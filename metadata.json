@@ -1,0 +1,5 @@
+{
+  "name": "GenDeck - AI Slide Generator",
+  "description": "Generate beautiful HTML/Tailwind presentation decks from your documents using Gemini models.",
+  "requestFramePermissions": []
+}

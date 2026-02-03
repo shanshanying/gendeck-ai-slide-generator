@@ -1,0 +1,58 @@
+
+export enum GenerationStatus {
+  IDLE = 'IDLE',
+  GENERATING_OUTLINE = 'GENERATING_OUTLINE',
+  REVIEWING_OUTLINE = 'REVIEWING_OUTLINE',
+  GENERATING_SLIDES = 'GENERATING_SLIDES',
+  COMPLETE = 'COMPLETE',
+  ERROR = 'ERROR'
+}
+
+export interface SlideData {
+  id: string;
+  title: string;
+  contentPoints: string[];
+  htmlContent: string | null;
+  notes?: string;
+  layoutSuggestion?: string;
+  isRegenerating: boolean;
+  cost?: number;
+}
+
+export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
+
+export interface ModelSelection {
+  provider: ApiProvider;
+  modelId: string;
+  baseUrl?: string;
+}
+
+export interface ApiSettings {
+  // Map of provider IDs to their API keys
+  apiKeys: Partial<Record<ApiProvider, string>>;
+  
+  // Distinct config for each step
+  outline: ModelSelection;
+  slides: ModelSelection;
+}
+
+export interface PresentationConfig {
+  topic: string;
+  audience: string;
+  purpose: string; // Added purpose
+  slideCount: number;
+  apiSettings: ApiSettings;
+  documentContent: string;
+}
+
+export interface OutlineItem {
+  title: string;
+  contentPoints: string[];
+  layoutSuggestion: string;
+  notes: string;
+}
+
+export interface ServiceResponse<T> {
+  data: T;
+  cost: number;
+}
