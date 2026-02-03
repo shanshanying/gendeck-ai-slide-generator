@@ -1,12 +1,14 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
 import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target } from 'lucide-react';
-import { PresentationConfig, ApiSettings, ApiProvider } from '../types';
-import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT } from '../constants';
+import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
+import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
 
 interface InputFormProps {
   onGenerate: (config: PresentationConfig) => void;
   isGenerating: boolean;
+  lang: Language;
+  t: (key: keyof typeof TRANSLATIONS['en']) => string;
 }
 
 // Helper to safely load from local storage
@@ -24,11 +26,11 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', "Gemini 1.5 Pro Overview"));
-  const [audience, setAudience] = useState(() => loadStr('gendeck_audience', AUDIENCE_PRESETS[0]));
-  const [purpose, setPurpose] = useState(() => loadStr('gendeck_purpose', PRESENTATION_PURPOSES[0]));
+  const [audience, setAudience] = useState(() => loadStr('gendeck_audience', AUDIENCE_PRESETS[lang][0]));
+  const [purpose, setPurpose] = useState(() => loadStr('gendeck_purpose', PRESENTATION_PURPOSES[lang][0]));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
   const [showSettings, setShowSettings] = useState(false);
@@ -53,6 +55,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
     loadStr('gendeck_m_slide', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
   );
 
+  // Simulated Progress State
+  const [progressMessage, setProgressMessage] = useState("");
+
   // Persistence Effects
   useEffect(() => localStorage.setItem('gendeck_topic', topic), [topic]);
   useEffect(() => localStorage.setItem('gendeck_audience', audience), [audience]);
@@ -70,6 +75,39 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
     localStorage.setItem('gendeck_p_slide', slideProvider);
     localStorage.setItem('gendeck_m_slide', slideModel);
   }, [slideProvider, slideModel]);
+
+  // Simulated Progress Effect
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isGenerating) {
+        const messages = lang === 'zh' ? [
+            "正在分析文档内容...",
+            "正在识别目标受众...",
+            "正在构建演示流程...",
+            "正在起草幻灯片标题...",
+            "正在优化布局建议...",
+            "正在完成大纲..."
+        ] : [
+            "Analyzing document content...",
+            "Identifying target audience...",
+            "Structuring presentation flow...",
+            "Drafting slide titles...",
+            "Refining layout suggestions...",
+            "Finalizing outline..."
+        ];
+        
+        let i = 0;
+        setProgressMessage(messages[0]);
+        
+        interval = setInterval(() => {
+            i = (i + 1) % messages.length;
+            setProgressMessage(messages[i]);
+        }, 3000);
+    } else {
+        setProgressMessage("");
+    }
+    return () => clearInterval(interval);
+  }, [isGenerating, lang]);
 
 
   // Helper to handle key changes
@@ -134,7 +172,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-purple-400" />
-          Create New Deck
+          {t('createNewDeck')}
         </h2>
         <button 
           onClick={() => setShowSettings(!showSettings)}
@@ -142,7 +180,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
           title="Configure AI Model"
         >
           <Settings className="w-4 h-4" />
-          <span className="text-xs font-medium">Model Settings</span>
+          <span className="text-xs font-medium">{t('modelSettings')}</span>
         </button>
       </div>
 
@@ -155,7 +193,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
             {/* 1. API Keys Section */}
             <div>
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                 <Key className="w-3 h-3" /> API Credentials
+                 <Key className="w-3 h-3" /> {t('apiCredentials')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {PROVIDERS.filter(p => p.id !== 'google' && p.id !== 'custom').map(p => (
@@ -173,7 +211,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                 <div>
                    <label className="block text-xs text-gray-500 mb-1">Google Gemini API Key</label>
                    <div className="w-full bg-gray-800/50 border border-gray-700 rounded px-3 py-1.5 text-gray-500 text-xs italic">
-                     Managed via system environment
+                     {t('googleApiKeyNote')}
                    </div>
                 </div>
               </div>
@@ -186,11 +224,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
               {/* Outline Config */}
               <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
                  <label className="block text-xs font-bold text-blue-400 mb-2 flex items-center gap-1">
-                    <Layers className="w-3 h-3" /> Step 1: Outline Generation
+                    <Layers className="w-3 h-3" /> {t('step1Outline')}
                  </label>
                  <div className="space-y-3">
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">Provider</label>
+                     <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
                      <select 
                         value={outlineProvider}
                         onChange={(e) => handleProviderChange('outline', e.target.value as ApiProvider)}
@@ -200,7 +238,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                      </select>
                    </div>
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">Model</label>
+                     <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
                      <select 
                         value={outlineModel}
                         onChange={(e) => setOutlineModel(e.target.value)}
@@ -218,11 +256,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
               {/* Slide Config */}
               <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
                  <label className="block text-xs font-bold text-green-400 mb-2 flex items-center gap-1">
-                    <ImageIcon className="w-3 h-3" /> Step 2: Slide Code Generation
+                    <ImageIcon className="w-3 h-3" /> {t('step2Slides')}
                  </label>
                  <div className="space-y-3">
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">Provider</label>
+                     <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
                      <select 
                         value={slideProvider}
                         onChange={(e) => handleProviderChange('slides', e.target.value as ApiProvider)}
@@ -232,7 +270,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                      </select>
                    </div>
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">Model</label>
+                     <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
                      <select 
                         value={slideModel}
                         onChange={(e) => setSlideModel(e.target.value)}
@@ -257,13 +295,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
             
             {/* Topic */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Topic / Title</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('topicLabel')}</label>
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
-                placeholder="e.g. Q3 Business Review"
+                placeholder={t('topicPlaceholder')}
                 required
               />
             </div>
@@ -271,7 +309,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
             {/* Slide Count */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-300">Number of Slides</label>
+                <label className="block text-sm font-medium text-gray-300">{t('slideCountLabel')}</label>
                 <span className="text-sm font-bold text-purple-400">{slideCount}</span>
               </div>
               <input 
@@ -291,10 +329,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
             {/* Audience Selection */}
             <div>
                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                 <Users className="w-4 h-4 text-purple-400"/> Target Audience
+                 <Users className="w-4 h-4 text-purple-400"/> {t('audienceLabel')}
                </label>
                <div className="flex flex-wrap gap-2 mb-2">
-                 {AUDIENCE_PRESETS.map((aud) => (
+                 {AUDIENCE_PRESETS[lang].map((aud) => (
                    <button
                     key={aud}
                     type="button"
@@ -314,17 +352,17 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                   value={audience} 
                   onChange={(e) => setAudience(e.target.value)}
                   className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                  placeholder="Or type custom audience..."
+                  placeholder={t('audiencePlaceholder')}
                 />
             </div>
 
             {/* Purpose Selection */}
             <div>
                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                 <Target className="w-4 h-4 text-blue-400"/> Presentation Goal
+                 <Target className="w-4 h-4 text-blue-400"/> {t('purposeLabel')}
                </label>
                <div className="grid grid-cols-2 gap-2">
-                 {PRESENTATION_PURPOSES.map((p) => (
+                 {PRESENTATION_PURPOSES[lang].map((p) => (
                    <button
                     key={p}
                     type="button"
@@ -347,8 +385,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Source Document
-                <span className="text-xs text-gray-500 ml-2">(Paste text or upload .txt/.md)</span>
+                {t('sourceLabel')}
+                <span className="text-xs text-gray-500 ml-2">({t('sourcePlaceholder')})</span>
               </label>
               <div className="relative h-full">
                 <textarea
@@ -356,12 +394,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                   onChange={(e) => setContent(e.target.value)}
                   rows={16}
                   className="w-full h-full min-h-[300px] bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-sm text-gray-300 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all font-mono"
-                  placeholder="Paste your document content here..."
+                  placeholder={t('pastePlaceholder')}
                 />
                 <div className="absolute bottom-3 right-3">
                   <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded-md flex items-center gap-1 transition-colors border border-gray-500">
                     <Upload className="w-3 h-3" />
-                    Upload File
+                    {t('uploadFile')}
                     <input type="file" accept=".txt,.md,.json" onChange={handleFileUpload} className="hidden" />
                   </label>
                 </div>
@@ -381,12 +419,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating }) => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Thinking...
+              <span className="animate-pulse">{progressMessage || t('thinking')}</span>
             </>
           ) : (
             <>
               <FileText className="w-6 h-6" />
-              Generate Outline
+              {t('generateBtn')}
             </>
           )}
         </button>

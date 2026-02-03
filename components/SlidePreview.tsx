@@ -1,13 +1,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SlideData } from '../types';
+import { SlideData, Language } from '../types';
 import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, Sun, Moon, CheckCircle, AlertTriangle } from 'lucide-react';
+import { TRANSLATIONS } from '../constants';
 
 interface SlidePreviewProps {
   slide: SlideData | undefined;
   onRegenerate: (id: string, customPrompt?: string) => void;
   styleDescription: string;
   colorPalette: string;
+  lang: Language;
+  t: (key: keyof typeof TRANSLATIONS['en']) => string;
 }
 
 const DESIGN_CONSTRAINTS = [
@@ -17,7 +20,7 @@ const DESIGN_CONSTRAINTS = [
   "Layout: Unique styles for Cover/Ending"
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, lang, t }) => {
   const [showCode, setShowCode] = useState(false);
   const [customInstruction, setCustomInstruction] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -88,8 +91,8 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         <div className="w-16 h-16 mb-4 rounded-full bg-gray-800 flex items-center justify-center">
           <Monitor className="w-8 h-8 text-gray-600" />
         </div>
-        <p className="text-xl font-medium">No Slide Selected</p>
-        <p className="text-sm mt-2 max-w-md">Select a slide from the sidebar to preview, regenerate, or edit.</p>
+        <p className="text-xl font-medium">{t('noSlideSelected')}</p>
+        <p className="text-sm mt-2 max-w-md">{t('selectSlidePrompt')}</p>
       </div>
     );
   }
@@ -115,17 +118,17 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       <div className="h-14 border-b border-gray-700 bg-gray-800 flex items-center justify-between px-4 shrink-0 z-20 relative">
         <div className="flex items-center gap-3 overflow-hidden">
            <h3 className="text-sm font-semibold text-gray-300 truncate max-w-[200px]" title={slide.title}>{slide.title}</h3>
-           {slide.isRegenerating && <span className="text-xs text-purple-400 flex items-center gap-1 shrink-0"><RefreshCw className="w-3 h-3 animate-spin"/> Updating...</span>}
+           {slide.isRegenerating && <span className="text-xs text-purple-400 flex items-center gap-1 shrink-0"><RefreshCw className="w-3 h-3 animate-spin"/> {t('updating')}</span>}
         </div>
         
         {/* Center: Zoom */}
         {!showCode && (
           <div className="hidden md:flex items-center bg-gray-900 rounded-lg border border-gray-700 p-1 mx-2">
-            <button onClick={handleZoomOut} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Zoom Out"><ZoomOut className="w-3 h-3" /></button>
+            <button onClick={handleZoomOut} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('zoomOut')}><ZoomOut className="w-3 h-3" /></button>
             <span className="text-[10px] w-10 text-center text-gray-400 font-mono">{Math.round(scale * 100)}%</span>
-            <button onClick={handleZoomIn} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Zoom In"><ZoomIn className="w-3 h-3" /></button>
+            <button onClick={handleZoomIn} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('zoomIn')}><ZoomIn className="w-3 h-3" /></button>
             <div className="w-px h-3 bg-gray-700 mx-1"></div>
-            <button onClick={handleFit} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Fit to Screen"><Maximize className="w-3 h-3" /></button>
+            <button onClick={handleFit} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('fitToScreen')}><Maximize className="w-3 h-3" /></button>
           </div>
         )}
 
@@ -148,14 +151,14 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
              className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${isEditing ? 'bg-gray-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
            >
              <RefreshCw className={`w-3 h-3 ${slide.isRegenerating ? 'animate-spin' : ''}`} />
-             Regenerate
+             {t('regenerate')}
            </button>
            <button 
              onClick={() => setShowCode(!showCode)}
              className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${showCode ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
            >
              <Code className="w-3 h-3" />
-             {showCode ? 'Preview' : 'Code'}
+             {showCode ? t('previewView') : t('code')}
            </button>
         </div>
       </div>
@@ -163,7 +166,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       {/* Regeneration Input Panel */}
       {isEditing && (
         <div className="absolute top-14 left-0 right-0 z-30 bg-gray-800 border-b border-gray-700 p-4 shadow-xl animate-in fade-in slide-in-from-top-2">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Instructions for regeneration</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">{t('instructions')}</label>
           <div className="flex gap-2 mb-4">
              {!showConfirmation ? (
                 <>
@@ -171,7 +174,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     type="text" 
                     value={customInstruction}
                     onChange={(e) => setCustomInstruction(e.target.value)}
-                    placeholder="e.g., Change layout to compare two items..."
+                    placeholder={t('instructionPlaceholder')}
                     className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:ring-1 focus:ring-purple-500 outline-none"
                     autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && handleApplyClick()}
@@ -180,33 +183,33 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     onClick={handleApplyClick}
                     className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
                   >
-                    Apply
+                    {t('apply')}
                   </button>
                   <button 
                     onClick={() => setIsEditing(false)}
                     className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded text-sm font-medium transition-colors"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </>
              ) : (
                 <div className="flex-1 flex items-center justify-between bg-red-900/20 border border-red-500/50 rounded-lg px-4 py-2 animate-in fade-in zoom-in-95">
                     <span className="text-red-200 text-sm font-medium flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-red-400" />
-                        Overwrite current slide design?
+                        {t('overwriteConfirm')}
                     </span>
                     <div className="flex gap-2">
                          <button 
                            onClick={() => setShowConfirmation(false)} 
                            className="text-xs text-gray-300 hover:text-white px-3 py-1.5 rounded hover:bg-gray-700"
                          >
-                           Cancel
+                           {t('cancel')}
                          </button>
                          <button 
                            onClick={performRegeneration} 
                            className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg shadow-red-900/50"
                          >
-                           Yes, Regenerate
+                           {t('yesRegenerate')}
                          </button>
                     </div>
                 </div>
@@ -217,7 +220,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
           {!showConfirmation && (
             <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
                <div className="flex items-center gap-2 mb-2">
-                 <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Active System Constraints</span>
+                 <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">{t('constraints')}</span>
                  <div className="h-px bg-gray-700 flex-1"></div>
                </div>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
@@ -268,7 +271,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                   {slide.isRegenerating && (
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center z-10">
                        <RefreshCw className="w-12 h-12 animate-spin text-purple-400 mb-3" />
-                       <span className="text-white font-medium text-lg drop-shadow-md">Regenerating Slide...</span>
+                       <span className="text-white font-medium text-lg drop-shadow-md">{t('regeneratingSlide')}</span>
                     </div>
                   )}
               </div>
@@ -278,12 +281,12 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
              {slide.isRegenerating ? (
                <div className="flex flex-col items-center animate-pulse">
                   <RefreshCw className="w-10 h-10 animate-spin text-purple-500 mb-2" />
-                  <span className="text-sm font-medium text-gray-300">Generating Slide Design...</span>
+                  <span className="text-sm font-medium text-gray-300">{t('generatingDesign')}</span>
                </div>
              ) : (
                <div className="text-center p-6 border-2 border-dashed border-gray-700 rounded-xl">
-                 <p>Waiting for generation...</p>
-                 <p className="text-xs text-gray-600 mt-1">Check the sidebar or click Regenerate</p>
+                 <p>{t('waitingGeneration')}</p>
+                 <p className="text-xs text-gray-600 mt-1">{t('checkSidebar')}</p>
                </div>
              )}
           </div>
@@ -293,12 +296,12 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       {/* Notes footer */}
       <div className="h-32 bg-gray-900 border-t border-gray-800 p-4 overflow-y-auto shrink-0 z-20">
         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-2">
-          <Code className="w-3 h-3" /> Speaker Notes
+          <Code className="w-3 h-3" /> {t('speakerNotes')}
         </h4>
         {slide.notes ? (
            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line font-serif">{slide.notes}</p>
         ) : (
-           <p className="text-sm text-gray-600 italic">No notes available. Use the "Generate Notes" button in the Outline view or Export menu.</p>
+           <p className="text-sm text-gray-600 italic">{t('noNotes')}</p>
         )}
       </div>
     </div>

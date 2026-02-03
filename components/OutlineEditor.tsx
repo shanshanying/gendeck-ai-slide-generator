@@ -1,21 +1,25 @@
 
 import React, { useState } from 'react';
-import { SlideData } from '../types';
+import { SlideData, Language } from '../types';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, ChevronDown, ChevronUp, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
-import { COLOR_THEMES } from '../constants';
+import { COLOR_THEMES, TRANSLATIONS } from '../constants';
 
 interface OutlineEditorProps {
   slides: SlideData[];
   onUpdateSlides: (slides: SlideData[]) => void;
   onConfirm: (colorPalette: string) => void;
   onCancel: () => void;
+  lang: Language;
+  t: (key: keyof typeof TRANSLATIONS['en']) => string;
 }
 
 const OutlineEditor: React.FC<OutlineEditorProps> = ({ 
   slides, 
   onUpdateSlides, 
   onConfirm, 
-  onCancel
+  onCancel,
+  lang,
+  t
 }) => {
   const [colorPalette, setColorPalette] = useState(COLOR_THEMES[0].colors.join(', '));
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -103,8 +107,8 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   const handleAddSlide = () => {
     const newSlide: SlideData = {
       id: Math.random().toString(36).substr(2, 9),
-      title: "New Slide",
-      contentPoints: ["Add your content here"],
+      title: lang === 'zh' ? "新幻灯片" : "New Slide",
+      contentPoints: [lang === 'zh' ? "在此添加内容" : "Add your content here"],
       htmlContent: null,
       notes: "",
       layoutSuggestion: "Layout: Standard. Title and Body.",
@@ -148,14 +152,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     <div className="w-full max-w-[95%] mx-auto p-6 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-white">Review & Style</h2>
-          <p className="text-gray-400 text-sm">Refine your structure, choose layouts, and pick a theme.</p>
+          <h2 className="text-2xl font-bold text-white">{t('reviewStyle')}</h2>
+          <p className="text-gray-400 text-sm">{t('refineStructure')}</p>
         </div>
         <div className="flex gap-3">
            <button 
              onClick={handleDownloadOutline}
              className="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors flex items-center gap-2"
-             title="Export Outline as Markdown"
+             title={t('exportOutline')}
            >
              <FileDown className="w-4 h-4" />
            </button>
@@ -163,13 +167,13 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
              onClick={onCancel}
              className="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors flex items-center gap-2"
            >
-             <ArrowLeft className="w-4 h-4" /> Back
+             <ArrowLeft className="w-4 h-4" /> {t('back')}
            </button>
            <button 
              onClick={() => onConfirm(colorPalette)}
              className="px-6 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2"
            >
-             Generate Slides <ArrowRight className="w-4 h-4" />
+             {t('generateSlidesBtn')} <ArrowRight className="w-4 h-4" />
            </button>
         </div>
       </div>
@@ -181,7 +185,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
            className="w-full px-6 py-4 flex items-center justify-between bg-gray-800/50 hover:bg-gray-750 transition-colors"
          >
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-               <PaintBucket className="w-4 h-4 text-yellow-400"/> Select Color Palette
+               <PaintBucket className="w-4 h-4 text-yellow-400"/> {t('selectPalette')}
             </h3>
             {isPaletteOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
          </button>
@@ -210,7 +214,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
              </div>
              
              <div className="flex items-center gap-3">
-                 <label className="text-xs text-gray-500 whitespace-nowrap">Custom Palette:</label>
+                 <label className="text-xs text-gray-500 whitespace-nowrap">{t('customPalette')}</label>
                  <input 
                     type="text"
                     value={colorPalette}
@@ -236,14 +240,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                      {index + 1}
                    </span>
                    <div className="flex-1">
-                      {isCover && <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mb-1 block">Cover Page</span>}
-                      {isEnding && <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1 block">Ending / Summary</span>}
+                      {isCover && <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mb-1 block">{t('coverPage')}</span>}
+                      {isEnding && <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1 block">{t('endingPage')}</span>}
                       <input 
                         type="text" 
                         value={slide.title}
                         onChange={(e) => handleUpdateSlide(slide.id, 'title', e.target.value)}
                         className={`bg-transparent border-none font-bold text-white focus:ring-0 w-full placeholder-gray-500 focus:bg-gray-900/50 rounded px-2 ${isCover ? 'text-2xl' : 'text-xl'}`}
-                        placeholder="Slide Title"
+                        placeholder={t('slideTitlePlaceholder')}
                       />
                    </div>
                  </div>
@@ -268,19 +272,19 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col">
                                 <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">
-                                Subtitle
+                                {t('subtitle')}
                                 </label>
                                 <textarea 
                                 value={slide.contentPoints[0] || ''}
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
                                 className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-base text-gray-200 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner"
-                                placeholder="Presentation subtitle or summary..."
+                                placeholder={t('subtitlePlaceholder')}
                                 />
                             </div>
                             
                             <div className="flex flex-col">
                                 <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">
-                                Title Style
+                                {t('titleStyle')}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button 
@@ -308,12 +312,12 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-col">
-                             <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Visual / Layout Notes</label>
+                             <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">{t('visualNotes')}</label>
                              <textarea
                                value={slide.layoutSuggestion || ''}
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                                className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-sm text-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner"
-                               placeholder="Instructions for the AI designer..."
+                               placeholder={t('visualNotesPlaceholder')}
                              />
                         </div>
                     </>
@@ -323,19 +327,19 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col">
                                 <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">
-                                Closing Message
+                                {t('closingMessage')}
                                 </label>
                                 <textarea 
                                 value={slide.contentPoints[0] || ''}
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
                                 className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner"
-                                placeholder="Thank you for your time..."
+                                placeholder={t('closingPlaceholder')}
                                 />
                             </div>
                             
                             <div className="flex flex-col">
                                 <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">
-                                Ending Style
+                                {t('endingStyle')}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button 
@@ -363,12 +367,12 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-col">
-                             <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Visual / Layout Notes</label>
+                             <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">{t('visualNotes')}</label>
                              <textarea
                                value={slide.layoutSuggestion || ''}
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                                className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-sm text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner"
-                               placeholder="Instructions for the AI designer..."
+                               placeholder={t('visualNotesPlaceholder')}
                              />
                         </div>
                     </>
@@ -377,19 +381,19 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                     <>
                         <div className="flex flex-col">
                             <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2 flex items-center justify-between">
-                            Content Points
-                            <span className="text-[10px] normal-case opacity-50 bg-gray-700 px-2 py-0.5 rounded">One point per line</span>
+                            {t('contentPoints')}
+                            <span className="text-[10px] normal-case opacity-50 bg-gray-700 px-2 py-0.5 rounded">{t('onePointPerLine')}</span>
                             </label>
                             <textarea 
                             value={slide.contentPoints.join('\n')}
                             onChange={(e) => handleUpdatePoints(slide.id, e.target.value)}
                             className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-base text-gray-200 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner"
-                            placeholder="• Point 1&#10;• Point 2&#10;• Point 3"
+                            placeholder={t('pointsPlaceholder')}
                             />
                         </div>
                         <div className="flex flex-col">
                             <div className="flex justify-between items-center mb-2">
-                                <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">Layout Preset</label>
+                                <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">{t('layoutPreset')}</label>
                             </div>
                             
                             {/* Standard Slide Presets Grid */}
@@ -414,12 +418,12 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                 </button>
                             </div>
 
-                            <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">Visual / Layout Notes</label>
+                            <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2">{t('visualNotes')}</label>
                             <textarea
                             value={slide.layoutSuggestion || ''}
                             onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                             className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-sm text-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner"
-                            placeholder="Describe layout ideas (e.g. 'Split screen with image on left') or style instructions..."
+                            placeholder={t('visualNotesPlaceholder')}
                             />
                         </div>
                     </>
@@ -433,7 +437,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           onClick={handleAddSlide}
           className="w-full py-6 border-2 border-dashed border-gray-700 rounded-xl text-gray-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-gray-800/50 transition-all flex items-center justify-center gap-3 font-semibold text-lg"
         >
-          <Plus className="w-6 h-6" /> Add New Slide
+          <Plus className="w-6 h-6" /> {t('addNewSlide')}
         </button>
       </div>
     </div>

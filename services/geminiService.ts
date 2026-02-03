@@ -307,6 +307,9 @@ export const generateSlideHtml = async (
   colorPalette: string,
   audience: string,
   apiSettings: ApiSettings,
+  deckTitle: string,
+  pageNumber: number,
+  totalPages: number,
   customInstruction?: string
 ): Promise<ServiceResponse<string>> => {
   try {
@@ -354,9 +357,10 @@ export const generateSlideHtml = async (
       </main>
 
       <!-- 3. Footer -->
-      <footer class="absolute bottom-0 left-0 w-full p-8 flex justify-between items-end text-[var(--c-text-muted)] z-10 border-t border-[var(--c-text-muted)]/10 mx-12 w-[calc(100%-96px)]">
-         <div class="text-sm font-medium opacity-60">GenDeck Presentation</div>
-         <div class="text-sm font-mono opacity-40">CONFIDENTIAL</div>
+      <footer class="absolute bottom-0 left-0 w-full p-8 flex items-end text-[var(--c-text-muted)] z-10 border-t border-[var(--c-text-muted)]/10 mx-12 w-[calc(100%-96px)]">
+         <div class="flex-1 text-left text-sm font-medium opacity-50">GenDeck</div>
+         <div class="flex-1 text-center text-sm font-semibold opacity-80 tracking-wide uppercase truncate px-4">${deckTitle}</div>
+         <div class="flex-1 text-right text-sm font-mono opacity-50">${pageNumber} / ${totalPages}</div>
       </footer>
       \`\`\`
 

@@ -1,24 +1,43 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, MoreVertical } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, MoreVertical, Languages, Play, Pause, XCircle, Printer } from 'lucide-react';
+import { TRANSLATIONS } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const App: React.FC = () => {
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('gendeck_lang');
+    return (saved === 'en' || saved === 'zh') ? saved : 'en';
+  });
+  
   const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(null);
-  const [colorPalette, setColorPalette] = useState<string>(''); // New State for palette
+  const [colorPalette, setColorPalette] = useState<string>('');
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [currentSlideId, setCurrentSlideId] = useState<string | null>(null);
   const [totalCost, setTotalCost] = useState(0);
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  
+  // New State for Pause/Resume
+  const [isPaused, setIsPaused] = useState(false);
+  
+  // Refs for process control
+  const shouldStopRef = React.useRef(false);
+  const processingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Helper function for translations
+  const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[language][key];
+
+  useEffect(() => {
+    localStorage.setItem('gendeck_lang', language);
+  }, [language]);
 
   // Ensure currentSlideId is valid when slides change
   useEffect(() => {
@@ -38,6 +57,9 @@ const App: React.FC = () => {
 
   // Function to process the queue of slides that need HTML generation
   const processSlideQueue = useCallback(async (currentSlides: SlideData[], currentConfig: PresentationConfig, palette: string) => {
+    // Check if stopped
+    if (shouldStopRef.current) return;
+
     // Find first slide without HTML and not currently regenerating
     const pendingSlideIndex = currentSlides.findIndex(s => !s.htmlContent && !s.isRegenerating);
     
@@ -63,22 +85,61 @@ const App: React.FC = () => {
         outlineItem, 
         palette, 
         currentConfig.audience, 
-        currentConfig.apiSettings
+        currentConfig.apiSettings,
+        currentConfig.topic,
+        pendingSlideIndex + 1,
+        currentSlides.length
       );
 
       setTotalCost(prev => prev + result.cost);
 
       setSlides(prev => {
         const next = prev.map(s => s.id === slideToProcess.id ? { ...s, htmlContent: result.data, isRegenerating: false } : s);
-        // Trigger next item in queue
-        setTimeout(() => processSlideQueue(next, currentConfig, palette), 100); 
+        
+        // Check stop ref again before scheduling next
+        if (!shouldStopRef.current) {
+            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100); 
+        }
         return next;
       });
     } catch (e) {
       console.error("Failed to generate slide", slideToProcess.id, e);
-      setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s));
+      setSlides(prev => {
+         const next = prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s);
+         // Even on error, try to continue if not stopped
+         if (!shouldStopRef.current) {
+            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100); 
+         }
+         return next;
+      });
     }
   }, []);
+
+  const handlePauseGeneration = () => {
+    shouldStopRef.current = true;
+    setIsPaused(true);
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
+  };
+
+  const handleResumeGeneration = () => {
+    shouldStopRef.current = false;
+    setIsPaused(false);
+    if (config) {
+      processSlideQueue(slides, config, colorPalette);
+    }
+  };
+
+  const handleCancelGeneration = () => {
+    shouldStopRef.current = true;
+    setIsPaused(false);
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
+    // Return to outline view to allow editing or restarting
+    setStatus(GenerationStatus.REVIEWING_OUTLINE);
+  };
 
   // Step 1: Generate Outline Only
   const handleGenerateOutline = async (newConfig: PresentationConfig) => {
@@ -160,6 +221,10 @@ const App: React.FC = () => {
     setColorPalette(selectedColorPalette);
     setStatus(GenerationStatus.GENERATING_SLIDES);
     
+    // Reset stop flags
+    shouldStopRef.current = false;
+    setIsPaused(false);
+    
     // processSlideQueue will handle the rest
     processSlideQueue(slides, config, selectedColorPalette);
   };
@@ -180,6 +245,8 @@ const App: React.FC = () => {
     setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: true } : s));
 
     const slide = slides.find(s => s.id === id);
+    const slideIndex = slides.findIndex(s => s.id === id);
+
     if (!slide) return;
 
     try {
@@ -194,7 +261,10 @@ const App: React.FC = () => {
         outlineItem, 
         colorPalette, // Use stored palette
         config.audience, 
-        config.apiSettings, 
+        config.apiSettings,
+        config.topic,
+        slideIndex + 1,
+        slides.length,
         customInstruction
       );
 
@@ -230,7 +300,7 @@ const App: React.FC = () => {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GenDeck - ${config?.topic}</title>
+  <title>${config?.topic}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* CSS Reset & Defaults */
@@ -339,33 +409,55 @@ const App: React.FC = () => {
       z-index: 1001;
     }
 
-    /* Print Overrides */
+    /* Print Overrides (PDF Export) */
     @media print {
       @page {
         size: 1920px 1080px;
         margin: 0;
       }
-      body, html { background: white; height: auto; overflow: visible; }
-      #deck-container { 
-        position: static; 
-        width: auto; 
-        height: auto; 
-        transform: none !important; 
-        display: block !important; 
-      }
-      .slide { 
-        position: relative; 
-        width: 1920px;
-        height: 1080px;
-        top: auto; 
-        left: auto; 
-        display: block !important; 
-        margin: 0; 
-        page-break-after: always; 
-        break-after: page; 
-        box-shadow: none;
+      body, html { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        background-color: transparent !important;
+        width: 1920px !important;
+        height: auto !important;
         overflow: visible !important;
       }
+      #deck-container { 
+        position: static !important; 
+        width: 1920px !important; 
+        height: auto !important; 
+        transform: none !important; 
+        display: block !important; 
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .slide { 
+        position: relative !important; 
+        width: 1920px !important;
+        height: 1080px !important;
+        top: auto !important; 
+        left: auto !important; 
+        display: block !important; 
+        margin: 0 !important; 
+        padding: 0 !important;
+        page-break-after: always !important; 
+        break-after: page !important; 
+        box-shadow: none !important;
+        overflow: hidden !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background-color: var(--c-bg) !important;
+        border: none !important;
+      }
+      
+      /* Force theme colors in print */
+      .slide * {
+         -webkit-print-color-adjust: exact !important;
+         print-color-adjust: exact !important;
+      }
+
       .nav-controls, .theme-toggle, .progress-bar, .no-print { display: none !important; }
     }
   </style>
@@ -494,6 +586,30 @@ const App: React.FC = () => {
     setShowExportMenu(false);
   };
 
+  const handleExportPdf = () => {
+    const fullHtml = getFullHtml();
+    // Inject auto-print script before body end
+    // The delay ensures Tailwind/Styles are applied
+    const printScript = `
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 1000); // 1s delay to ensure fonts/layout settle
+        };
+      </script>
+    `;
+    const htmlToPrint = fullHtml.replace('</body>', `${printScript}</body>`);
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(htmlToPrint);
+      printWindow.document.close();
+    }
+    setShowExportMenu(false);
+  };
+
   const handleExportMarkdown = () => {
     const md = slides.map(s => `## ${s.title}\n\n${s.contentPoints.map(p => `- ${p}`).join('\n')}\n\n**Notes:**\n${s.notes || 'N/A'}\n`).join('\n---\n\n');
     downloadFile(md, `outline-${config?.topic.replace(/\s+/g, '-').toLowerCase()}.md`, 'text/markdown');
@@ -518,139 +634,226 @@ const App: React.FC = () => {
 
   const currentSlide = slides.find(s => s.id === currentSlideId);
   const hasNotes = slides.some(s => s.notes && s.notes.trim().length > 0);
+  
+  // Calculate generation progress
+  const generatedCount = slides.filter(s => s.htmlContent).length;
+  const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden font-sans">
+    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden font-sans relative">
+      {/* Progress Bar Overlay */}
+      {status === GenerationStatus.GENERATING_SLIDES && (
+        <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 z-[100]">
+           <div 
+             className={`h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 ease-out ${isPaused ? 'opacity-50' : ''}`}
+             style={{ width: `${progressPercent}%` }}
+           />
+        </div>
+      )}
+
       {/* Header */}
-      <header className="h-16 border-b border-gray-800 bg-gray-900 flex items-center justify-between px-6 z-50">
+      <header className="h-16 border-b border-gray-800 bg-gray-900 flex items-center justify-between px-6 z-50 relative">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg">G</div>
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">GenDeck</h1>
         </div>
         
-        {/* Cost Display */}
-        {totalCost > 0 && (
-          <div className="hidden md:flex items-center gap-1 bg-gray-800 px-3 py-1 rounded-full border border-gray-700">
-            <DollarSign className="w-3 h-3 text-green-400" />
-            <span className="text-xs font-mono text-gray-300">Est. Cost: ${totalCost.toFixed(4)}</span>
-          </div>
-        )}
-        
-        {status === GenerationStatus.REVIEWING_OUTLINE && (
-           <div className="text-sm text-gray-400 font-medium">Outline Editor</div>
-        )}
+        <div className="flex items-center gap-4">
+            {/* Language Switcher */}
+            <button 
+                onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-gray-800 px-2 py-1 rounded border border-gray-700"
+                title="Switch Language"
+            >
+                <Languages className="w-3 h-3" />
+                <span className="font-mono">{language === 'en' ? 'EN' : '中文'}</span>
+            </button>
 
-        {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && slides.length > 0 && (
-          <div className="flex items-center gap-2 md:gap-4">
-             <div className="text-xs text-gray-500 hidden lg:block">
-               {status === GenerationStatus.GENERATING_SLIDES 
-                 ? `Generating slides... (${slides.filter(s => s.htmlContent).length}/${slides.length})` 
-                 : 'Presentation Ready'}
-             </div>
+            {/* Cost Display */}
+            {totalCost > 0 && (
+            <div className="hidden md:flex items-center gap-1 bg-gray-800 px-3 py-1 rounded-full border border-gray-700 shadow-sm">
+                <DollarSign className="w-3 h-3 text-green-400" />
+                <span className="text-xs font-mono text-gray-300">
+                {t('estCost')}: ${totalCost.toFixed(4)}
+                </span>
+            </div>
+            )}
 
-             {/* Speaker Notes Button */}
-             <button 
-               onClick={handleGenerateNotes}
-               disabled={isGeneratingNotes}
-               className={`text-xs px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${
-                 hasNotes 
-                   ? 'bg-blue-900/30 text-blue-300 border-blue-800 hover:bg-blue-900/50' 
-                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-white'
-               }`}
-               title={hasNotes ? 'Regenerate Speaker Notes' : 'Generate Speaker Notes'}
-             >
-                {isGeneratingNotes ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquareText className="w-3 h-3" />}
-                <span className="hidden md:inline">{hasNotes ? 'Regenerate Notes' : 'Generate Notes'}</span>
-             </button>
-             
-             {/* Preview Button */}
-             <button 
-               onClick={handlePreview}
-               className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all border border-gray-600"
-               title="Preview in new tab"
-             >
-               <Eye className="w-4 h-4" />
-               <span className="hidden sm:inline">Preview</span>
-             </button>
+            {status === GenerationStatus.REVIEWING_OUTLINE && (
+            <div className="px-3 py-1 bg-blue-900/30 text-blue-400 border border-blue-500/30 rounded-full text-xs font-medium animate-pulse">
+                {t('outlineEditor')}
+            </div>
+            )}
+            
+            {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
+              <div className="flex items-center gap-2">
+                 {status === GenerationStatus.GENERATING_SLIDES && (
+                   <div className="flex items-center gap-2 bg-purple-900/30 text-purple-300 px-3 py-1.5 rounded-lg border border-purple-500/30">
+                     <Loader2 className="w-3 h-3 animate-spin" />
+                     <span className="text-xs font-medium">{t('generating')} {Math.round(progressPercent)}%</span>
+                     <div className="h-3 w-px bg-purple-500/30 mx-1" />
+                     {isPaused ? (
+                        <button onClick={handleResumeGeneration} className="hover:text-white" title={t('resume')}>
+                            <Play className="w-3 h-3 fill-current" />
+                        </button>
+                     ) : (
+                        <button onClick={handlePauseGeneration} className="hover:text-white" title={t('pause')}>
+                            <Pause className="w-3 h-3 fill-current" />
+                        </button>
+                     )}
+                     <button onClick={handleCancelGeneration} className="hover:text-white ml-1" title={t('cancel')}>
+                        <XCircle className="w-3 h-3" />
+                     </button>
+                   </div>
+                 )}
 
-             {/* Explicit Download HTML Button (Fixed Visibility) */}
-             <button 
-               onClick={handleExportHtml}
-               className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-purple-900/30 border border-purple-500"
-               title="Download HTML Deck"
-             >
-               <Download className="w-4 h-4" />
-               <span>Download HTML</span>
-             </button>
-
-             {/* Export Menu for other options */}
-             <div className="relative">
-               <button 
-                 onClick={() => setShowExportMenu(!showExportMenu)}
-                 className="bg-gray-800 hover:bg-gray-700 text-gray-400 px-2 py-2 rounded-lg text-sm font-medium flex items-center justify-center transition-all border border-gray-700"
-                 title="More export options"
-               >
-                 <MoreVertical className="w-4 h-4" />
-               </button>
-               
-               {showExportMenu && (
-                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                   <div className="px-4 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-900/50">Other Formats</div>
-                   <button onClick={handleExportMarkdown} className="w-full text-left px-4 py-3 hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-200 border-t border-gray-700">
-                     <FileJson className="w-4 h-4 text-green-400" /> Outline (Markdown)
-                   </button>
-                   <button onClick={handleExportNotes} className="w-full text-left px-4 py-3 hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-200 border-t border-gray-700">
-                     <FileText className="w-4 h-4 text-blue-400" /> Speaker Notes (Txt)
-                   </button>
+                 {/* Export Dropdown */}
+                 <div className="relative">
+                    <button 
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-700 text-sm font-medium transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">{t('otherFormats')}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                    
+                    {showExportMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                          <div className="p-1">
+                             <button 
+                               onClick={handleExportHtml}
+                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                             >
+                               <FileJson className="w-4 h-4" />
+                               {t('downloadHtml')}
+                             </button>
+                             <button 
+                               onClick={handleExportPdf}
+                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                             >
+                               <Printer className="w-4 h-4" />
+                               {t('exportPdf')}
+                             </button>
+                             <button 
+                               onClick={handleExportMarkdown}
+                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                             >
+                               <FileText className="w-4 h-4" />
+                               {t('exportOutline')}
+                             </button>
+                             <button 
+                               onClick={handleExportNotes}
+                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                             >
+                               <MessageSquareText className="w-4 h-4" />
+                               {t('exportNotes')}
+                             </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                  </div>
-               )}
-             </div>
-             
-             <button 
-               onClick={() => {
-                 setSlides([]);
-                 setConfig(null);
-                 setStatus(GenerationStatus.IDLE);
-                 setTotalCost(0);
-               }}
-               className="text-gray-400 hover:text-white text-sm ml-2"
-             >
-               New
-             </button>
-          </div>
-        )}
+
+                 <button 
+                    onClick={handlePreview}
+                    disabled={slides.length === 0}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all active:scale-95"
+                 >
+                    <Eye className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('preview')}</span>
+                 </button>
+              </div>
+            )}
+            
+            {status !== GenerationStatus.IDLE && (
+              <button 
+                onClick={() => {
+                   if (confirm("Are you sure? All progress will be lost.")) {
+                     handleCancelGeneration();
+                     setStatus(GenerationStatus.IDLE);
+                   }
+                }}
+                className="text-gray-400 hover:text-white p-2"
+                title={t('new')}
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            )}
+        </div>
       </header>
 
-      {/* Main Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {status === GenerationStatus.IDLE || status === GenerationStatus.ERROR || status === GenerationStatus.GENERATING_OUTLINE ? (
-           <div className="w-full h-full overflow-y-auto p-4 md:p-10">
-             <InputForm onGenerate={handleGenerateOutline} isGenerating={status === GenerationStatus.GENERATING_OUTLINE} />
-           </div>
-        ) : status === GenerationStatus.REVIEWING_OUTLINE ? (
-           <OutlineEditor 
-             slides={slides}
-             onUpdateSlides={handleUpdateSlides}
-             onConfirm={handleConfirmOutline}
-             onCancel={handleCancelOutline}
-           />
-        ) : (
-          <>
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-hidden relative">
+        {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
+          <div className="h-full overflow-y-auto">
+            <InputForm 
+              onGenerate={handleGenerateOutline} 
+              isGenerating={status === GenerationStatus.GENERATING_OUTLINE} 
+              lang={language}
+              t={t}
+            />
+          </div>
+        )}
+
+        {status === GenerationStatus.REVIEWING_OUTLINE && (
+          <OutlineEditor 
+            slides={slides} 
+            onUpdateSlides={handleUpdateSlides} 
+            onConfirm={handleConfirmOutline}
+            onCancel={handleCancelOutline}
+            lang={language}
+            t={t}
+          />
+        )}
+
+        {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
+          <div className="flex h-full">
             <Sidebar 
               slides={slides} 
               currentSlideId={currentSlideId} 
-              onSelectSlide={setCurrentSlideId}
-              isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES}
+              onSelectSlide={setCurrentSlideId} 
+              isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES && !isPaused}
+              lang={language}
+              t={t}
             />
-            <SlidePreview 
-              slide={currentSlide} 
-              onRegenerate={handleRegenerateSlide}
-              styleDescription={config?.audience || ""}
-              colorPalette={colorPalette}
-            />
-          </>
+            <div className="flex-1 relative">
+               <SlidePreview 
+                 slide={currentSlide}
+                 onRegenerate={handleRegenerateSlide}
+                 styleDescription={colorPalette} // reusing prop for palette
+                 colorPalette={colorPalette}
+                 lang={language}
+                 t={t}
+               />
+               
+               {/* Notes Generation CTA Overlay if complete but no notes */}
+               {status === GenerationStatus.COMPLETE && !hasNotes && !isGeneratingNotes && (
+                   <div className="absolute bottom-6 right-6 z-40">
+                      <button 
+                        onClick={handleGenerateNotes}
+                        className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-xl border border-gray-700 flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4"
+                      >
+                         <MessageSquareText className="w-4 h-4 text-green-400" />
+                         {t('generateNotes')}
+                      </button>
+                   </div>
+               )}
+
+               {isGeneratingNotes && (
+                   <div className="absolute bottom-6 right-6 z-40">
+                      <div className="bg-gray-800 text-white px-4 py-2 rounded-lg shadow-xl border border-gray-700 flex items-center gap-2 text-sm font-medium">
+                         <Loader2 className="w-4 h-4 animate-spin text-green-400" />
+                         Generating speaker notes...
+                      </div>
+                   </div>
+               )}
+            </div>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

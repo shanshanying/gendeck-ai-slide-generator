@@ -56,3 +56,5 @@ export interface ServiceResponse<T> {
   data: T;
   cost: number;
 }
+
+export type Language = 'en' | 'zh';

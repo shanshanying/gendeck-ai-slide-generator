@@ -1,21 +1,25 @@
+
 import React from 'react';
-import { SlideData } from '../types';
+import { SlideData, Language } from '../types';
 import { Layout, CheckCircle, CircleDashed } from 'lucide-react';
+import { TRANSLATIONS } from '../constants';
 
 interface SidebarProps {
   slides: SlideData[];
   currentSlideId: string | null;
   onSelectSlide: (id: string) => void;
   isGeneratingAll: boolean;
+  lang: Language;
+  t: (key: keyof typeof TRANSLATIONS['en']) => string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide, isGeneratingAll }) => {
+const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide, isGeneratingAll, t }) => {
   return (
     <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-full">
       <div className="p-4 border-b border-gray-800 bg-gray-900 z-10">
         <h2 className="text-sm font-bold text-gray-100 uppercase tracking-wider flex items-center gap-2">
           <Layout className="w-4 h-4 text-purple-500" />
-          Slides ({slides.length})
+          {t('slidesHeader')} ({slides.length})
         </h2>
       </div>
       
@@ -50,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide
         ))}
         {slides.length === 0 && (
           <div className="text-center p-4 mt-10">
-            <p className="text-xs text-gray-600 italic">No slides yet. Configure and generate to start.</p>
+            <p className="text-xs text-gray-600 italic">{t('noSlides')}</p>
           </div>
         )}
       </div>
