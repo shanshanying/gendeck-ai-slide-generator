@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, ApiSettings } from './types';
 import { ThemeProvider, useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
 import { getThemeClasses, cx } from './styles/theme';
@@ -15,21 +15,54 @@ import { TRANSLATIONS, COLOR_THEMES } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+// Auto-save data structure
+interface AutosaveData {
+  status: GenerationStatus;
+  config: PresentationConfig | null;
+  colorPalette: string;
+  slides: SlideData[];
+  currentSlideId: string | null;
+  totalCost: number;
+  timestamp: number;
+}
+
+const AUTOSAVE_KEY = 'gendeck_autosave';
+
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('gendeck_lang');
     return (saved === 'en' || saved === 'zh') ? saved : 'en';
   });
 
+  // Restore from autosave on initial load
+  const getInitialState = (): Partial<AutosaveData> => {
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        const data: AutosaveData = JSON.parse(saved);
+        // Only restore if autosave is less than 7 days old
+        const oneWeek = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - data.timestamp < oneWeek) {
+          return data;
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return {};
+  };
+
+  const initialState = getInitialState();
+
   const { theme, toggleTheme, isDark } = useThemeContext();
   const th = getThemeClasses(theme);
   
-  const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
-  const [config, setConfig] = useState<PresentationConfig | null>(null);
-  const [colorPalette, setColorPalette] = useState<string>('');
-  const [slides, setSlides] = useState<SlideData[]>([]);
-  const [currentSlideId, setCurrentSlideId] = useState<string | null>(null);
-  const [totalCost, setTotalCost] = useState(0);
+  const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
+  const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
+  const [colorPalette, setColorPalette] = useState<string>(initialState.colorPalette || '');
+  const [slides, setSlides] = useState<SlideData[]>(initialState.slides || []);
+  const [currentSlideId, setCurrentSlideId] = useState<string | null>(initialState.currentSlideId || null);
+  const [totalCost, setTotalCost] = useState(initialState.totalCost || 0);
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showNewDeckConfirm, setShowNewDeckConfirm] = useState(false);
@@ -50,6 +83,23 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('gendeck_lang', language);
   }, [language]);
+
+  // Auto-save state to localStorage whenever important state changes
+  useEffect(() => {
+    // Only autosave if we have actual content (not in IDLE state with empty slides)
+    if (status !== GenerationStatus.IDLE || slides.length > 0) {
+      const data: AutosaveData = {
+        status,
+        config,
+        colorPalette,
+        slides,
+        currentSlideId,
+        totalCost,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+    }
+  }, [status, config, colorPalette, slides, currentSlideId, totalCost]);
 
 
 
@@ -255,7 +305,10 @@ const App: React.FC = () => {
     setColorPalette('');
     setIsGeneratingNotes(false);
     
-    // 4. Reset the stop flag so future generations can proceed
+    // 4. Clear autosave data
+    localStorage.removeItem(AUTOSAVE_KEY);
+    
+    // 5. Reset the stop flag so future generations can proceed
     shouldStopRef.current = false;
   };
 
@@ -852,6 +905,14 @@ const App: React.FC = () => {
                 {t('estCost')}: ${totalCost.toFixed(4)}
                 </span>
             </div>
+            )}
+
+            {/* Auto-save indicator */}
+            {slides.length > 0 && (
+              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', isDark ? 'bg-slate-800/50 border-white/5' : 'bg-gray-100/80 border-gray-200')} title={language === 'zh' ? '已自动保存' : 'Auto-saved'}>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={cx('text-[10px] font-medium', th.text.muted)}>{language === 'zh' ? '已保存' : 'Saved'}</span>
+              </div>
             )}
 
             {status === GenerationStatus.REVIEWING_OUTLINE && (
