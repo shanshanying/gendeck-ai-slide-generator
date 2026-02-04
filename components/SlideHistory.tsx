@@ -14,6 +14,16 @@ interface SlideHistoryProps {
   theme: 'dark' | 'light';
 }
 
+/** Decode HTML entities so escaped storage (e.g. &lt; &gt;) renders as HTML */
+function decodeHtmlEntities(html: string): string {
+  if (typeof document === 'undefined') {
+    return html.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+  }
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.innerHTML;
+}
+
 const SlideHistory: React.FC<SlideHistoryProps> = ({
   isOpen,
   onClose,
@@ -50,7 +60,15 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
       const response = await deckApi.getVersions(deckId, 50);
       setHistory(response.data);
       if (response.data.length > 0) {
-        setSelectedVersion(response.data[0]);
+        // List endpoint doesn't include full_html; fetch full version so preview works
+        const first = response.data[0];
+        setSelectedVersion(first);
+        try {
+          const full = await deckApi.getVersion(first.id);
+          setSelectedVersion(full.data);
+        } catch {
+          // keep list item if full fetch fails
+        }
       }
     } catch (err: any) {
       setError(lang === 'zh' ? '无法加载历史版本' : 'Failed to load history');
@@ -63,7 +81,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
   // Load full version details (including full_html) when selecting a version
   const handleSelectVersion = async (version: DeckHistoryItem) => {
     if (selectedVersion?.id === version.id) return;
-    
+
     setLoadingFullVersion(true);
     try {
       const response = await deckApi.getVersion(version.id);
@@ -79,7 +97,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
 
   const handleRestore = async () => {
     if (!selectedVersion) return;
-    
+
     setRestoring(true);
     try {
       onRestore(selectedVersion);
@@ -105,11 +123,11 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
 
   return (
     <div className={isDark ? 'text-slate-200' : 'text-gray-900'}>
-      <div 
+      <div
         className={isDark ? 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[400]' : 'fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[400]'}
         onClick={onClose}
       />
-      
+
       <div className={cx(
         'fixed inset-4 md:inset-10 lg:inset-20 z-[401] rounded-2xl shadow-2xl border flex flex-col overflow-hidden',
         isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
@@ -129,7 +147,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
               </p>
             </div>
           </div>
-          
+
           <button onClick={onClose} className={cx('p-2 rounded-lg transition-colors hover:bg-white/5', isDark ? 'text-slate-400' : 'text-gray-600')}>
             <X className="w-5 h-5" />
           </button>
@@ -221,7 +239,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
 
                 {/* Preview Content */}
                 <div className="flex-1 overflow-auto p-4">
-                  <div 
+                  <div
                     className={cx(
                       'mx-auto rounded-lg overflow-hidden shadow-2xl',
                       isDark ? 'bg-[#111]' : 'bg-white'
@@ -240,17 +258,11 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                         </div>
                       </div>
                     ) : selectedVersion.full_html ? (
-                      <div 
-                        className="w-full h-full"
-                        style={{ 
-                          transform: 'scale(0.5)',
-                          transformOrigin: 'top left',
-                          width: '1920px',
-                          height: '1080px',
-                        }}
-                        dangerouslySetInnerHTML={{ 
-                          __html: selectedVersion.full_html 
-                        }}
+                      <iframe
+                        title={lang === 'zh' ? '版本预览' : 'Version preview'}
+                        className="w-full h-full border-0 rounded-lg bg-white"
+                        sandbox="allow-scripts"
+                        srcDoc={decodeHtmlEntities(selectedVersion.full_html)}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
