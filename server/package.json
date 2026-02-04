@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "test-db": "node test-db.js",
     "setup-db": "psql -U postgres -f ../database/schema.sql"
   },
   "dependencies": {
