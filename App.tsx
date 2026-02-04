@@ -9,8 +9,9 @@ import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
+import { ImportResult } from './services/importService';
 import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon } from 'lucide-react';
-import { TRANSLATIONS } from './constants';
+import { TRANSLATIONS, COLOR_THEMES } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -157,6 +158,70 @@ const App: React.FC = () => {
   // Show confirmation dialog for new deck
   const handleNewDeck = () => {
     setShowNewDeckConfirm(true);
+  };
+
+  // Handle importing a previously generated HTML deck
+  const handleImportHtml = (result: ImportResult) => {
+    // Set the topic and config
+    const importedConfig: PresentationConfig = {
+      topic: result.topic,
+      audience: result.config.audience || '',
+      purpose: result.config.purpose || '',
+      slideCount: result.slides.length,
+      apiSettings: config?.apiSettings || {
+        apiKeys: {},
+        outline: { provider: 'google', modelId: 'gemini-3-flash-preview' },
+        slides: { provider: 'google', modelId: 'gemini-3-flash-preview' },
+      },
+      documentContent: result.config.documentContent || '',
+    };
+
+    setConfig(importedConfig);
+    setSlides(result.slides);
+    
+    // Try to match the color palette to a theme
+    const paletteColors = result.colorPalette.split(',');
+    let matchedTheme = result.colorPalette;
+    
+    // Find matching theme by comparing colors
+    for (const theme of COLOR_THEMES) {
+      const themeColors = theme.colors;
+      // Simple heuristic: check if the first color (background) matches approximately
+      if (paletteColors[0] && themeColors[0] && 
+          areColorsSimilar(paletteColors[0], themeColors[0])) {
+        matchedTheme = theme.colors.join(',');
+        break;
+      }
+    }
+    
+    setColorPalette(matchedTheme);
+    setTotalCost(0);
+    
+    // Go directly to COMPLETE status since we already have HTML
+    setStatus(GenerationStatus.COMPLETE);
+    
+    // Save topic to localStorage
+    localStorage.setItem('gendeck_topic', result.topic);
+  };
+
+  // Helper to check if two colors are similar (basic hex comparison)
+  const areColorsSimilar = (color1: string, color2: string): boolean => {
+    // Normalize colors
+    const c1 = color1.toLowerCase().trim();
+    const c2 = color2.toLowerCase().trim();
+    
+    // Exact match
+    if (c1 === c2) return true;
+    
+    // Check for shorthand hex (#fff vs #ffffff)
+    const normalize = (c: string) => {
+      if (c.startsWith('#') && c.length === 4) {
+        return '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+      }
+      return c;
+    };
+    
+    return normalize(c1) === normalize(c2);
   };
 
   // Actually reset the app to IDLE state after confirmation
@@ -902,6 +967,7 @@ const App: React.FC = () => {
               lang={language}
               t={t}
               theme={theme}
+              onImportHtml={handleImportHtml}
             />
           </div>
         )}

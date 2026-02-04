@@ -1,6 +1,7 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target, XCircle, AlertTriangle, Eye, Edit3 } from 'lucide-react';
+import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp } from 'lucide-react';
+import { parseExportedHtml, ImportResult } from '../services/importService';
 import { PresentationConfig, ApiSettings, ApiProvider, Language, Theme } from '../types';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
@@ -12,6 +13,7 @@ interface InputFormProps {
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
+  onImportHtml?: (result: ImportResult) => void;
 }
 
 // Helper to safely load from local storage
@@ -29,7 +31,7 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t, theme }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t, theme, onImportHtml }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', "Gemini 1.5 Pro Overview"));
   const [audience, setAudience] = useState(() => loadStr('gendeck_audience', AUDIENCE_PRESETS[lang][0]));
@@ -195,6 +197,23 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       };
       reader.readAsText(file);
     }
+  };
+
+  const handleHtmlImport = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onImportHtml) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const htmlContent = event.target?.result as string;
+        const result = parseExportedHtml(htmlContent);
+        onImportHtml(result);
+      } catch (error) {
+        alert(lang === 'zh' ? '导入失败：无法解析HTML文件' : 'Import failed: Could not parse HTML file');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -562,7 +581,18 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   placeholder={t('pastePlaceholder')}
                 />
               )}
-              <div className="absolute bottom-3 right-3">
+              <div className="absolute bottom-3 right-3 flex gap-2">
+                {/* Import HTML Button */}
+                {onImportHtml && (
+                  <label className={cx(
+                    'cursor-pointer text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border',
+                    isDark ? 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border-purple-500/30 hover:border-purple-500/50' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 hover:border-purple-300'
+                  )} title={lang === 'zh' ? '导入之前生成的HTML演示文稿' : 'Import previously generated HTML deck'}>
+                    <FileUp className="w-3 h-3" />
+                    {lang === 'zh' ? '导入HTML' : 'Import HTML'}
+                    <input type="file" accept=".html,.htm" onChange={handleHtmlImport} className="hidden" />
+                  </label>
+                )}
                 <label className={cx(
                   'cursor-pointer text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border',
                   isDark ? 'bg-slate-800 hover:bg-slate-700 text-white border-white/10 hover:border-white/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 hover:border-gray-400'
