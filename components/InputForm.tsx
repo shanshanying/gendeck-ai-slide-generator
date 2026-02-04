@@ -188,7 +188,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-gray-800 rounded-xl shadow-2xl border border-gray-700">
+    <div className="max-w-5xl mx-auto p-6 bg-slate-900/50 backdrop-blur rounded-2xl shadow-2xl shadow-black/20 border border-white/10">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-purple-400" />
@@ -196,7 +196,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         </h2>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className={`transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg border ${showSettings ? 'bg-purple-900/50 border-purple-500 text-white' : 'border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+          className={`transition-all flex items-center gap-2 px-3 py-1.5 rounded-lg border ${showSettings ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10' : 'border-white/10 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/20'}`}
           title="Configure AI Model"
         >
           <Settings className="w-4 h-4" />
@@ -208,10 +208,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {/* Advanced Model Configuration Panel */}
         {showSettings && (
-          <div className="p-5 bg-gray-900/80 rounded-lg border border-purple-500/30 mb-6 animate-in fade-in slide-in-from-top-2 space-y-6">
+          <div className="p-5 bg-slate-950/80 backdrop-blur rounded-xl border border-purple-500/20 mb-6 animate-in fade-in slide-in-from-top-2 space-y-6">
 
             {errorMsg && (
-                <div className="bg-red-900/30 border border-red-500/50 rounded p-3 flex items-start gap-3">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
                     <p className="text-sm text-red-200">{errorMsg}</p>
                 </div>
@@ -225,7 +225,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {PROVIDERS.map(p => (
                   <div key={p.id}>
-                    <label className={`block text-xs mb-1 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-400 font-bold' : 'text-gray-500'}`}>
+                    <label className={`block text-xs mb-1.5 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-400 font-bold' : 'text-slate-400'}`}>
                         {p.name} API Key {(!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id)) ? '*' : ''}
                     </label>
                     <input
@@ -233,19 +233,19 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                       value={apiKeys[p.id] || ''}
                       onChange={(e) => handleKeyChange(p.id, e.target.value)}
                       placeholder={p.placeholderKey}
-                      className={`w-full bg-gray-800 border rounded px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-1 ${!apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500 focus:border-red-500 ring-red-500/50' : 'border-gray-700 focus:border-purple-500'}`}
+                      className={`w-full bg-slate-900 border rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${!apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-purple-500/50'}`}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="h-px bg-gray-800 w-full" />
+            <div className="h-px bg-white/5 w-full" />
 
             {/* 2. Model Selection Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Outline Config */}
-              <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+              <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
                  <label className="block text-xs font-bold text-blue-400 mb-2 flex items-center gap-1">
                     <Layers className="w-3 h-3" /> {t('step1Outline')}
                  </label>
@@ -255,7 +255,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                      <select
                         value={outlineProvider}
                         onChange={(e) => handleProviderChange('outline', e.target.value as ApiProvider)}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                      >
                        {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                      </select>
@@ -265,7 +265,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                      <select
                         value={outlineModel}
                         onChange={(e) => setOutlineModel(e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                      >
                        {PROVIDERS.find(p => p.id === outlineProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
@@ -276,7 +276,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               </div>
 
               {/* Slide Config */}
-              <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+              <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
                  <label className="block text-xs font-bold text-green-400 mb-2 flex items-center gap-1">
                     <ImageIcon className="w-3 h-3" /> {t('step2Slides')}
                  </label>
@@ -286,7 +286,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                      <select
                         value={slideProvider}
                         onChange={(e) => handleProviderChange('slides', e.target.value as ApiProvider)}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                      >
                        {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                      </select>
@@ -296,7 +296,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                      <select
                         value={slideModel}
                         onChange={(e) => setSlideModel(e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                      >
                        {PROVIDERS.find(p => p.id === slideProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
@@ -315,12 +315,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
           {/* 1. Topic/Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('topicLabel')}</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">{t('topicLabel')}</label>
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+              className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
               placeholder={t('topicPlaceholder')}
               required
             />
@@ -401,20 +401,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
           {/* 5. Source Document */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               {t('sourceLabel')}
-              <span className="text-xs text-gray-500 ml-2">({t('sourcePlaceholder')})</span>
+              <span className="text-xs text-slate-500 ml-2">({t('sourcePlaceholder')})</span>
             </label>
             <div className="relative">
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={12}
-                className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-3 text-sm text-gray-300 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all font-mono resize-y"
+                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm text-slate-300 placeholder:text-slate-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y"
                 placeholder={t('pastePlaceholder')}
               />
               <div className="absolute bottom-3 right-3">
-                <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors border border-gray-500">
+                <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border border-white/10 hover:border-white/20">
                   <Upload className="w-3 h-3" />
                   {t('uploadFile')}
                   <input type="file" accept=".txt,.md,.json" onChange={handleFileUpload} className="hidden" />
@@ -429,7 +429,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           <button
             type="submit"
             disabled={isGenerating || !content.trim()}
-            className={`flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg flex items-center justify-center gap-3 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-lg ${isGenerating ? 'cursor-not-allowed' : ''}`}
+            className={`flex-1 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-purple-500/25 flex items-center justify-center gap-3 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-lg ${isGenerating ? 'cursor-not-allowed' : ''}`}
           >
             {isGenerating ? (
               <>
@@ -451,7 +451,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
              <button
                 type="button"
                 onClick={onCancel}
-                className="bg-red-900/50 hover:bg-red-900 border border-red-700 text-red-200 font-bold py-4 px-6 rounded-lg shadow-lg flex items-center justify-center gap-2 transform transition-all active:scale-95 animate-in fade-in"
+                className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-200 font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 transform transition-all active:scale-95 animate-in fade-in"
              >
                 <XCircle className="w-6 h-6" />
                 {t('cancel')}

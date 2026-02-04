@@ -86,9 +86,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
   if (!slide) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full bg-gray-900 text-gray-500 p-8 text-center border-l border-gray-800">
-        <div className="w-16 h-16 mb-4 rounded-full bg-gray-800 flex items-center justify-center">
-          <Monitor className="w-8 h-8 text-gray-600" />
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-slate-950 text-slate-500 p-8 text-center border-l border-white/5">
+        <div className="w-16 h-16 mb-4 rounded-2xl bg-slate-900/50 flex items-center justify-center ring-1 ring-white/10">
+          <Monitor className="w-8 h-8 text-slate-600" />
         </div>
         <p className="text-xl font-medium">{t('noSlideSelected')}</p>
         <p className="text-sm mt-2 max-w-md">{t('selectSlidePrompt')}</p>
@@ -112,9 +112,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-900 border-l border-gray-800 relative">
+    <div className="flex-1 flex flex-col h-full bg-slate-950 border-l border-white/5 relative">
       {/* Toolbar */}
-      <div className="h-14 border-b border-gray-700 bg-gray-800 flex items-center justify-between px-4 shrink-0 z-20 relative">
+      <div className="h-14 border-b border-white/5 bg-slate-900/50 backdrop-blur flex items-center justify-between px-4 shrink-0 z-20 relative">
         <div className="flex items-center gap-3 overflow-hidden">
            <h3 className="text-sm font-semibold text-gray-300 truncate max-w-[200px]" title={slide.title}>{slide.title}</h3>
            {slide.isRegenerating && <span className="text-xs text-purple-400 flex items-center gap-1 shrink-0"><RefreshCw className="w-3 h-3 animate-spin"/> {t('updating')}</span>}
@@ -122,12 +122,12 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         
         {/* Center: Zoom */}
         {!showCode && (
-          <div className="hidden md:flex items-center bg-gray-900 rounded-lg border border-gray-700 p-1 mx-2">
-            <button onClick={handleZoomOut} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('zoomOut')}><ZoomOut className="w-3 h-3" /></button>
-            <span className="text-[10px] w-10 text-center text-gray-400 font-mono">{Math.round(scale * 100)}%</span>
-            <button onClick={handleZoomIn} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('zoomIn')}><ZoomIn className="w-3 h-3" /></button>
-            <div className="w-px h-3 bg-gray-700 mx-1"></div>
-            <button onClick={handleFit} className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title={t('fitToScreen')}><Maximize className="w-3 h-3" /></button>
+          <div className="hidden md:flex items-center bg-slate-950 rounded-lg border border-white/10 p-1 mx-2">
+            <button onClick={handleZoomOut} className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors" title={t('zoomOut')}><ZoomOut className="w-3.5 h-3.5" /></button>
+            <span className="text-[10px] w-10 text-center text-slate-400 font-mono">{Math.round(scale * 100)}%</span>
+            <button onClick={handleZoomIn} className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors" title={t('zoomIn')}><ZoomIn className="w-3.5 h-3.5" /></button>
+            <div className="w-px h-3 bg-white/10 mx-1"></div>
+            <button onClick={handleFit} className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors" title={t('fitToScreen')}><Maximize className="w-3.5 h-3.5" /></button>
           </div>
         )}
 
@@ -136,27 +136,27 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
            {/* Theme Toggle */}
            <button
              onClick={() => setIsDarkMode(!isDarkMode)}
-             className={`p-2 rounded-lg transition-colors border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-yellow-400' : 'bg-gray-200 border-gray-300 text-orange-500'}`}
+             className={`p-2 rounded-lg transition-all border ${isDarkMode ? 'bg-slate-900 border-white/10 text-yellow-400 hover:bg-slate-800' : 'bg-slate-200 border-white/20 text-orange-500 hover:bg-slate-300'}`}
              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
            >
-             {isDarkMode ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
+             {isDarkMode ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
            </button>
 
-           <div className="w-px h-4 bg-gray-700 mx-1" />
+           <div className="w-px h-4 bg-white/10 mx-1" />
 
            <button 
              onClick={() => setIsEditing(!isEditing)}
              disabled={slide.isRegenerating}
-             className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${isEditing ? 'bg-gray-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+             className={`text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${isEditing ? 'bg-slate-600 text-white' : 'bg-slate-800 text-white hover:bg-slate-700 border border-white/10'}`}
            >
-             <RefreshCw className={`w-3 h-3 ${slide.isRegenerating ? 'animate-spin' : ''}`} />
+             <RefreshCw className={`w-3.5 h-3.5 ${slide.isRegenerating ? 'animate-spin' : ''}`} />
              {t('regenerate')}
            </button>
            <button 
              onClick={() => setShowCode(!showCode)}
-             className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-2 ${showCode ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+             className={`text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${showCode ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-white/10'}`}
            >
-             <Code className="w-3 h-3" />
+             <Code className="w-3.5 h-3.5" />
              {showCode ? t('previewView') : t('code')}
            </button>
         </div>
@@ -164,7 +164,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
       {/* Regeneration Input Panel */}
       {isEditing && (
-        <div className="absolute top-14 left-0 right-0 z-30 bg-gray-800 border-b border-gray-700 p-4 shadow-xl animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-14 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur border-b border-white/5 p-4 shadow-xl shadow-black/20 animate-in fade-in slide-in-from-top-2">
           <label className="block text-sm font-medium text-gray-300 mb-2">{t('instructions')}</label>
           <div className="flex gap-2 mb-4">
              {!showConfirmation ? (
@@ -174,25 +174,25 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     value={customInstruction}
                     onChange={(e) => setCustomInstruction(e.target.value)}
                     placeholder={t('instructionPlaceholder')}
-                    className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                    className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                     autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && handleApplyClick()}
                   />
                   <button 
                     onClick={handleApplyClick}
-                    className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                    className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-500/20"
                   >
                     {t('apply')}
                   </button>
                   <button 
                     onClick={() => setIsEditing(false)}
-                    className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded text-sm font-medium transition-colors"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-white/10"
                   >
                     {t('cancel')}
                   </button>
                 </>
              ) : (
-                <div className="flex-1 flex items-center justify-between bg-red-900/20 border border-red-500/50 rounded-lg px-4 py-2 animate-in fade-in zoom-in-95">
+                <div className="flex-1 flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 animate-in fade-in zoom-in-95">
                     <span className="text-red-200 text-sm font-medium flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-red-400" />
                         {t('overwriteConfirm')}
@@ -200,13 +200,13 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     <div className="flex gap-2">
                          <button 
                            onClick={() => setShowConfirmation(false)} 
-                           className="text-xs text-gray-300 hover:text-white px-3 py-1.5 rounded hover:bg-gray-700"
+                           className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
                          >
                            {t('cancel')}
                          </button>
                          <button 
                            onClick={performRegeneration} 
-                           className="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg shadow-red-900/50"
+                           className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-500/20"
                          >
                            {t('yesRegenerate')}
                          </button>
@@ -217,16 +217,16 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
           
           {/* Design Checklist */}
           {!showConfirmation && (
-            <div className="bg-gray-900/50 p-3 rounded border border-gray-700">
+            <div className="bg-slate-950/50 p-3 rounded-lg border border-white/5">
                <div className="flex items-center gap-2 mb-2">
-                 <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">{t('constraints')}</span>
-                 <div className="h-px bg-gray-700 flex-1"></div>
+                 <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{t('constraints')}</span>
+                 <div className="h-px bg-white/5 flex-1"></div>
                </div>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
                  {DESIGN_CONSTRAINTS.map((c, i) => (
                    <div key={i} className="flex items-center gap-2">
-                     <CheckCircle className="w-3 h-3 text-green-500/80" />
-                     <span className="text-[11px] text-gray-300">{c}</span>
+                     <CheckCircle className="w-3 h-3 text-emerald-500/80" />
+                     <span className="text-[11px] text-slate-300">{c}</span>
                    </div>
                  ))}
                </div>
@@ -236,11 +236,11 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       )}
 
       {/* Content Area */}
-      <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/90 w-full h-full">
+      <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/50 w-full h-full">
         {slide.htmlContent ? (
            showCode ? (
-             <div className="w-full h-full bg-gray-900 p-4 overflow-auto">
-               <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap font-medium">
+             <div className="w-full h-full bg-slate-950 p-4 overflow-auto">
+               <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap font-medium">
                  {slide.htmlContent}
                </pre>
              </div>
@@ -276,16 +276,16 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
               </div>
            )
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
              {slide.isRegenerating ? (
                <div className="flex flex-col items-center animate-pulse">
-                  <RefreshCw className="w-10 h-10 animate-spin text-purple-500 mb-2" />
-                  <span className="text-sm font-medium text-gray-300">{t('generatingDesign')}</span>
+                  <RefreshCw className="w-10 h-10 animate-spin text-purple-400 mb-2" />
+                  <span className="text-sm font-medium text-slate-300">{t('generatingDesign')}</span>
                </div>
              ) : (
-               <div className="text-center p-6 border-2 border-dashed border-gray-700 rounded-xl">
+               <div className="text-center p-6 border-2 border-dashed border-white/10 rounded-xl">
                  <p>{t('waitingGeneration')}</p>
-                 <p className="text-xs text-gray-600 mt-1">{t('checkSidebar')}</p>
+                 <p className="text-xs text-slate-600 mt-1">{t('checkSidebar')}</p>
                </div>
              )}
           </div>
@@ -293,14 +293,14 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       </div>
       
       {/* Notes footer */}
-      <div className="h-32 bg-gray-900 border-t border-gray-800 p-4 overflow-y-auto shrink-0 z-20">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-2">
+      <div className="h-32 bg-slate-950/50 backdrop-blur border-t border-white/5 p-4 overflow-y-auto shrink-0 z-20">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-2">
           <Code className="w-3 h-3" /> {t('speakerNotes')}
         </h4>
         {slide.notes ? (
-           <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line font-serif">{slide.notes}</p>
+           <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line font-serif">{slide.notes}</p>
         ) : (
-           <p className="text-sm text-gray-600 italic">{t('noNotes')}</p>
+           <p className="text-sm text-slate-600 italic">{t('noNotes')}</p>
         )}
       </div>
     </div>

@@ -710,47 +710,50 @@ const App: React.FC = () => {
   const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden font-sans relative">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans relative selection:bg-purple-500/30 selection:text-purple-100">
+      {/* Animated Background Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-950 to-slate-950 pointer-events-none" />
+      
       {/* Progress Bar Overlay */}
       {status === GenerationStatus.GENERATING_SLIDES && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 z-[100]">
+        <div className="absolute top-0 left-0 w-full h-1 bg-slate-800/50 z-[100]">
            <div 
-             className={`h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 ease-out ${isPaused ? 'opacity-50' : ''}`}
+             className={`h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(168,85,247,0.5)] ${isPaused ? 'opacity-50' : ''}`}
              style={{ width: `${progressPercent}%` }}
            />
         </div>
       )}
 
-      {/* Header */}
-      <header className="h-16 border-b border-gray-800 bg-gray-900 flex items-center justify-between px-6 z-50 relative">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg">G</div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">GenDeck</h1>
+      {/* Glass Header */}
+      <header className="h-16 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl flex items-center justify-between px-6 z-50 relative">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25 ring-1 ring-white/20">G</div>
+          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">GenDeck</h1>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
             {/* Language Switcher */}
             <button 
                 onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-gray-800 px-2 py-1 rounded border border-gray-700"
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
                 title="Switch Language"
             >
-                <Languages className="w-3 h-3" />
-                <span className="font-mono">{language === 'en' ? 'EN' : '中文'}</span>
+                <Languages className="w-3.5 h-3.5" />
+                <span className="font-medium">{language === 'en' ? 'EN' : '中文'}</span>
             </button>
 
             {/* Cost Display */}
             {totalCost > 0 && (
-            <div className="hidden md:flex items-center gap-1 bg-gray-800 px-3 py-1 rounded-full border border-gray-700 shadow-sm">
-                <DollarSign className="w-3 h-3 text-green-400" />
-                <span className="text-xs font-mono text-gray-300">
+            <div className="hidden md:flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-emerald-500/20 shadow-sm">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-xs font-mono text-slate-300">
                 {t('estCost')}: ${totalCost.toFixed(4)}
                 </span>
             </div>
             )}
 
             {status === GenerationStatus.REVIEWING_OUTLINE && (
-            <div className="px-3 py-1 bg-blue-900/30 text-blue-400 border border-blue-500/30 rounded-full text-xs font-medium animate-pulse">
+            <div className="px-3 py-1.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-full text-xs font-medium animate-pulse">
                 {t('outlineEditor')}
             </div>
             )}
@@ -758,21 +761,21 @@ const App: React.FC = () => {
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
-                   <div className="flex items-center gap-2 bg-purple-900/30 text-purple-300 px-3 py-1.5 rounded-lg border border-purple-500/30">
-                     <Loader2 className="w-3 h-3 animate-spin" />
+                   <div className="flex items-center gap-2 bg-purple-500/10 text-purple-200 px-3 py-1.5 rounded-lg border border-purple-500/20 backdrop-blur-sm">
+                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                      <span className="text-xs font-medium">{t('generating')} {Math.round(progressPercent)}%</span>
-                     <div className="h-3 w-px bg-purple-500/30 mx-1" />
+                     <div className="h-3 w-px bg-purple-500/20 mx-1" />
                      {isPaused ? (
-                        <button onClick={handleResumeGeneration} className="hover:text-white" title={t('resume')}>
-                            <Play className="w-3 h-3 fill-current" />
+                        <button onClick={handleResumeGeneration} className="hover:text-white transition-colors" title={t('resume')}>
+                            <Play className="w-3.5 h-3.5 fill-current" />
                         </button>
                      ) : (
-                        <button onClick={handlePauseGeneration} className="hover:text-white" title={t('pause')}>
-                            <Pause className="w-3 h-3 fill-current" />
+                        <button onClick={handlePauseGeneration} className="hover:text-white transition-colors" title={t('pause')}>
+                            <Pause className="w-3.5 h-3.5 fill-current" />
                         </button>
                      )}
-                     <button onClick={handleCancelGeneration} className="hover:text-white ml-1" title={t('cancel')}>
-                        <XCircle className="w-3 h-3" />
+                     <button onClick={handleCancelGeneration} className="hover:text-white transition-colors ml-1" title={t('cancel')}>
+                        <XCircle className="w-3.5 h-3.5" />
                      </button>
                    </div>
                  )}
@@ -781,7 +784,7 @@ const App: React.FC = () => {
                  <div className="relative">
                     <button 
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-700 text-sm font-medium transition-colors"
+                      className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 text-sm font-medium transition-all"
                     >
                       <Download className="w-4 h-4" />
                       <span className="hidden sm:inline">{t('otherFormats')}</span>
@@ -791,32 +794,32 @@ const App: React.FC = () => {
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95">
                           <div className="p-1">
                              <button 
                                onClick={handleExportHtml}
-                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
                              >
                                <FileJson className="w-4 h-4" />
                                {t('downloadHtml')}
                              </button>
                              <button 
                                onClick={handleExportPdf}
-                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
                              >
                                <Printer className="w-4 h-4" />
                                {t('exportPdf')}
                              </button>
                              <button 
                                onClick={handleExportMarkdown}
-                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
                              >
                                <FileText className="w-4 h-4" />
                                {t('exportOutline')}
                              </button>
                              <button 
                                onClick={handleExportNotes}
-                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg flex items-center gap-2"
+                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
                              >
                                <MessageSquareText className="w-4 h-4" />
                                {t('exportNotes')}
@@ -830,7 +833,7 @@ const App: React.FC = () => {
                  <button 
                     onClick={handlePreview}
                     disabled={slides.length === 0}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all active:scale-95"
+                    className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                     <Eye className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('preview')}</span>
@@ -841,7 +844,7 @@ const App: React.FC = () => {
             {status !== GenerationStatus.IDLE && (
               <button 
                 onClick={handleNewDeck}
-                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-700 text-sm font-medium transition-colors ml-2"
+                className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 text-sm font-medium transition-all ml-2"
                 title={t('new')}
               >
                 <Plus className="w-4 h-4" />
@@ -900,7 +903,7 @@ const App: React.FC = () => {
                    <div className="absolute bottom-6 right-6 z-40">
                       <button 
                         onClick={handleGenerateNotes}
-                        className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-xl border border-gray-700 flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4"
+                        className="bg-slate-900/90 hover:bg-slate-800 backdrop-blur text-white px-4 py-2 rounded-lg shadow-xl shadow-black/20 border border-white/10 hover:border-white/20 flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all"
                       >
                          <MessageSquareText className="w-4 h-4 text-green-400" />
                          {t('generateNotes')}
@@ -910,7 +913,7 @@ const App: React.FC = () => {
 
                {isGeneratingNotes && (
                    <div className="absolute bottom-6 right-6 z-40">
-                      <div className="bg-gray-800 text-white px-4 py-2 rounded-lg shadow-xl border border-gray-700 flex items-center gap-2 text-sm font-medium">
+                      <div className="bg-slate-900/90 backdrop-blur text-white px-4 py-2 rounded-lg shadow-xl shadow-black/20 border border-white/10 flex items-center gap-2 text-sm font-medium">
                          <Loader2 className="w-4 h-4 animate-spin text-green-400" />
                          Generating speaker notes...
                       </div>
@@ -930,25 +933,25 @@ const App: React.FC = () => {
           }}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" />
           
           {/* Modal Content */}
-          <div className="relative bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-700">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <Plus className="w-5 h-5 text-amber-500" />
+            <div className="flex items-center gap-3 px-6 py-5 border-b border-white/5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center ring-1 ring-amber-500/20">
+                <Plus className="w-5 h-5 text-amber-400" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">{t('new')}</h3>
-                <p className="text-sm text-gray-400">{t('confirmNew')}</p>
+                <p className="text-sm text-slate-400">{t('confirmNew')}</p>
               </div>
             </div>
             
             {/* Body */}
             <div className="px-6 py-4">
-              <div className="flex items-start gap-3 text-sm text-gray-300">
-                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="flex items-start gap-3 text-sm text-slate-300">
+                <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5 ring-1 ring-red-500/20">
                   <span className="text-red-400 font-bold text-xs">!</span>
                 </div>
                 <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
@@ -956,16 +959,16 @@ const App: React.FC = () => {
             </div>
             
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700 bg-gray-800/50 rounded-b-2xl">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/5 bg-slate-900/50 rounded-b-2xl">
               <button
                 onClick={cancelNewDeck}
-                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all border border-white/5"
               >
                 {language === 'zh' ? '取消' : 'Cancel'}
               </button>
               <button
                 onClick={confirmNewDeck}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg shadow-red-600/20"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
               >
                 {language === 'zh' ? '确认新建' : 'Confirm New'}
               </button>

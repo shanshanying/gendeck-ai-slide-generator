@@ -153,25 +153,25 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-white">{t('reviewStyle')}</h2>
-          <p className="text-gray-400 text-sm">{t('refineStructure')}</p>
+          <p className="text-slate-400 text-sm">{t('refineStructure')}</p>
         </div>
         <div className="flex gap-3">
            <button 
              onClick={handleDownloadOutline}
-             className="px-3 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors flex items-center gap-2"
+             className="px-3 py-2 rounded-lg bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-white/10 hover:border-white/20 transition-all flex items-center gap-2"
              title={t('exportOutline')}
            >
              <FileDown className="w-4 h-4" />
            </button>
            <button 
              onClick={onCancel}
-             className="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors flex items-center gap-2"
+             className="px-4 py-2 rounded-lg bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-white/10 hover:border-white/20 transition-all flex items-center gap-2"
            >
              <ArrowLeft className="w-4 h-4" /> {t('back')}
            </button>
            <button 
              onClick={() => onConfirm(colorPalette)}
-             className="px-6 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2"
+             className="px-6 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 flex items-center gap-2"
            >
              {t('generateSlidesBtn')} <ArrowRight className="w-4 h-4" />
            </button>
@@ -179,15 +179,15 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       </div>
 
       {/* Theme Selection Section - Collapsible */}
-      <div className="mb-8 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shrink-0 transition-all duration-300">
+      <div className="mb-8 bg-slate-900/50 backdrop-blur border border-white/10 rounded-xl overflow-hidden shrink-0 transition-all duration-300">
          <button 
            onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-           className="w-full px-6 py-4 flex items-center justify-between bg-gray-800/50 hover:bg-gray-750 transition-colors"
+           className="w-full px-6 py-4 flex items-center justify-between bg-slate-900/50 hover:bg-slate-800/50 transition-all"
          >
-            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
                <PaintBucket className="w-4 h-4 text-yellow-400"/> {t('selectPalette')}
             </h3>
-            {isPaletteOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+            {isPaletteOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
          </button>
          
          {isPaletteOpen && (
@@ -200,26 +200,26 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                       key={theme.id}
                       type="button"
                       onClick={() => setColorPalette(theme.colors.join(', '))}
-                      className={`p-3 rounded-lg border text-left transition-all ${isActive ? 'bg-gray-700 border-yellow-500 ring-1 ring-yellow-500 shadow-md' : 'bg-gray-900 border-gray-700 hover:bg-gray-800'}`}
+                      className={`p-3 rounded-lg border text-left transition-all ${isActive ? 'bg-slate-800 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10' : 'bg-slate-950 border-white/5 hover:bg-slate-900 hover:border-white/10'}`}
                     >
                       <div className="flex gap-1.5 mb-2">
                          {theme.colors.map((c, i) => (
                            <div key={i} style={{backgroundColor: c}} className="w-4 h-4 rounded-full border border-gray-600/50 shadow-sm" />
                          ))}
                       </div>
-                      <span className={`text-xs font-medium block truncate ${isActive ? 'text-white' : 'text-gray-400'}`}>{theme.label}</span>
+                      <span className={`text-xs font-medium block truncate ${isActive ? 'text-white' : 'text-slate-400'}`}>{theme.label}</span>
                     </button>
                   );
                 })}
              </div>
              
              <div className="flex items-center gap-3">
-                 <label className="text-xs text-gray-500 whitespace-nowrap">{t('customPalette')}</label>
+                 <label className="text-xs text-slate-500 whitespace-nowrap">{t('customPalette')}</label>
                  <input 
                     type="text"
                     value={colorPalette}
                     onChange={(e) => setColorPalette(e.target.value)}
-                    className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-white text-sm focus:ring-1 focus:ring-yellow-500 focus:outline-none font-mono"
+                    className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500/50 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 font-mono transition-all"
                     placeholder="#000000, #FFFFFF, #FF0000 (Custom Hex Codes)"
                   />
              </div>
@@ -233,10 +233,10 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           const isEnding = index === slides.length - 1 && slides.length > 1;
 
           return (
-            <div key={slide.id} className={`bg-gray-800 border ${isCover ? 'border-purple-500/30 bg-purple-900/10' : isEnding ? 'border-blue-500/30 bg-blue-900/10' : 'border-gray-700'} rounded-xl p-6 shadow-lg group hover:border-gray-600 transition-all`}>
+            <div key={slide.id} className={`bg-slate-900/50 backdrop-blur border ${isCover ? 'border-purple-500/20 bg-purple-500/5' : isEnding ? 'border-blue-500/20 bg-blue-500/5' : 'border-white/5'} rounded-xl p-6 shadow-lg shadow-black/10 group hover:border-white/10 transition-all`}>
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-700/50">
                  <div className="flex items-center gap-4 w-full">
-                   <span className={`text-sm font-mono w-8 h-8 flex items-center justify-center rounded-full shrink-0 ${isCover ? 'bg-purple-600 text-white font-bold' : isEnding ? 'bg-blue-600 text-white font-bold' : 'bg-gray-700 text-gray-300'}`}>
+                   <span className={`text-sm font-mono w-8 h-8 flex items-center justify-center rounded-lg shrink-0 ${isCover ? 'bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25' : isEnding ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/25' : 'bg-slate-800 text-slate-300 ring-1 ring-white/10'}`}>
                      {index + 1}
                    </span>
                    <div className="flex-1">
@@ -246,18 +246,18 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                         type="text" 
                         value={slide.title}
                         onChange={(e) => handleUpdateSlide(slide.id, 'title', e.target.value)}
-                        className={`bg-transparent border-none font-bold text-white focus:ring-0 w-full placeholder-gray-500 focus:bg-gray-900/50 rounded px-2 ${isCover ? 'text-2xl' : 'text-xl'}`}
+                        className={`bg-transparent border-none font-bold text-white focus:ring-0 w-full placeholder-slate-500 focus:bg-slate-950/50 rounded px-2 ${isCover ? 'text-2xl' : 'text-xl'}`}
                         placeholder={t('slideTitlePlaceholder')}
                       />
                    </div>
                  </div>
                  <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button onClick={() => handleMove(index, 'up')} className="p-2 hover:bg-gray-700 rounded text-gray-400" title="Move Up"><MoveUp className="w-4 h-4"/></button>
-                   <button onClick={() => handleMove(index, 'down')} className="p-2 hover:bg-gray-700 rounded text-gray-400" title="Move Down"><MoveDown className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'up')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors" title="Move Up"><MoveUp className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'down')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors" title="Move Down"><MoveDown className="w-4 h-4"/></button>
                    <button 
                     type="button"
                     onClick={(e) => handleDelete(e, slide.id)} 
-                    className="p-2 hover:bg-red-900/50 hover:text-red-400 rounded text-gray-400 ml-2 cursor-pointer transition-colors" 
+                    className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-slate-400 ml-2 cursor-pointer transition-colors" 
                     title="Delete"
                    >
                      <Trash2 className="w-4 h-4"/>
