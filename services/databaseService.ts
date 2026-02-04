@@ -85,6 +85,25 @@ export interface DeckHistoryItem {
   saved_at: string;
 }
 
+/** Payload for deck update (camelCase; server accepts topic, audience, purpose, colorPalette, slideCount, totalCost) */
+export interface UpdateDeckPayload {
+  topic?: string;
+  audience?: string;
+  purpose?: string;
+  colorPalette?: string;
+  slideCount?: number;
+  totalCost?: number;
+  slides?: Array<SlideData & { orderIndex?: number }>;
+  fullHtml?: string;
+  documentContent?: string;
+  outlineProvider?: string;
+  outlineModel?: string;
+  outlineBaseUrl?: string;
+  slidesProvider?: string;
+  slidesModel?: string;
+  slidesBaseUrl?: string;
+}
+
 // Convert database slide to frontend SlideData
 export function dbSlideToSlideData(dbSlide: DatabaseSlide): SlideData {
   return {
@@ -159,7 +178,7 @@ export const deckApi = {
     }),
 
   // Update deck
-  update: (id: string, updates: Partial<DatabaseDeck>): Promise<{ success: boolean }> =>
+  update: (id: string, updates: UpdateDeckPayload): Promise<{ success: boolean }> =>
     api(`/decks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -232,6 +251,17 @@ export const slideApi = {
     api(`/slides/deck/${deckId}/history?limitPerSlide=${limitPerSlide}`),
 };
 
-// Health check
+// Health check (throws on failure)
 export const healthCheck = (): Promise<{ status: string; timestamp: string }> =>
   api('/health');
+
+/** Returns true if backend is reachable, false on network/HTTP error. Does not throw. */
+export async function checkBackendAvailable(): Promise<boolean> {
+  try {
+    const url = `${API_BASE_URL}/health`;
+    const res = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(5000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

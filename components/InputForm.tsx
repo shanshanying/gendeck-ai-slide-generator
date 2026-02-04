@@ -223,11 +223,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
   return (
     <div className={cx(
-      'max-w-5xl mx-auto p-6 backdrop-blur rounded-2xl shadow-2xl border',
+      'w-full min-h-full max-w-6xl xl:max-w-7xl 2xl:max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12 py-8 lg:py-10 backdrop-blur rounded-2xl shadow-2xl border',
       isDark ? 'bg-slate-900/50 shadow-black/20 border-white/10' : 'bg-white/70 shadow-gray-200/50 border-gray-200'
     )}>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-purple-400" />
           {t('createNewDeck')}
         </h2>

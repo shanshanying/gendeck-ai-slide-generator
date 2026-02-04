@@ -199,57 +199,31 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur border-b p-4 shadow-xl animate-in fade-in slide-in-from-top-2', isDark ? 'bg-slate-900/95 border-white/5 shadow-black/20' : 'bg-gray-50/95 border-gray-200 shadow-gray-200/20')}>
           <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('instructions')}</label>
           <div className="flex gap-2 mb-4">
-             {!showConfirmation ? (
-                <>
-                  <input
-                    type="text"
-                    value={customInstruction}
-                    onChange={(e) => setCustomInstruction(e.target.value)}
-                    placeholder={t('instructionPlaceholder')}
-                    className={cx('flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all border', th.input.bg, th.input.border, th.input.text, th.input.focusBorder)}
-                    autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && handleApplyClick()}
-                  />
-                  <button
-                    onClick={handleApplyClick}
-                    className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-500/20"
-                  >
-                    {t('apply')}
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className={cx('px-4 py-2 rounded-lg text-sm font-medium transition-all border', isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-white/10' : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-200')}
-                  >
-                    {t('cancel')}
-                  </button>
-                </>
-             ) : (
-                <div className="flex-1 flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 animate-in fade-in zoom-in-95">
-                    <span className="text-red-200 text-sm font-medium flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-400" />
-                        {t('overwriteConfirm')}
-                    </span>
-                    <div className="flex gap-2">
-                         <button
-                           onClick={() => setShowConfirmation(false)}
-                           className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                         >
-                           {t('cancel')}
-                         </button>
-                         <button
-                           onClick={performRegeneration}
-                           className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-500/20"
-                         >
-                           {t('yesRegenerate')}
-                         </button>
-                    </div>
-                </div>
-             )}
+            <input
+              type="text"
+              value={customInstruction}
+              onChange={(e) => setCustomInstruction(e.target.value)}
+              placeholder={t('instructionPlaceholder')}
+              className={cx('flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all border', th.input.bg, th.input.border, th.input.text, th.input.focusBorder)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyClick()}
+            />
+            <button
+              onClick={handleApplyClick}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-500/20"
+            >
+              {t('apply')}
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className={cx('px-4 py-2 rounded-lg text-sm font-medium transition-all border', th.button.primary)}
+            >
+              {t('cancel')}
+            </button>
           </div>
 
           {/* Design Checklist */}
-          {!showConfirmation && (
-            <div className="bg-slate-950/50 p-3 rounded-lg border border-white/5">
+          <div className={cx('p-3 rounded-lg border', isDark ? 'bg-slate-950/50 border-white/5' : 'bg-gray-100/80 border-gray-200')}>
                <div className="flex items-center gap-2 mb-2">
                  <span className={cx('text-[10px] font-bold uppercase tracking-wider', th.text.muted)}>{t('constraints')}</span>
                  <div className="h-px bg-white/5 flex-1"></div>
@@ -263,7 +237,41 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                  ))}
                </div>
             </div>
-          )}
+        </div>
+      )}
+
+      {/* Overwrite confirmation modal – same style as App New Deck confirm */}
+      {showConfirmation && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setShowConfirmation(false)}
+        >
+          <div className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-100 ring-amber-200')}>
+                <AlertTriangle className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
+              </div>
+              <div>
+                <h3 className={cx('text-lg font-semibold', th.text.primary)}>{t('overwriteConfirm')}</h3>
+                <p className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '将使用新指令重新生成此幻灯片，当前内容将被替换。' : 'This slide will be regenerated with your instruction. Current content will be replaced.'}</p>
+              </div>
+            </div>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={performRegeneration}
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
+              >
+                {t('yesRegenerate')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

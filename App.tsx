@@ -10,7 +10,7 @@ import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
 import { ImportResult, parseExportedHtml } from './services/importService';
-import { deckApi, slideApi, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
+import { deckApi, slideApi, checkBackendAvailable, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
 import DeckBrowser from './components/DeckBrowser';
 import SlideHistory from './components/SlideHistory';
 import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
@@ -87,6 +87,7 @@ const App: React.FC = () => {
   const [isSavingToDb, setIsSavingToDb] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [hasDatabase, setHasDatabase] = useState(!!import.meta.env.VITE_API_URL);
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
 
   // New State for Pause/Resume
   const [isPaused, setIsPaused] = useState(false);
@@ -104,6 +105,15 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('gendeck_lang', language);
   }, [language]);
+
+  // Check backend availability on mount so Browse/Save/History can be disabled when backend is down
+  useEffect(() => {
+    let cancelled = false;
+    checkBackendAvailable().then((ok) => {
+      if (!cancelled) setBackendAvailable(ok);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Auto-save state to localStorage whenever important state changes
   useEffect(() => {
@@ -342,11 +352,11 @@ const App: React.FC = () => {
 
   // Save current deck to database
   const handleSaveToDatabase = async () => {
-    if (!config || slides.length === 0 || !hasDatabase) return;
+    if (!config || slides.length === 0 || !hasDatabase || backendAvailable !== true) return;
 
     setIsSavingToDb(true);
     setSaveStatus('idle');
-    
+
     try {
       // Generate full HTML for export
       const fullHtml = getFullHtml();
@@ -368,7 +378,7 @@ const App: React.FC = () => {
         } catch (versionError) {
           console.warn('Failed to save version, continuing with deck update:', versionError);
         }
-        
+
         // Update existing deck
         await deckApi.update(currentDbDeckId, {
           topic: config.topic,
@@ -431,7 +441,7 @@ const App: React.FC = () => {
     const provider = (deck.slides_provider as ApiProvider) || (deck.outline_provider as ApiProvider) || 'google';
     const modelId = deck.slides_model || deck.outline_model || 'gemini-3-flash-preview';
     const baseUrl = deck.slides_base_url || deck.outline_base_url || getBaseUrl(provider);
-    
+
     const baseConfig: PresentationConfig = {
       topic: deck.topic,
       audience: deck.audience || '',
@@ -502,7 +512,7 @@ const App: React.FC = () => {
 
   // Save single slide to database (for auto-save)
   const handleSaveSlideToDb = async (slideIndex: number, slide: SlideData) => {
-    if (!currentDbDeckId || !hasDatabase) return;
+    if (!currentDbDeckId || !hasDatabase || backendAvailable !== true) return;
 
     try {
       await slideApi.save(currentDbDeckId, slideIndex, slide);
@@ -517,7 +527,7 @@ const App: React.FC = () => {
       alert(language === 'zh' ? '此版本没有保存完整HTML' : 'This version has no full HTML');
       return;
     }
-    
+
     // Parse the full HTML like loading from database
     const parsed = parseExportedHtml(version.full_html);
     setSlides(parsed.slides.map((s, i) => ({
@@ -526,7 +536,7 @@ const App: React.FC = () => {
       isRegenerating: false,
     })));
     setColorPalette(version.color_palette || parsed.colorPalette);
-    
+
     // Update topic if different
     if (config && version.topic !== config.topic) {
       setConfig({ ...config, topic: version.topic });
@@ -1138,13 +1148,25 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Database Actions */}
+            {/* Database Actions: shown when API URL is configured; Browse/Save/History disabled when backend unavailable */}
             {hasDatabase && (
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setShowDeckBrowser(true)}
-                  className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
-                  title={language === 'zh' ? '浏览保存的演示文稿' : 'Browse saved decks'}
+                  onClick={() => backendAvailable === true && setShowDeckBrowser(true)}
+                  disabled={backendAvailable !== true}
+                  className={cx(
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                    backendAvailable !== true
+                      ? 'opacity-50 cursor-not-allowed border-gray-400/50 text-gray-500'
+                      : th.button.primary
+                  )}
+                  title={
+                    backendAvailable === false
+                      ? (language === 'zh' ? '后端不可用' : 'Backend unavailable')
+                      : backendAvailable === null
+                        ? (language === 'zh' ? '检查后端...' : 'Checking backend...')
+                        : (language === 'zh' ? '浏览保存的演示文稿' : 'Browse saved decks')
+                  }
                 >
                   <Database className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{language === 'zh' ? '浏览' : 'Browse'}</span>
@@ -1153,19 +1175,26 @@ const App: React.FC = () => {
                 {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && slides.length > 0 && (
                   <button
                     onClick={handleSaveToDatabase}
-                    disabled={isSavingToDb}
+                    disabled={isSavingToDb || backendAvailable !== true}
                     className={cx(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
                       saveStatus === 'success' && 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/30',
                       saveStatus === 'error' && 'bg-gradient-to-r from-red-500 to-rose-500 shadow-red-500/30',
-                      saveStatus === 'idle' && 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20',
+                      saveStatus === 'idle' && backendAvailable === true && 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20',
+                      backendAvailable !== true && 'opacity-50 cursor-not-allowed bg-gray-500/30',
                       'text-white shadow-lg',
                       'border border-white/20',
                       'hover:shadow-xl hover:scale-105 active:scale-95',
                       'disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100',
                       'relative overflow-hidden'
                     )}
-                    title={language === 'zh' ? '保存到数据库' : 'Save to database'}
+                    title={
+                      backendAvailable === false
+                        ? (language === 'zh' ? '后端不可用' : 'Backend unavailable')
+                        : backendAvailable === null
+                          ? (language === 'zh' ? '检查后端...' : 'Checking backend...')
+                          : (language === 'zh' ? '保存到数据库' : 'Save to database')
+                    }
                   >
                     {/* Status indicator dot */}
                     <span className={cx(
@@ -1174,7 +1203,7 @@ const App: React.FC = () => {
                       saveStatus === 'error' && 'bg-red-300',
                       saveStatus === 'idle' && 'bg-emerald-300/50'
                     )} />
-                    
+
                     {isSavingToDb ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1201,9 +1230,21 @@ const App: React.FC = () => {
 
                 {currentDbDeckId && (
                   <button
-                    onClick={() => setShowSlideHistory(true)}
-                    className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
-                    title={language === 'zh' ? '查看历史版本' : 'View history'}
+                    onClick={() => backendAvailable === true && setShowSlideHistory(true)}
+                    disabled={backendAvailable !== true}
+                    className={cx(
+                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                      backendAvailable !== true
+                        ? 'opacity-50 cursor-not-allowed border-gray-400/50 text-gray-500'
+                        : th.button.primary
+                    )}
+                    title={
+                      backendAvailable === false
+                        ? (language === 'zh' ? '后端不可用' : 'Backend unavailable')
+                        : backendAvailable === null
+                          ? (language === 'zh' ? '检查后端...' : 'Checking backend...')
+                          : (language === 'zh' ? '查看历史版本' : 'View history')
+                    }
                   >
                     <History className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{language === 'zh' ? '历史' : 'History'}</span>
@@ -1317,7 +1358,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className={cx('flex-1 overflow-hidden relative', !isDark && 'bg-gray-50/50')}>
         {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
-          <div className="h-full overflow-y-auto">
+          <div className="h-full w-full overflow-y-auto">
             <InputForm
               onGenerate={handleGenerateOutline}
               onCancel={handleCancelOutlineGeneration}

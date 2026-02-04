@@ -24,6 +24,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<DatabaseDeck | null>(null);
   const [showLoadOptions, setShowLoadOptions] = useState(false);
+  const [deckToDelete, setDeckToDelete] = useState<DatabaseDeck | null>(null);
 
   const th = getThemeClasses(theme);
   const isDark = theme === 'dark';
@@ -66,11 +67,15 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (deck: DatabaseDeck, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(lang === 'zh' ? '确定要删除这个演示文稿吗？' : 'Are you sure you want to delete this deck?')) {
-      return;
-    }
+    setDeckToDelete(deck);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deckToDelete) return;
+    const id = deckToDelete.id;
+    setDeckToDelete(null);
     setDeletingId(id);
     try {
       await deckApi.delete(id);
@@ -141,6 +146,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
@@ -148,6 +154,46 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
         onClick={onClose}
       />
       
+      {/* Delete confirmation modal – same style as App New Deck confirm */}
+      {deckToDelete && (
+        <div
+          className="absolute inset-0 z-[310] flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setDeckToDelete(null)}
+        >
+          <div className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-red-500/10 ring-red-500/20' : 'bg-red-100 ring-red-200')}>
+                <Trash2 className={cx('w-5 h-5', isDark ? 'text-red-400' : 'text-red-600')} />
+              </div>
+              <div>
+                <h3 className={cx('text-lg font-semibold', th.text.primary)}>{lang === 'zh' ? '删除演示文稿' : 'Delete deck'}</h3>
+                <p className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '确定要删除这个演示文稿吗？' : 'Are you sure you want to delete this deck?'}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4">
+              <p className={cx('text-sm', th.text.secondary)}>
+                {lang === 'zh' ? `「${deckToDelete.topic}」将被永久删除，此操作无法撤销。` : `"${deckToDelete.topic}" will be permanently deleted. This cannot be undone.`}
+              </p>
+            </div>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+              <button
+                onClick={() => setDeckToDelete(null)}
+                className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
+              >
+                {lang === 'zh' ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
+              >
+                {lang === 'zh' ? '删除' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal */}
       <div className={cx(
         'relative w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl border flex flex-col',
@@ -327,7 +373,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                       </button>
 
                       <button
-                        onClick={(e) => handleDelete(deck.id, e)}
+                        onClick={(e) => handleDeleteClick(deck, e)}
                         disabled={deletingId === deck.id}
                         className={cx(
                           'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
@@ -350,6 +396,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
         </div>
       </div>
     </div>
+    </>
   );
 };
 
