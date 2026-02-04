@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [totalCost, setTotalCost] = useState(0);
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showNewDeckConfirm, setShowNewDeckConfirm] = useState(false);
   
   // New State for Pause/Resume
   const [isPaused, setIsPaused] = useState(false);
@@ -145,30 +146,49 @@ const App: React.FC = () => {
     setStatus(GenerationStatus.REVIEWING_OUTLINE);
   };
 
-  // Completely reset the app to IDLE state
+  // Show confirmation dialog for new deck
   const handleNewDeck = () => {
-    if (confirm("Are you sure? All progress will be lost.")) {
-      // 1. Stop any ongoing operations
-      shouldStopRef.current = true;
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      
-      // 2. Reset UI State
-      setIsPaused(false);
-      setStatus(GenerationStatus.IDLE);
-      
-      // 3. Reset Data State
-      setSlides([]);
-      setConfig(null);
-      setTotalCost(0);
-      setCurrentSlideId(null);
-      setColorPalette('');
-      setIsGeneratingNotes(false);
+    setShowNewDeckConfirm(true);
+  };
+
+  // Actually reset the app to IDLE state after confirmation
+  const confirmNewDeck = () => {
+    // 1. Stop any ongoing generation processes
+    shouldStopRef.current = true;
+    
+    // Clear any pending processing timeout
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
     }
+    
+    // Abort any ongoing outline generation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // 2. Reset UI State
+    setIsPaused(false);
+    setShowExportMenu(false);
+    setShowNewDeckConfirm(false);
+    setStatus(GenerationStatus.IDLE);
+    
+    // 3. Reset Data State - all to initial values
+    setSlides([]);
+    setConfig(null);
+    setTotalCost(0);
+    setCurrentSlideId(null);
+    setColorPalette('');
+    setIsGeneratingNotes(false);
+    
+    // 4. Reset the stop flag so future generations can proceed
+    shouldStopRef.current = false;
+  };
+
+  // Cancel new deck confirmation
+  const cancelNewDeck = () => {
+    setShowNewDeckConfirm(false);
   };
 
   // Step 1: Generate Outline Only
@@ -901,6 +921,59 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* New Deck Confirmation Modal */}
+      {showNewDeckConfirm && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) cancelNewDeck();
+          }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
+          
+          {/* Modal Content */}
+          <div className="relative bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-700">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">{t('new')}</h3>
+                <p className="text-sm text-gray-400">{t('confirmNew')}</p>
+              </div>
+            </div>
+            
+            {/* Body */}
+            <div className="px-6 py-4">
+              <div className="flex items-start gap-3 text-sm text-gray-300">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-red-400 font-bold text-xs">!</span>
+                </div>
+                <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700 bg-gray-800/50 rounded-b-2xl">
+              <button
+                onClick={cancelNewDeck}
+                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                {language === 'zh' ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={confirmNewDeck}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg shadow-red-600/20"
+              >
+                {language === 'zh' ? '确认新建' : 'Confirm New'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

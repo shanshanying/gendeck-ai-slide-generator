@@ -168,6 +168,7 @@ export const TRANSLATIONS = {
     exportNotes: "Speaker Notes (Txt)",
     exportPdf: "Print / Save as PDF",
     new: "New",
+    confirmNew: "Are you sure? All progress will be lost.",
     
     // InputForm
     createNewDeck: "Create New Deck",
@@ -260,6 +261,7 @@ export const TRANSLATIONS = {
     exportNotes: "导出讲稿 (Txt)",
     exportPdf: "打印 / 另存为 PDF",
     new: "新建",
+    confirmNew: "确定要重新开始吗？所有进度将丢失。",
     
     // InputForm
     createNewDeck: "创建新演示文稿",
