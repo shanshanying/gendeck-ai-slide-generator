@@ -72,7 +72,6 @@ export const PROVIDERS: {
     defaultBaseUrl: 'https://api.moonshot.ai/v1',
     placeholderKey: 'sk-...',
     models: [
-      { id: 'kimi-k2.5', name: 'Kimi K2.5(Multi-Modal)', inputPrice: 0.10, outputPrice: 0.60 },
       { id: 'kimi-k2-0905-preview', name: 'Kimi K2 (Latest)', inputPrice: 0.15, outputPrice: 0.60 },
       { id: 'kimi-k2-turbo-preview', name: 'Kimi K2 Turbo (Recommended)', inputPrice: 0.15, outputPrice: 1.15 },
     ]
@@ -241,6 +240,7 @@ export const TRANSLATIONS = {
     apiCredentials: "API Credentials",
     step1Outline: "Step 1: Outline Generation",
     step2Slides: "Step 2: Slide Code Generation",
+    aiModel: "AI Model",
     provider: "Provider",
     model: "Model",
     topicLabel: "Topic / Title",
@@ -334,6 +334,7 @@ export const TRANSLATIONS = {
     apiCredentials: "API 凭证",
     step1Outline: "第一步：生成大纲",
     step2Slides: "第二步：生成幻灯片代码",
+    aiModel: "AI 模型",
     provider: "提供商",
     model: "模型",
     topicLabel: "主题 / 标题",

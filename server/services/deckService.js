@@ -5,15 +5,30 @@ class DeckService {
    * Save a complete deck with all slides
    */
   async saveDeck(deckData) {
-    const { topic, audience, purpose, colorPalette, slides, totalCost = 0 } = deckData;
+    const { 
+      topic, audience, purpose, colorPalette, slides, totalCost = 0, 
+      fullHtml = null, documentContent = null,
+      outlineProvider = null, outlineModel = null, outlineBaseUrl = null,
+      slidesProvider = null, slidesModel = null, slidesBaseUrl = null
+    } = deckData;
     
     return withTransaction(async (client) => {
       // Insert or update deck
       const deckResult = await client.query(
-        `INSERT INTO decks (topic, audience, purpose, color_palette, slide_count, total_cost)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO decks (
+          topic, audience, purpose, color_palette, slide_count, total_cost, 
+          full_html, document_content, 
+          outline_provider, outline_model, outline_base_url,
+          slides_provider, slides_model, slides_base_url
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING id`,
-        [topic, audience, purpose, colorPalette, slides.length, totalCost]
+        [
+          topic, audience, purpose, colorPalette, slides.length, totalCost, 
+          fullHtml, documentContent,
+          outlineProvider, outlineModel, outlineBaseUrl,
+          slidesProvider, slidesModel, slidesBaseUrl
+        ]
       );
       
       const deckId = deckResult.rows[0].id;
@@ -30,10 +45,10 @@ class DeckService {
             deckId,
             i,
             slide.title,
-            slide.contentPoints,
-            slide.htmlContent,
+            slide.content_points || slide.contentPoints || [],
+            slide.html_content || slide.htmlContent,
             slide.notes || '',
-            slide.layoutSuggestion || 'Standard'
+            slide.layout_suggestion || slide.layoutSuggestion || 'Standard'
           ]
         );
       }

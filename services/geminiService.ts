@@ -231,8 +231,8 @@ export const generateOutline = async (
         ]
     `;
 
-    // Use Outline settings
-    const { text, cost } = await callLLM(prompt, apiSettings.outline, apiSettings.apiKeys, true, signal);
+    // Use model settings
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal);
     const jsonString = cleanJson(text);
 
     let parsed: any;
@@ -296,8 +296,8 @@ export const generateSpeakerNotes = async (
       - Example format: ["Notes for slide 1", "Notes for slide 2", ...]
     `;
 
-    // We use the Outline model settings for logic/writing tasks like notes
-    const { text, cost } = await callLLM(prompt, apiSettings.outline, apiSettings.apiKeys, true);
+    // Use model settings for speaker notes generation
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true);
     const jsonString = cleanJson(text);
 
     let notes: string[] = [];
@@ -427,13 +427,17 @@ export const generateSlideHtml = async (
     `;
 
     // Use Slide settings
-    const { text, cost } = await callLLM(prompt, apiSettings.slides, apiSettings.apiKeys, false);
+    // Use model settings for slide generation
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false);
     return { data: cleanHtml(text), cost };
 
-  } catch (error) {
+  } catch (error: any) {
+    // Log error for debugging
+    console.error('Error generating slide:', error);
+    
     // Error handled by returning fallback HTML
     return {
-      data: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Error generating slide</div><div style="font-size:18px;margin-top:8px;opacity:0.7;">Please try regenerating</div></div></section>`,
+      data: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Error generating slide</div><div style="font-size:18px;margin-top:8px;opacity:0.7;">${error.message || 'Unknown error'}</div></div></section>`,
       cost: 0
     };
   }

@@ -12,32 +12,58 @@ With the database backend, you can:
 
 ## Prerequisites
 
-- PostgreSQL 12+ installed
+- PostgreSQL 12+ (local or cloud-hosted)
 - Node.js 18+ installed
 
 ## Quick Start
 
-### 1. Create Database
+### 1. Get Your PostgreSQL Connection
+
+You can use:
+- **Local PostgreSQL** (installed on your machine)
+- **Docker PostgreSQL** (container)
+- **Cloud PostgreSQL** (Supabase, Railway, Render, Neon, AWS RDS, etc.)
+
+### 2. Create Database
+
+**For local/self-hosted PostgreSQL:**
 
 ```bash
-# Connect to PostgreSQL
-psql -U postgres
+# Connect to PostgreSQL (replace with your admin user)
+psql -h <host> -U <admin_user> -p <port>
 
 # Create database
 CREATE DATABASE gendeck;
+
+# Create dedicated user (recommended)
+CREATE USER gendeck_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE gendeck TO gendeck_user;
 
 # Exit
 \q
 ```
 
-### 2. Run Schema
+**For cloud PostgreSQL:**
+- Use the provider's dashboard or CLI to create a database
+- Note down the connection details (host, port, database, user, password)
+
+### 3. Run Schema
 
 ```bash
-cd server
-psql -U postgres -d gendeck -f ../database/schema.sql
+# Option 1: Using connection string
+psql "postgresql://user:password@host:port/database" -f database/schema.sql
+
+# Option 2: Using individual parameters
+psql -h <host> -U <user> -d <database> -p <port> -f database/schema.sql
+
+# Example for local:
+psql -h localhost -U gendeck_user -d gendeck -f database/schema.sql
+
+# Example for Supabase:
+psql "postgresql://postgres:password@db.xxx.supabase.co:5432/postgres" -f database/schema.sql
 ```
 
-### 3. Configure Environment
+### 4. Configure Backend Environment
 
 ```bash
 cd server
@@ -45,15 +71,39 @@ cp .env.example .env
 # Edit .env with your database credentials
 ```
 
-### 4. Install Dependencies & Start Server
+**Option A: Individual Parameters (Local/Dev)**
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=gendeck
+DB_USER=gendeck_user
+DB_PASSWORD=your_secure_password
+PORT=3001
+NODE_ENV=development
+```
+
+**Option B: Connection URL (Cloud/Production)**
+```env
+DATABASE_URL=postgresql://user:password@host:port/database
+PORT=3001
+NODE_ENV=production
+```
+
+### 5. Test Connection
 
 ```bash
 cd server
 npm install
+npm run test-db
+```
+
+### 6. Start Server
+
+```bash
 npm run dev
 ```
 
-### 5. Configure Frontend
+### 7. Configure Frontend
 
 Edit `.env.local` in the project root:
 
@@ -89,6 +139,54 @@ Restart the Vite dev server.
 - Stores previous versions automatically via trigger
 - Allows restoring any past version
 - Tracks `saved_at` timestamp
+
+## Cloud Provider Examples
+
+### Supabase
+
+1. Create project at [supabase.com](https://supabase.com)
+2. Go to Settings → Database
+3. Copy the connection string (Session or Transaction pooler)
+4. Use in `.env`:
+
+```env
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxx.supabase.co:5432/postgres
+```
+
+### Railway
+
+```env
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+```
+
+Railway automatically provides this variable.
+
+### Render
+
+1. Create PostgreSQL instance
+2. Copy "External Database URL"
+3. Use in `.env`:
+
+```env
+DATABASE_URL=postgresql://user:pass@dpg-xxx.render.com:5432/dbname
+```
+
+### Neon
+
+```env
+DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-1.aws.neon.tech/dbname?sslmode=require
+```
+
+### AWS RDS
+
+```env
+DB_HOST=your-db.xxx.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=gendeck
+DB_USER=admin
+DB_PASSWORD=your_password
+DB_SSL=true
+```
 
 ## API Endpoints
 
@@ -151,13 +249,17 @@ When `VITE_API_URL` is not set, database features are hidden from the UI.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `DATABASE_URL` | Full PostgreSQL connection string | - |
 | `DB_HOST` | PostgreSQL host | localhost |
 | `DB_PORT` | PostgreSQL port | 5432 |
 | `DB_NAME` | Database name | gendeck |
-| `DB_USER` | Database user | postgres |
-| `DB_PASSWORD` | Database password | (required) |
+| `DB_USER` | Database user | - |
+| `DB_PASSWORD` | Database password | - |
 | `PORT` | API server port | 3001 |
 | `NODE_ENV` | Environment | development |
+| `DB_SSL` | Enable SSL (for production) | false |
+
+**Note:** `DATABASE_URL` takes precedence over individual parameters if both are provided.
 
 ## Production Deployment
 
@@ -169,6 +271,9 @@ Use a managed PostgreSQL service:
 - Azure Database
 - DigitalOcean Managed Databases
 - Supabase
+- Railway
+- Render
+- Neon
 
 ### Backend
 
@@ -194,17 +299,46 @@ Deploy the `dist/` folder to:
 - GitHub Pages
 - AWS S3 + CloudFront
 
+## Docker PostgreSQL (Local Development)
+
+```bash
+# Run PostgreSQL in Docker
+docker run -d \
+  --name gendeck-db \
+  -e POSTGRES_USER=gendeck \
+  -e POSTGRES_PASSWORD=gendeck_pass \
+  -e POSTGRES_DB=gendeck \
+  -p 5432:5432 \
+  postgres:15
+
+# Run schema
+docker exec -i gendeck-db psql -U gendeck -d gendeck < database/schema.sql
+
+# Configure .env
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_NAME=gendeck
+# DB_USER=gendeck
+# DB_PASSWORD=gendeck_pass
+```
+
 ## Troubleshooting
 
 ### Connection Refused
 - Ensure PostgreSQL is running
 - Check `DB_HOST` and `DB_PORT` in `.env`
 - Verify firewall rules allow connections
+- For cloud DBs, ensure your IP is in allowlist
 
 ### Authentication Failed
 - Check `DB_USER` and `DB_PASSWORD`
-- Verify user exists: `psql -U postgres -c "\du"`
-- Reset password if needed
+- Verify user exists and has correct password
+- For cloud DBs, reset password in dashboard if needed
+
+### SSL/TLS Errors
+- Set `DB_SSL=true` for cloud databases
+- Or add `?sslmode=require` to connection URL
+- For self-signed certs, may need to set `rejectUnauthorized: false`
 
 ### CORS Errors
 - Ensure `VITE_API_URL` matches the backend URL exactly
@@ -212,8 +346,8 @@ Deploy the `dist/` folder to:
 - Verify `cors` middleware is enabled (default in dev)
 
 ### Database Not Found
-- Create the database: `createdb gendeck`
-- Run schema: `psql -d gendeck -f database/schema.sql`
+- Create the database using provider dashboard or `createdb` command
+- Run schema: `psql <connection> -f database/schema.sql`
 
 ## Security Notes
 
@@ -222,3 +356,4 @@ Deploy the `dist/` folder to:
 - Enable SSL for production database connections
 - Consider adding authentication to the API
 - Rate limit API endpoints in production
+- Use separate database users for app and schema management

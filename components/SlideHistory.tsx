@@ -1,18 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { History, X, RotateCcw, Clock, ChevronLeft, ChevronRight, FileCode } from 'lucide-react';
-import { slideApi, SlideHistoryItem, dbSlideToSlideData } from '../services/databaseService';
-import { SlideData } from '../types';
+import { deckApi, DeckHistoryItem } from '../services/databaseService';
 import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
 interface SlideHistoryProps {
   isOpen: boolean;
   onClose: () => void;
-  slideId: string | null;
-  slideIndex: number;
-  slideTitle: string;
-  onRestore: (slide: SlideData) => void;
+  deckId: string | null;
+  onRestore: (version: DeckHistoryItem) => void;
   lang: 'en' | 'zh';
   theme: 'dark' | 'light';
 }
@@ -20,16 +17,15 @@ interface SlideHistoryProps {
 const SlideHistory: React.FC<SlideHistoryProps> = ({
   isOpen,
   onClose,
-  slideId,
-  slideIndex,
-  slideTitle,
+  deckId,
   onRestore,
   lang,
   theme,
 }) => {
-  const [history, setHistory] = useState<SlideHistoryItem[]>([]);
+  const [history, setHistory] = useState<DeckHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<SlideHistoryItem | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<DeckHistoryItem | null>(null);
+  const [loadingFullVersion, setLoadingFullVersion] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
 
@@ -38,20 +34,20 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    if (isOpen && slideId) {
+    if (isOpen && deckId) {
       loadHistory();
     } else {
       setHistory([]);
       setSelectedVersion(null);
     }
-  }, [isOpen, slideId]);
+  }, [isOpen, deckId]);
 
   const loadHistory = async () => {
-    if (!slideId) return;
+    if (!deckId) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await slideApi.getHistory(slideId, 50);
+      const response = await deckApi.getVersions(deckId, 50);
       setHistory(response.data);
       if (response.data.length > 0) {
         setSelectedVersion(response.data[0]);
@@ -64,14 +60,29 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
     }
   };
 
+  // Load full version details (including full_html) when selecting a version
+  const handleSelectVersion = async (version: DeckHistoryItem) => {
+    if (selectedVersion?.id === version.id) return;
+    
+    setLoadingFullVersion(true);
+    try {
+      const response = await deckApi.getVersion(version.id);
+      setSelectedVersion(response.data);
+    } catch (err) {
+      console.error('Failed to load version details:', err);
+      // Fallback to the list version if fetch fails
+      setSelectedVersion(version);
+    } finally {
+      setLoadingFullVersion(false);
+    }
+  };
+
   const handleRestore = async () => {
-    if (!slideId || !selectedVersion) return;
+    if (!selectedVersion) return;
     
     setRestoring(true);
     try {
-      const response = await slideApi.restore(slideId, selectedVersion.id);
-      const restoredSlide = dbSlideToSlideData(response.data);
-      onRestore(restoredSlide);
+      onRestore(selectedVersion);
       onClose();
     } catch (err) {
       alert(lang === 'zh' ? '恢复失败' : 'Restore failed');
@@ -87,39 +98,20 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
     });
-  };
-
-  const handlePrevVersion = () => {
-    if (!selectedVersion) return;
-    const currentIndex = history.findIndex(h => h.id === selectedVersion.id);
-    if (currentIndex < history.length - 1) {
-      setSelectedVersion(history[currentIndex + 1]);
-    }
-  };
-
-  const handleNextVersion = () => {
-    if (!selectedVersion) return;
-    const currentIndex = history.findIndex(h => h.id === selectedVersion.id);
-    if (currentIndex > 0) {
-      setSelectedVersion(history[currentIndex - 1]);
-    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className={isDark ? 'text-slate-200' : 'text-gray-900'}>
       <div 
-        className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')}
+        className={isDark ? 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[400]' : 'fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[400]'}
         onClick={onClose}
       />
       
-      {/* Modal */}
       <div className={cx(
-        'relative w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl border flex flex-col',
+        'fixed inset-4 md:inset-10 lg:inset-20 z-[401] rounded-2xl shadow-2xl border flex flex-col overflow-hidden',
         isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
       )}>
         {/* Header */}
@@ -130,30 +122,23 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
             </div>
             <div>
               <h3 className={cx('text-lg font-semibold', th.text.primary)}>
-                {lang === 'zh' ? '幻灯片历史' : 'Slide History'}
+                {lang === 'zh' ? '历史版本' : 'Version History'}
               </h3>
               <p className={cx('text-xs', th.text.muted)}>
-                #{slideIndex + 1}: {slideTitle}
+                {history.length} {lang === 'zh' ? '个版本' : 'versions'}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {selectedVersion && (
-              <span className={cx('text-xs px-3 py-1 rounded-full border', isDark ? 'bg-slate-800 border-white/10' : 'bg-gray-100 border-gray-200')}>
-                {lang === 'zh' ? '版本' : 'Version'} {selectedVersion.version}
-              </span>
-            )}
-            <button onClick={onClose} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button onClick={onClose} className={cx('p-2 rounded-lg transition-colors hover:bg-white/5', isDark ? 'text-slate-400' : 'text-gray-600')}>
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Version List */}
-          <div className={cx('w-72 border-r overflow-y-auto', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+          <div className={cx('w-72 border-r overflow-y-auto', isDark ? 'border-white/5 bg-slate-900/30' : 'border-gray-100 bg-gray-50/50')}>
             {loading ? (
               <div className="p-4 text-center">
                 <div className={cx('w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto', th.text.muted)} />
@@ -173,26 +158,25 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                 {history.map((item, idx) => (
                   <button
                     key={item.id}
-                    onClick={() => setSelectedVersion(item)}
+                    onClick={() => handleSelectVersion(item)}
                     className={cx(
                       'w-full text-left p-3 rounded-lg border transition-all',
                       selectedVersion?.id === item.id
-                        ? (isDark ? 'bg-purple-500/10 border-purple-500/30' : 'bg-purple-50 border-purple-300')
+                        ? (isDark ? 'bg-purple-500/20 border-purple-500/50' : 'bg-purple-50 border-purple-300')
                         : (isDark ? 'border-transparent hover:bg-slate-800' : 'border-transparent hover:bg-gray-100')
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={cx('text-xs font-mono', isDark ? 'text-purple-400' : 'text-purple-600')}>
+                      <span className={cx('text-xs font-mono font-bold', isDark ? 'text-purple-400' : 'text-purple-600')}>
                         v{item.version}
                       </span>
                       {idx === 0 && (
-                        <span className={cx('text-[10px] px-1.5 py-0.5 rounded', isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600')}>
-                          {lang === 'zh' ? '当前' : 'Current'}
+                        <span className={cx('text-[10px] px-1.5 py-0.5 rounded', isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600')}>
+                          {lang === 'zh' ? '最新' : 'Latest'}
                         </span>
                       )}
                     </div>
-                    <div className={cx('flex items-center gap-1 text-xs', th.text.muted)}>
-                      <Clock className="w-3 h-3" />
+                    <div className={cx('text-xs opacity-70')}>
                       {formatDate(item.saved_at)}
                     </div>
                   </button>
@@ -202,29 +186,13 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
           </div>
 
           {/* Main - Preview */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col bg-black/5">
             {selectedVersion ? (
               <>
-                {/* Preview Toolbar */}
-                <div className={cx('flex items-center justify-between p-3 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handlePrevVersion}
-                      disabled={history.findIndex(h => h.id === selectedVersion.id) >= history.length - 1}
-                      className={cx('p-1.5 rounded-lg transition-colors disabled:opacity-30', th.button.ghost)}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className={cx('text-xs', th.text.muted)}>
-                      {history.findIndex(h => h.id === selectedVersion.id) + 1} / {history.length}
-                    </span>
-                    <button
-                      onClick={handleNextVersion}
-                      disabled={history.findIndex(h => h.id === selectedVersion.id) <= 0}
-                      className={cx('p-1.5 rounded-lg transition-colors disabled:opacity-30', th.button.ghost)}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                {/* Toolbar */}
+                <div className={cx('flex items-center justify-between p-3 border-b', isDark ? 'bg-slate-900/50 border-white/5' : 'bg-white/50 border-gray-200')}>
+                  <div className={cx('text-sm font-medium', th.text.secondary)}>
+                    {lang === 'zh' ? '版本' : 'Version'} {selectedVersion.version}
                   </div>
 
                   <button
@@ -233,7 +201,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                     className={cx(
                       'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                       history.findIndex(h => h.id === selectedVersion.id) === 0
-                        ? 'opacity-50 cursor-not-allowed'
+                        ? 'opacity-50 cursor-not-allowed bg-gray-500/20'
                         : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-lg shadow-purple-500/20'
                     )}
                   >
@@ -252,11 +220,11 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                 </div>
 
                 {/* Preview Content */}
-                <div className="flex-1 overflow-auto p-4 bg-black/5">
+                <div className="flex-1 overflow-auto p-4">
                   <div 
                     className={cx(
                       'mx-auto rounded-lg overflow-hidden shadow-2xl',
-                      isDark ? 'bg-[var(--c-bg)]' : 'bg-white'
+                      isDark ? 'bg-[#111]' : 'bg-white'
                     )}
                     style={{
                       width: '100%',
@@ -264,7 +232,14 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                       aspectRatio: '16/9',
                     }}
                   >
-                    {selectedVersion.html_content ? (
+                    {loadingFullVersion ? (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <div className="text-center">
+                          <div className={cx('w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-3', th.text.muted)} />
+                          <p>{lang === 'zh' ? '加载中...' : 'Loading...'}</p>
+                        </div>
+                      </div>
+                    ) : selectedVersion.full_html ? (
                       <div 
                         className="w-full h-full"
                         style={{ 
@@ -274,14 +249,14 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                           height: '1080px',
                         }}
                         dangerouslySetInnerHTML={{ 
-                          __html: selectedVersion.html_content 
+                          __html: selectedVersion.full_html 
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <div className="text-center">
                           <FileCode className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">{lang === 'zh' ? '无预览' : 'No preview'}</p>
+                          <p>{lang === 'zh' ? '无预览' : 'No preview'}</p>
                         </div>
                       </div>
                     )}
@@ -289,38 +264,22 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                 </div>
 
                 {/* Details */}
-                <div className={cx('p-4 border-t', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+                <div className={cx('p-4 border-t', isDark ? 'bg-slate-900/50 border-white/5' : 'bg-white/50 border-gray-200')}>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className={cx('text-xs block mb-1', th.text.muted)}>{lang === 'zh' ? '标题' : 'Title'}</span>
-                      <span className={th.text.primary}>{selectedVersion.title}</span>
+                      <span className={cx('text-xs block mb-1 opacity-60')}>{lang === 'zh' ? '标题' : 'Title'}</span>
+                      <span className="font-medium">{selectedVersion.topic}</span>
                     </div>
                     <div>
-                      <span className={cx('text-xs block mb-1', th.text.muted)}>{lang === 'zh' ? '布局' : 'Layout'}</span>
-                      <span className={th.text.primary}>{selectedVersion.layout_suggestion || 'Standard'}</span>
+                      <span className={cx('text-xs block mb-1 opacity-60')}>{lang === 'zh' ? '主题' : 'Theme'}</span>
+                      <span className="font-medium">{selectedVersion.color_palette || 'Default'}</span>
                     </div>
-                    {selectedVersion.content_points && selectedVersion.content_points.length > 0 && (
-                      <div className="col-span-2">
-                        <span className={cx('text-xs block mb-1', th.text.muted)}>{lang === 'zh' ? '内容要点' : 'Content Points'}</span>
-                        <ul className={cx('text-xs space-y-1', th.text.secondary)}>
-                          {selectedVersion.content_points.slice(0, 5).map((point, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-purple-400">•</span>
-                              <span className="truncate">{point}</span>
-                            </li>
-                          ))}
-                          {selectedVersion.content_points.length > 5 && (
-                            <li className={th.text.muted}>+{selectedVersion.content_points.length - 5} more...</li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className={cx('text-sm', th.text.muted)}>
+                <p className={cx('text-sm opacity-60')}>
                   {lang === 'zh' ? '选择一个版本查看' : 'Select a version to view'}
                 </p>
               </div>

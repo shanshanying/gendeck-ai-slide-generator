@@ -31,9 +31,8 @@ export interface ApiSettings {
   // Map of provider IDs to their API keys
   apiKeys: Partial<Record<ApiProvider, string>>;
   
-  // Distinct config for each step
-  outline: ModelSelection;
-  slides: ModelSelection;
+  // Single model for all generation tasks (outline and slides)
+  model: ModelSelection;
 }
 
 export interface PresentationConfig {

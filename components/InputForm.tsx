@@ -1,6 +1,6 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp } from 'lucide-react';
+import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp } from 'lucide-react';
 import { parseExportedHtml, ImportResult } from '../services/importService';
 import { PresentationConfig, ApiSettings, ApiProvider, Language, Theme } from '../types';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
@@ -47,19 +47,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     loadJson('gendeck_api_keys', {})
   );
 
-  // Independent Selection with Persistence
-  const [outlineProvider, setOutlineProvider] = useState<ApiProvider>(() =>
-    loadStr('gendeck_p_outline', 'google') as ApiProvider
+  // Single Model Selection with Persistence
+  const [provider, setProvider] = useState<ApiProvider>(() =>
+    loadStr('gendeck_provider', 'google') as ApiProvider
   );
-  const [outlineModel, setOutlineModel] = useState(() =>
-    loadStr('gendeck_m_outline', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
-  );
-
-  const [slideProvider, setSlideProvider] = useState<ApiProvider>(() =>
-    loadStr('gendeck_p_slide', 'google') as ApiProvider
-  );
-  const [slideModel, setSlideModel] = useState(() =>
-    loadStr('gendeck_m_slide', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
+  const [model, setModel] = useState(() =>
+    loadStr('gendeck_model', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
   );
 
   // Simulated Progress State
@@ -121,14 +114,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
 
   useEffect(() => {
-    localStorage.setItem('gendeck_p_outline', outlineProvider);
-    localStorage.setItem('gendeck_m_outline', outlineModel);
-  }, [outlineProvider, outlineModel]);
-
-  useEffect(() => {
-    localStorage.setItem('gendeck_p_slide', slideProvider);
-    localStorage.setItem('gendeck_m_slide', slideModel);
-  }, [slideProvider, slideModel]);
+    localStorage.setItem('gendeck_provider', provider);
+    localStorage.setItem('gendeck_model', model);
+  }, [provider, model]);
 
   // Simulated Progress Effect
   useEffect(() => {
@@ -171,20 +159,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   };
 
   // Helper to update model when provider changes
-  const handleProviderChange = (
-    type: 'outline' | 'slides',
-    providerId: ApiProvider
-  ) => {
+  const handleProviderChange = (providerId: ApiProvider) => {
     const providerConfig = PROVIDERS.find(p => p.id === providerId);
     const defaultModel = providerConfig?.models[0]?.id || '';
-
-    if (type === 'outline') {
-      setOutlineProvider(providerId);
-      setOutlineModel(defaultModel);
-    } else {
-      setSlideProvider(providerId);
-      setSlideModel(defaultModel);
-    }
+    setProvider(providerId);
+    setModel(defaultModel);
   };
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -220,36 +199,22 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     e.preventDefault();
     setErrorMsg(null);
 
-    // Validate API Keys
-    const providersToCheck = new Set<ApiProvider>([outlineProvider, slideProvider]);
-
-    const missingKeys: string[] = [];
-    providersToCheck.forEach(p => {
-        if (!apiKeys[p] || apiKeys[p]!.trim() === '') {
-            missingKeys.push(PROVIDERS.find(prov => prov.id === p)?.name || p);
-        }
-    });
-
-    if (missingKeys.length > 0) {
+    // Validate API Key
+    if (!apiKeys[provider] || apiKeys[provider]!.trim() === '') {
         setShowSettings(true);
-        setErrorMsg(`Missing API Keys for: ${missingKeys.join(', ')}. Please enter them in Model Settings.`);
+        setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
         return;
     }
 
-    // Construct simplified settings object
+    // Construct settings object with single model
     const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
 
     const apiSettings: ApiSettings = {
       apiKeys: apiKeys,
-      outline: {
-        provider: outlineProvider,
-        modelId: outlineModel,
-        baseUrl: getBaseUrl(outlineProvider)
-      },
-      slides: {
-        provider: slideProvider,
-        modelId: slideModel,
-        baseUrl: getBaseUrl(slideProvider)
+      model: {
+        provider: provider,
+        modelId: model,
+        baseUrl: getBaseUrl(provider)
       }
     };
 
@@ -310,9 +275,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   <div key={p.id}>
                     <label className={cx(
                       'block text-xs mb-1.5',
-                      !apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-500 font-bold' : th.text.tertiary
+                      !apiKeys[p.id] && provider === p.id ? 'text-orange-500 font-bold' : th.text.tertiary
                     )}>
-                        {p.name} API Key {(!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id)) ? '*' : ''}
+                        {p.name} API Key {(!apiKeys[p.id] && provider === p.id) ? '*' : ''}
                     </label>
                     <input
                       type="password"
@@ -322,7 +287,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                       className={cx(
                         'w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                         th.input.bg, th.input.border, th.input.text, th.input.focusBorder,
-                        !apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500/50 focus:border-red-500' : ''
+                        !apiKeys[p.id] && errorMsg && provider === p.id ? 'border-red-500/50 focus:border-red-500' : ''
                       )}
                     />
                   </div>
@@ -333,86 +298,43 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             <div className={cx('h-px w-full', th.border.divider)} />
 
             {/* 2. Model Selection Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Outline Config */}
-              <div className={cx(
-                'p-3 rounded-lg border',
-                isDark ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
-              )}>
-                 <label className="block text-xs font-bold text-blue-400 mb-2 flex items-center gap-1">
-                    <Layers className="w-3 h-3" /> {t('step1Outline')}
-                 </label>
-                 <div className="space-y-3">
-                   <div>
-                     <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('provider')}</label>
-                     <select
-                        value={outlineProvider}
-                        onChange={(e) => handleProviderChange('outline', e.target.value as ApiProvider)}
-                        className={cx(
-                          'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                          th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                        )}
-                     >
-                       {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                     </select>
-                   </div>
-                   <div>
-                     <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('model')}</label>
-                     <select
-                        value={outlineModel}
-                        onChange={(e) => setOutlineModel(e.target.value)}
-                        className={cx(
-                          'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                          th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                        )}
-                     >
-                       {PROVIDERS.find(p => p.id === outlineProvider)?.models.map(m => (
-                         <option key={m.id} value={m.id}>{m.name}</option>
-                       ))}
-                     </select>
-                   </div>
+            <div className={cx(
+              'p-4 rounded-lg border max-w-md mx-auto',
+              isDark ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
+            )}>
+               <label className="block text-xs font-bold text-purple-400 mb-3 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> {t('aiModel')}
+               </label>
+               <div className="space-y-3">
+                 <div>
+                   <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('provider')}</label>
+                   <select
+                      value={provider}
+                      onChange={(e) => handleProviderChange(e.target.value as ApiProvider)}
+                      className={cx(
+                        'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                        th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                      )}
+                   >
+                     {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                   </select>
                  </div>
-              </div>
-
-              {/* Slide Config */}
-              <div className={cx(
-                'p-3 rounded-lg border',
-                isDark ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
-              )}>
-                 <label className="block text-xs font-bold text-green-400 mb-2 flex items-center gap-1">
-                    <ImageIcon className="w-3 h-3" /> {t('step2Slides')}
-                 </label>
-                 <div className="space-y-3">
-                   <div>
-                     <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('provider')}</label>
-                     <select
-                        value={slideProvider}
-                        onChange={(e) => handleProviderChange('slides', e.target.value as ApiProvider)}
-                        className={cx(
-                          'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                          th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                        )}
-                     >
-                       {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                     </select>
-                   </div>
-                   <div>
-                     <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('model')}</label>
-                     <select
-                        value={slideModel}
-                        onChange={(e) => setSlideModel(e.target.value)}
-                        className={cx(
-                          'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                          th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                        )}
-                     >
-                       {PROVIDERS.find(p => p.id === slideProvider)?.models.map(m => (
-                         <option key={m.id} value={m.id}>{m.name}</option>
-                       ))}
-                     </select>
-                   </div>
+                 <div>
+                   <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('model')}</label>
+                   <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className={cx(
+                        'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                        th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                      )}
+                   >
+                     {PROVIDERS.find(p => p.id === provider)?.models.map(m => (
+                       <option key={m.id} value={m.id}>{m.name}</option>
+                     ))}
+                   </select>
                  </div>
-              </div>
+               </div>
             </div>
 
           </div>

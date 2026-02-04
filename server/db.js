@@ -19,6 +19,7 @@ if (process.env.DATABASE_URL) {
     database: process.env.DB_NAME || 'gendeck',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     // Connection pool settings
     max: 20,
     idleTimeoutMillis: 30000,

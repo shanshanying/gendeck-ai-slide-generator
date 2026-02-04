@@ -13,6 +13,14 @@ CREATE TABLE IF NOT EXISTS decks (
     color_palette VARCHAR(255),
     slide_count INTEGER DEFAULT 0,
     total_cost DECIMAL(10, 6) DEFAULT 0,
+    full_html TEXT, -- Complete deck HTML for export
+    document_content TEXT, -- Original input text
+    outline_provider VARCHAR(50), -- e.g., 'google'
+    outline_model VARCHAR(100), -- e.g., 'gemini-3-flash-preview'
+    outline_base_url VARCHAR(500), -- e.g., 'https://api.openai.com/v1' (optional, for custom endpoints)
+    slides_provider VARCHAR(50), -- e.g., 'openai'
+    slides_model VARCHAR(100), -- e.g., 'gpt-4o'
+    slides_base_url VARCHAR(500), -- e.g., 'https://api.deepseek.com' (optional, for custom endpoints)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(255) -- Optional: for multi-user support
@@ -34,17 +42,14 @@ CREATE TABLE IF NOT EXISTS slides (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Slide history table: Stores all historical versions of slides
-CREATE TABLE IF NOT EXISTS slide_history (
+-- Deck history table: Stores all historical versions of full decks
+CREATE TABLE IF NOT EXISTS deck_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slide_id UUID NOT NULL REFERENCES slides(id) ON DELETE CASCADE,
     deck_id UUID NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
-    slide_index INTEGER NOT NULL,
-    title VARCHAR(500) NOT NULL,
-    content_points TEXT[],
-    html_content TEXT,
-    notes TEXT,
-    layout_suggestion VARCHAR(100),
+    topic VARCHAR(500) NOT NULL,
+    full_html TEXT, -- Complete deck HTML
+    outline JSONB, -- Outline structure for editing
+    color_palette VARCHAR(255),
     version INTEGER NOT NULL,
     saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     saved_by VARCHAR(255)
@@ -54,8 +59,7 @@ CREATE TABLE IF NOT EXISTS slide_history (
 CREATE INDEX IF NOT EXISTS idx_slides_deck_id ON slides(deck_id);
 CREATE INDEX IF NOT EXISTS idx_slides_slide_index ON slides(slide_index);
 CREATE INDEX IF NOT EXISTS idx_slides_current ON slides(deck_id, slide_index, is_current) WHERE is_current = true;
-CREATE INDEX IF NOT EXISTS idx_slide_history_slide_id ON slide_history(slide_id);
-CREATE INDEX IF NOT EXISTS idx_slide_history_deck_id ON slide_history(deck_id);
+CREATE INDEX IF NOT EXISTS idx_deck_history_deck_id ON deck_history(deck_id);
 CREATE INDEX IF NOT EXISTS idx_decks_created_at ON decks(created_at DESC);
 
 -- Trigger function to update updated_at timestamp
@@ -80,33 +84,4 @@ CREATE TRIGGER update_slides_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger to save slide history when slide is updated
-CREATE OR REPLACE FUNCTION save_slide_history()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Only save history if content actually changed
-    IF OLD.html_content IS DISTINCT FROM NEW.html_content OR
-       OLD.title IS DISTINCT FROM NEW.title OR
-       OLD.content_points IS DISTINCT FROM NEW.content_points THEN
-        
-        INSERT INTO slide_history (
-            slide_id, deck_id, slide_index, title, content_points,
-            html_content, notes, layout_suggestion, version
-        ) VALUES (
-            OLD.id, OLD.deck_id, OLD.slide_index, OLD.title, OLD.content_points,
-            OLD.html_content, OLD.notes, OLD.layout_suggestion, OLD.version
-        );
-        
-        -- Increment version
-        NEW.version = OLD.version + 1;
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-DROP TRIGGER IF EXISTS trigger_save_slide_history ON slides;
-CREATE TRIGGER trigger_save_slide_history
-    BEFORE UPDATE ON slides
-    FOR EACH ROW
-    EXECUTE FUNCTION save_slide_history();
+-- Note: Slide-level history removed. History is now tracked at deck level.

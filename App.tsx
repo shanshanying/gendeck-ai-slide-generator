@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, ApiSettings } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, ApiSettings, ApiProvider } from './types';
 import { ThemeProvider, useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
 import { getThemeClasses, cx } from './styles/theme';
@@ -9,12 +9,12 @@ import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { ImportResult } from './services/importService';
+import { ImportResult, parseExportedHtml } from './services/importService';
 import { deckApi, slideApi, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
 import DeckBrowser from './components/DeckBrowser';
 import SlideHistory from './components/SlideHistory';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History } from 'lucide-react';
-import { TRANSLATIONS, COLOR_THEMES } from './constants';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
+import { TRANSLATIONS, COLOR_THEMES, PROVIDERS } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -30,6 +30,16 @@ interface AutosaveData {
 }
 
 const AUTOSAVE_KEY = 'gendeck_autosave';
+
+// Helper to get API keys from localStorage
+const getStoredApiKeys = (): Partial<Record<ApiProvider, string>> => {
+  try {
+    const saved = localStorage.getItem('gendeck_api_keys');
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+};
 
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => {
@@ -59,7 +69,7 @@ const App: React.FC = () => {
 
   const { theme, toggleTheme, isDark } = useThemeContext();
   const th = getThemeClasses(theme);
-  
+
   const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
   const [colorPalette, setColorPalette] = useState<string>(initialState.colorPalette || '');
@@ -69,21 +79,22 @@ const App: React.FC = () => {
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showNewDeckConfirm, setShowNewDeckConfirm] = useState(false);
-  
+
   // Database-related state
   const [showDeckBrowser, setShowDeckBrowser] = useState(false);
   const [showSlideHistory, setShowSlideHistory] = useState(false);
   const [currentDbDeckId, setCurrentDbDeckId] = useState<string | null>(null);
   const [isSavingToDb, setIsSavingToDb] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [hasDatabase, setHasDatabase] = useState(!!import.meta.env.VITE_API_URL);
-  
+
   // New State for Pause/Resume
   const [isPaused, setIsPaused] = useState(false);
-  
+
   // Refs for process control
   const shouldStopRef = React.useRef(false);
   const processingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Ref for aborting outline generation
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -119,7 +130,7 @@ const App: React.FC = () => {
        // If no selection, select first
        if (!currentSlideId) {
          setCurrentSlideId(slides[0].id);
-       } 
+       }
        // If selection is invalid (e.g. deleted), select first
        else if (!slides.find(s => s.id === currentSlideId)) {
          setCurrentSlideId(slides[0].id);
@@ -136,14 +147,14 @@ const App: React.FC = () => {
 
     // Find first slide without HTML and not currently regenerating
     const pendingSlideIndex = currentSlides.findIndex(s => !s.htmlContent && !s.isRegenerating);
-    
+
     if (pendingSlideIndex === -1) {
       setStatus(GenerationStatus.COMPLETE);
       return;
     }
 
     const slideToProcess = currentSlides[pendingSlideIndex];
-    
+
     // Optimistic update to show regeneration state
     setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: true } : s));
 
@@ -156,9 +167,9 @@ const App: React.FC = () => {
       };
 
       const result = await generateSlideHtml(
-        outlineItem, 
-        palette, 
-        currentConfig.audience, 
+        outlineItem,
+        palette,
+        currentConfig.audience,
         currentConfig.apiSettings,
         currentConfig.topic,
         pendingSlideIndex + 1,
@@ -169,10 +180,10 @@ const App: React.FC = () => {
 
       setSlides(prev => {
         const next = prev.map(s => s.id === slideToProcess.id ? { ...s, htmlContent: result.data, isRegenerating: false } : s);
-        
+
         // Check stop ref again before scheduling next
         if (!shouldStopRef.current) {
-            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100); 
+            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100);
         }
         return next;
       });
@@ -182,7 +193,7 @@ const App: React.FC = () => {
          const next = prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s);
          // Even on error, try to continue if not stopped
          if (!shouldStopRef.current) {
-            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100); 
+            processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), 100);
          }
          return next;
       });
@@ -238,28 +249,28 @@ const App: React.FC = () => {
 
     setConfig(importedConfig);
     setSlides(result.slides);
-    
+
     // Try to match the color palette to a theme
     const paletteColors = result.colorPalette.split(',');
     let matchedTheme = result.colorPalette;
-    
+
     // Find matching theme by comparing colors
     for (const theme of COLOR_THEMES) {
       const themeColors = theme.colors;
       // Simple heuristic: check if the first color (background) matches approximately
-      if (paletteColors[0] && themeColors[0] && 
+      if (paletteColors[0] && themeColors[0] &&
           areColorsSimilar(paletteColors[0], themeColors[0])) {
         matchedTheme = theme.colors.join(',');
         break;
       }
     }
-    
+
     setColorPalette(matchedTheme);
     setTotalCost(0);
-    
+
     // Go directly to COMPLETE status since we already have HTML
     setStatus(GenerationStatus.COMPLETE);
-    
+
     // Save topic to localStorage
     localStorage.setItem('gendeck_topic', result.topic);
   };
@@ -269,10 +280,10 @@ const App: React.FC = () => {
     // Normalize colors
     const c1 = color1.toLowerCase().trim();
     const c2 = color2.toLowerCase().trim();
-    
+
     // Exact match
     if (c1 === c2) return true;
-    
+
     // Check for shorthand hex (#fff vs #ffffff)
     const normalize = (c: string) => {
       if (c.startsWith('#') && c.length === 4) {
@@ -280,7 +291,7 @@ const App: React.FC = () => {
       }
       return c;
     };
-    
+
     return normalize(c1) === normalize(c2);
   };
 
@@ -288,25 +299,25 @@ const App: React.FC = () => {
   const confirmNewDeck = () => {
     // 1. Stop any ongoing generation processes
     shouldStopRef.current = true;
-    
+
     // Clear any pending processing timeout
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
     }
-    
+
     // Abort any ongoing outline generation
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     // 2. Reset UI State
     setIsPaused(false);
     setShowExportMenu(false);
     setShowNewDeckConfirm(false);
     setStatus(GenerationStatus.IDLE);
-    
+
     // 3. Reset Data State - all to initial values
     setSlides([]);
     setConfig(null);
@@ -314,10 +325,10 @@ const App: React.FC = () => {
     setCurrentSlideId(null);
     setColorPalette('');
     setIsGeneratingNotes(false);
-    
+
     // 4. Clear autosave data
     localStorage.removeItem(AUTOSAVE_KEY);
-    
+
     // 5. Reset the stop flag so future generations can proceed
     shouldStopRef.current = false;
   };
@@ -332,62 +343,167 @@ const App: React.FC = () => {
   // Save current deck to database
   const handleSaveToDatabase = async () => {
     if (!config || slides.length === 0 || !hasDatabase) return;
-    
+
     setIsSavingToDb(true);
+    setSaveStatus('idle');
+    
     try {
-      const response = await deckApi.create({
-        topic: config.topic,
-        audience: config.audience,
-        purpose: config.purpose,
-        colorPalette,
-        slides,
-        totalCost,
-      });
-      
-      setCurrentDbDeckId(response.data.id);
-      alert(lang === 'zh' ? '保存成功！' : 'Saved to database!');
+      // Generate full HTML for export
+      const fullHtml = getFullHtml();
+
+      // If deck already exists, save a version first
+      if (currentDbDeckId) {
+        try {
+          await deckApi.saveVersion(currentDbDeckId, {
+            topic: config.topic,
+            fullHtml,
+            outline: slides.map(s => ({
+              title: s.title,
+              contentPoints: s.contentPoints,
+              layoutSuggestion: s.layoutSuggestion,
+              notes: s.notes
+            })),
+            colorPalette,
+          });
+        } catch (versionError) {
+          console.warn('Failed to save version, continuing with deck update:', versionError);
+        }
+        
+        // Update existing deck
+        await deckApi.update(currentDbDeckId, {
+          topic: config.topic,
+          audience: config.audience,
+          purpose: config.purpose,
+          colorPalette,
+          slides: slides.map((s, i) => ({ ...s, orderIndex: i })),
+          totalCost,
+          fullHtml,
+          documentContent: config.documentContent,
+          outlineProvider: config.apiSettings.model.provider,
+          outlineModel: config.apiSettings.model.modelId,
+          outlineBaseUrl: config.apiSettings.model.baseUrl,
+          slidesProvider: config.apiSettings.model.provider,
+          slidesModel: config.apiSettings.model.modelId,
+          slidesBaseUrl: config.apiSettings.model.baseUrl,
+        });
+      } else {
+        // Create new deck
+        const response = await deckApi.create({
+          topic: config.topic,
+          audience: config.audience,
+          purpose: config.purpose,
+          colorPalette,
+          slides,
+          totalCost,
+          fullHtml,
+          documentContent: config.documentContent,
+          outlineProvider: config.apiSettings.model.provider,
+          outlineModel: config.apiSettings.model.modelId,
+          outlineBaseUrl: config.apiSettings.model.baseUrl,
+          slidesProvider: config.apiSettings.model.provider,
+          slidesModel: config.apiSettings.model.modelId,
+          slidesBaseUrl: config.apiSettings.model.baseUrl,
+        });
+        setCurrentDbDeckId(response.data.id);
+      }
+
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error: any) {
       console.error('Failed to save to database:', error);
-      alert(lang === 'zh' ? '保存失败: ' + error.message : 'Save failed: ' + error.message);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setIsSavingToDb(false);
     }
   };
 
-  // Load deck from database
-  const handleLoadFromDatabase = (deckData: {
-    id: string;
-    topic: string;
-    slides: SlideData[];
-    colorPalette: string;
-  }) => {
-    setCurrentDbDeckId(deckData.id);
-    setSlides(deckData.slides);
-    setColorPalette(deckData.colorPalette);
+  // Helper to get baseUrl for a provider
+  const getBaseUrl = (providerId: string): string | undefined => {
+    return PROVIDERS.find(p => p.id === providerId)?.defaultBaseUrl;
+  };
+
+  // Load deck from database at specific stage
+  const handleLoadFromDatabase = (deck: DatabaseDeckWithSlides, stage: import('./components/DeckBrowser').LoadStage) => {
+    setCurrentDbDeckId(deck.id);
+
+    // Use slides_provider/model as the single model (backward compatible)
+    const provider = (deck.slides_provider as ApiProvider) || (deck.outline_provider as ApiProvider) || 'google';
+    const modelId = deck.slides_model || deck.outline_model || 'gemini-3-flash-preview';
+    const baseUrl = deck.slides_base_url || deck.outline_base_url || getBaseUrl(provider);
     
-    // Reconstruct config
-    const loadedConfig: PresentationConfig = {
-      topic: deckData.topic,
-      audience: '',
-      purpose: '',
-      slideCount: deckData.slides.length,
-      apiSettings: config?.apiSettings || {
-        apiKeys: {},
-        outline: { provider: 'google', modelId: 'gemini-3-flash-preview' },
-        slides: { provider: 'google', modelId: 'gemini-3-flash-preview' },
+    const baseConfig: PresentationConfig = {
+      topic: deck.topic,
+      audience: deck.audience || '',
+      purpose: deck.purpose || '',
+      slideCount: deck.slide_count || 0,
+      apiSettings: {
+        apiKeys: getStoredApiKeys(),
+        model: {
+          provider,
+          modelId,
+          baseUrl,
+        },
       },
-      documentContent: '',
+      documentContent: deck.document_content || '',
     };
-    
-    setConfig(loadedConfig);
-    setStatus(GenerationStatus.COMPLETE);
-    localStorage.setItem('gendeck_topic', deckData.topic);
+
+    switch (stage) {
+      case 'input':
+        // Load into input form stage
+        setConfig(baseConfig);
+        setColorPalette(deck.color_palette || '');
+        setSlides([]);
+        setStatus(GenerationStatus.IDLE);
+        localStorage.setItem('gendeck_topic', deck.topic);
+        localStorage.setItem('gendeck_audience', deck.audience || '');
+        localStorage.setItem('gendeck_purpose', deck.purpose || '');
+        localStorage.setItem('gendeck_content', deck.document_content || '');
+        break;
+
+      case 'outline':
+        // Load into outline preview stage
+        if (!deck.full_html) {
+          alert(language === 'zh' ? '错误：此演示文稿没有保存完整HTML' : 'Error: Full HTML not available');
+          return;
+        }
+        const parsed = parseExportedHtml(deck.full_html);
+        setSlides(parsed.slides.map((s, i) => ({
+          ...s,
+          id: generateId(),
+          htmlContent: null, // Will regenerate
+          isRegenerating: false,
+        })));
+        setConfig(baseConfig);
+        setColorPalette(deck.color_palette || parsed.colorPalette);
+        setStatus(GenerationStatus.REVIEWING_OUTLINE);
+        localStorage.setItem('gendeck_topic', deck.topic);
+        break;
+
+      case 'deck':
+        // Load into deck preview stage (full HTML)
+        if (!deck.full_html) {
+          alert(language === 'zh' ? '错误：此演示文稿没有保存完整HTML' : 'Error: Full HTML not available');
+          return;
+        }
+        const parsedDeck = parseExportedHtml(deck.full_html);
+        setSlides(parsedDeck.slides.map((s, i) => ({
+          ...s,
+          id: generateId(),
+          isRegenerating: false,
+        })));
+        setConfig(baseConfig);
+        setColorPalette(deck.color_palette || parsedDeck.colorPalette);
+        setStatus(GenerationStatus.COMPLETE);
+        localStorage.setItem('gendeck_topic', deck.topic);
+        break;
+    }
   };
 
   // Save single slide to database (for auto-save)
   const handleSaveSlideToDb = async (slideIndex: number, slide: SlideData) => {
     if (!currentDbDeckId || !hasDatabase) return;
-    
+
     try {
       await slideApi.save(currentDbDeckId, slideIndex, slide);
     } catch (error) {
@@ -396,14 +512,26 @@ const App: React.FC = () => {
   };
 
   // Restore slide from history
-  const handleRestoreSlide = (restoredSlide: SlideData) => {
-    if (!currentSlideId) return;
+  const handleRestoreVersion = (version: import('./services/databaseService').DeckHistoryItem) => {
+    if (!version.full_html) {
+      alert(language === 'zh' ? '此版本没有保存完整HTML' : 'This version has no full HTML');
+      return;
+    }
     
-    setSlides(prev => prev.map(s => 
-      s.id === currentSlideId 
-        ? { ...restoredSlide, id: s.id, isRegenerating: false }
-        : s
-    ));
+    // Parse the full HTML like loading from database
+    const parsed = parseExportedHtml(version.full_html);
+    setSlides(parsed.slides.map((s, i) => ({
+      ...s,
+      id: generateId(),
+      isRegenerating: false,
+    })));
+    setColorPalette(version.color_palette || parsed.colorPalette);
+    
+    // Update topic if different
+    if (config && version.topic !== config.topic) {
+      setConfig({ ...config, topic: version.topic });
+      localStorage.setItem('gendeck_topic', version.topic);
+    }
   };
 
   // Step 1: Generate Outline Only
@@ -420,8 +548,8 @@ const App: React.FC = () => {
 
     try {
       const result = await generateOutline(
-        newConfig.documentContent, 
-        newConfig.topic, 
+        newConfig.documentContent,
+        newConfig.topic,
         newConfig.audience,
         newConfig.purpose, // Pass the purpose here
         newConfig.slideCount,
@@ -430,7 +558,7 @@ const App: React.FC = () => {
       );
 
       setTotalCost(prev => prev + result.cost);
-      
+
       const initialSlides: SlideData[] = result.data.map(item => ({
         id: generateId(),
         title: item.title,
@@ -469,7 +597,7 @@ const App: React.FC = () => {
   const handleGenerateNotes = async () => {
     if (!config || slides.length === 0) return;
     setIsGeneratingNotes(true);
-    
+
     try {
       const outlineItems = slides.map(s => ({
         title: s.title,
@@ -502,14 +630,14 @@ const App: React.FC = () => {
   // Step 2: Confirm Outline, Set Palette, and Start HTML Generation
   const handleConfirmOutline = (selectedColorPalette: string) => {
     if (!config || slides.length === 0) return;
-    
+
     setColorPalette(selectedColorPalette);
     setStatus(GenerationStatus.GENERATING_SLIDES);
-    
+
     // Reset stop flags
     shouldStopRef.current = false;
     setIsPaused(false);
-    
+
     // processSlideQueue will handle the rest
     processSlideQueue(slides, config, selectedColorPalette);
   };
@@ -543,9 +671,9 @@ const App: React.FC = () => {
       };
 
       const result = await generateSlideHtml(
-        outlineItem, 
+        outlineItem,
         colorPalette, // Use stored palette
-        config.audience, 
+        config.audience,
         config.apiSettings,
         config.topic,
         slideIndex + 1,
@@ -554,7 +682,7 @@ const App: React.FC = () => {
       );
 
       setTotalCost(prev => prev + result.cost);
-      
+
       setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: result.data, isRegenerating: false } : s));
     } catch (e) {
       setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false } : s));
@@ -614,7 +742,7 @@ const App: React.FC = () => {
       top: 0;
       left: 0;
       overflow: hidden;
-      display: none; 
+      display: none;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -700,35 +828,35 @@ const App: React.FC = () => {
         size: 1920px 1080px;
         margin: 0;
       }
-      body, html { 
-        margin: 0 !important; 
-        padding: 0 !important; 
+      body, html {
+        margin: 0 !important;
+        padding: 0 !important;
         background-color: transparent !important;
         width: 1920px !important;
         height: auto !important;
         overflow: visible !important;
       }
-      #deck-container { 
-        position: static !important; 
-        width: 1920px !important; 
-        height: auto !important; 
-        transform: none !important; 
-        display: block !important; 
+      #deck-container {
+        position: static !important;
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        display: block !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
       }
-      .slide { 
-        position: relative !important; 
+      .slide {
+        position: relative !important;
         width: 1920px !important;
         height: 1080px !important;
-        top: auto !important; 
-        left: auto !important; 
-        display: block !important; 
-        margin: 0 !important; 
+        top: auto !important;
+        left: auto !important;
+        display: block !important;
+        margin: 0 !important;
         padding: 0 !important;
-        page-break-after: always !important; 
-        break-after: page !important; 
+        page-break-after: always !important;
+        break-after: page !important;
         box-shadow: none !important;
         overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
@@ -736,7 +864,7 @@ const App: React.FC = () => {
         background-color: var(--c-bg) !important;
         border: none !important;
       }
-      
+
       /* Force theme colors in print */
       .slide * {
          -webkit-print-color-adjust: exact !important;
@@ -749,18 +877,18 @@ const App: React.FC = () => {
 </head>
 <body class="theme-root">
   <div class="progress-bar" id="progressBar" style="width: 0%"></div>
-  
-  <button class="theme-toggle no-print" onclick="toggleTheme()" id="themeBtn">☀ Light Mode</button>
+
+  <button class="theme-toggle no-print" id="themeBtn">☀ Light Mode</button>
 
   <div id="deck-container">
     ${slides.map((s, i) => s.htmlContent).join('\n')}
   </div>
 
   <div class="nav-controls no-print">
-    <div class="nav-btn" onclick="prevSlide()">←</div>
+    <div class="nav-btn" id="prevBtn">←</div>
     <div class="page-indicator" id="pageIndicator">1 / ${slides.length}</div>
-    <div class="nav-btn" onclick="nextSlide()">→</div>
-    <div class="nav-btn" onclick="toggleFullScreen()" title="Fullscreen">⛶</div>
+    <div class="nav-btn" id="nextBtn">→</div>
+    <div class="nav-btn" id="fullscreenBtn" title="Fullscreen">⛶</div>
   </div>
 
   <script>
@@ -807,7 +935,7 @@ const App: React.FC = () => {
     function toggleTheme() {
       isLight = !isLight;
       const container = document.getElementById('deck-container');
-      
+
       slides.forEach(slide => {
         if (isLight) {
           slide.classList.add('theme-light');
@@ -826,14 +954,20 @@ const App: React.FC = () => {
       const winH = window.innerHeight;
       const scaleX = winW / 1920;
       const scaleY = winH / 1080;
-      const scale = Math.min(scaleX, scaleY) * 0.95; 
-      
+      const scale = Math.min(scaleX, scaleY) * 0.95;
+
       container.style.transform = \`translate(-50%, -50%) scale(\${scale})\`;
     }
 
+    // Attach event listeners to buttons
+    document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+    document.getElementById('prevBtn').addEventListener('click', prevSlide);
+    document.getElementById('nextBtn').addEventListener('click', nextSlide);
+    document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreen);
+
     window.addEventListener('resize', fitSlides);
-    fitSlides(); 
-    updateSlide(); 
+    fitSlides();
+    updateSlide();
 
     // Keyboard Nav
     document.addEventListener('keydown', (e) => {
@@ -885,7 +1019,7 @@ const App: React.FC = () => {
       </script>
     `;
     const htmlToPrint = fullHtml.replace('</body>', `${printScript}</body>`);
-    
+
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.open();
@@ -919,7 +1053,7 @@ const App: React.FC = () => {
 
   const currentSlide = slides.find(s => s.id === currentSlideId);
   const hasNotes = slides.some(s => s.notes && s.notes.trim().length > 0);
-  
+
   // Calculate generation progress
   const generatedCount = slides.filter(s => s.htmlContent).length;
   const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
@@ -937,11 +1071,11 @@ const App: React.FC = () => {
     <div className={`h-screen flex flex-col overflow-hidden font-sans relative ${themeClasses}`}>
       {/* Animated Background Gradient */}
       <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] ${bgGradient} pointer-events-none`} />
-      
+
       {/* Progress Bar Overlay */}
       {status === GenerationStatus.GENERATING_SLIDES && (
         <div className="absolute top-0 left-0 w-full h-1 bg-slate-800/50 z-[100]">
-           <div 
+           <div
              className={`h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(168,85,247,0.5)] ${isPaused ? 'opacity-50' : ''}`}
              style={{ width: `${progressPercent}%` }}
            />
@@ -960,7 +1094,7 @@ const App: React.FC = () => {
             isDark ? 'from-white via-slate-200 to-slate-400' : 'from-gray-900 via-gray-700 to-gray-600'
           )}>GenDeck</h1>
         </div>
-        
+
         <div className="flex items-center gap-3">
             {/* Theme Toggle */}
             <button
@@ -977,7 +1111,7 @@ const App: React.FC = () => {
             </button>
 
             {/* Language Switcher */}
-            <button 
+            <button
                 onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
                 className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
                 title="Switch Language"
@@ -1015,24 +1149,57 @@ const App: React.FC = () => {
                   <Database className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{language === 'zh' ? '浏览' : 'Browse'}</span>
                 </button>
-                
+
                 {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && slides.length > 0 && (
                   <button
                     onClick={handleSaveToDatabase}
                     disabled={isSavingToDb}
-                    className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
+                    className={cx(
+                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                      saveStatus === 'success' && 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/30',
+                      saveStatus === 'error' && 'bg-gradient-to-r from-red-500 to-rose-500 shadow-red-500/30',
+                      saveStatus === 'idle' && 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20',
+                      'text-white shadow-lg',
+                      'border border-white/20',
+                      'hover:shadow-xl hover:scale-105 active:scale-95',
+                      'disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100',
+                      'relative overflow-hidden'
+                    )}
                     title={language === 'zh' ? '保存到数据库' : 'Save to database'}
                   >
+                    {/* Status indicator dot */}
+                    <span className={cx(
+                      'absolute top-1 right-1 w-1.5 h-1.5 rounded-full transition-all',
+                      saveStatus === 'success' && 'bg-green-300 animate-pulse',
+                      saveStatus === 'error' && 'bg-red-300',
+                      saveStatus === 'idle' && 'bg-emerald-300/50'
+                    )} />
+                    
                     {isSavingToDb ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span className="hidden sm:inline">{language === 'zh' ? '保存中...' : 'Saving...'}</span>
+                      </>
+                    ) : saveStatus === 'success' ? (
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{language === 'zh' ? '已保存' : 'Saved!'}</span>
+                      </>
+                    ) : saveStatus === 'error' ? (
+                      <>
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{language === 'zh' ? '失败' : 'Failed'}</span>
+                      </>
                     ) : (
-                      <Save className="w-3.5 h-3.5" />
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{language === 'zh' ? '保存' : 'Save'}</span>
+                      </>
                     )}
-                    <span className="hidden sm:inline">{language === 'zh' ? '保存' : 'Save'}</span>
                   </button>
                 )}
 
-                {currentSlide && currentSlideId && (
+                {currentDbDeckId && (
                   <button
                     onClick={() => setShowSlideHistory(true)}
                     className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
@@ -1050,7 +1217,7 @@ const App: React.FC = () => {
                 {t('outlineEditor')}
             </div>
             )}
-            
+
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
@@ -1075,7 +1242,7 @@ const App: React.FC = () => {
 
                  {/* Export Dropdown */}
                  <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setShowExportMenu(!showExportMenu)}
                       className={cx('flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border', th.button.primary)}
                     >
@@ -1083,34 +1250,34 @@ const App: React.FC = () => {
                       <span className="hidden sm:inline">{t('otherFormats')}</span>
                       <ChevronDown className="w-3 h-3" />
                     </button>
-                    
+
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
                         <div className={cx('absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border', isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-gray-200')}>
                           <div className="p-1">
-                             <button 
+                             <button
                                onClick={handleExportHtml}
                                className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <FileJson className="w-4 h-4" />
                                {t('downloadHtml')}
                              </button>
-                             <button 
+                             <button
                                onClick={handleExportPdf}
                                className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <Printer className="w-4 h-4" />
                                {t('exportPdf')}
                              </button>
-                             <button 
+                             <button
                                onClick={handleExportMarkdown}
                                className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <FileText className="w-4 h-4" />
                                {t('exportOutline')}
                              </button>
-                             <button 
+                             <button
                                onClick={handleExportNotes}
                                className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
@@ -1123,7 +1290,7 @@ const App: React.FC = () => {
                     )}
                  </div>
 
-                 <button 
+                 <button
                     onClick={handlePreview}
                     disabled={slides.length === 0}
                     className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1133,9 +1300,9 @@ const App: React.FC = () => {
                  </button>
               </div>
             )}
-            
+
             {status !== GenerationStatus.IDLE && (
-              <button 
+              <button
                 onClick={handleNewDeck}
                 className={cx('flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ml-2', th.button.primary)}
                 title={t('new')}
@@ -1151,10 +1318,10 @@ const App: React.FC = () => {
       <main className={cx('flex-1 overflow-hidden relative', !isDark && 'bg-gray-50/50')}>
         {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
           <div className="h-full overflow-y-auto">
-            <InputForm 
-              onGenerate={handleGenerateOutline} 
+            <InputForm
+              onGenerate={handleGenerateOutline}
               onCancel={handleCancelOutlineGeneration}
-              isGenerating={status === GenerationStatus.GENERATING_OUTLINE} 
+              isGenerating={status === GenerationStatus.GENERATING_OUTLINE}
               lang={language}
               t={t}
               theme={theme}
@@ -1164,9 +1331,9 @@ const App: React.FC = () => {
         )}
 
         {status === GenerationStatus.REVIEWING_OUTLINE && (
-          <OutlineEditor 
-            slides={slides} 
-            onUpdateSlides={handleUpdateSlides} 
+          <OutlineEditor
+            slides={slides}
+            onUpdateSlides={handleUpdateSlides}
             onConfirm={handleConfirmOutline}
             onCancel={handleCancelOutline}
             lang={language}
@@ -1177,17 +1344,17 @@ const App: React.FC = () => {
 
         {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
           <div className="flex h-full">
-            <Sidebar 
-              slides={slides} 
-              currentSlideId={currentSlideId} 
-              onSelectSlide={setCurrentSlideId} 
+            <Sidebar
+              slides={slides}
+              currentSlideId={currentSlideId}
+              onSelectSlide={setCurrentSlideId}
               isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES && !isPaused}
               lang={language}
               t={t}
               theme={theme}
             />
             <div className="flex-1 relative">
-               <SlidePreview 
+               <SlidePreview
                  slide={currentSlide}
                  onRegenerate={handleRegenerateSlide}
                  colorPalette={colorPalette}
@@ -1195,11 +1362,11 @@ const App: React.FC = () => {
                  t={t}
                  theme={theme}
                />
-               
+
                {/* Notes Generation CTA Overlay if complete but no notes */}
                {status === GenerationStatus.COMPLETE && !hasNotes && !isGeneratingNotes && (
                    <div className="absolute bottom-6 right-6 z-40">
-                      <button 
+                      <button
                         onClick={handleGenerateNotes}
                         className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border', isDark ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20' : 'bg-white/90 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300 shadow-gray-200/50')}
                       >
@@ -1224,7 +1391,7 @@ const App: React.FC = () => {
 
       {/* New Deck Confirmation Modal */}
       {showNewDeckConfirm && (
-        <div 
+        <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) cancelNewDeck();
@@ -1232,7 +1399,7 @@ const App: React.FC = () => {
         >
           {/* Backdrop */}
           <div className={cx('absolute inset-0 backdrop-blur-sm transition-opacity', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
-          
+
           {/* Modal Content */}
           <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
             {/* Header */}
@@ -1245,7 +1412,7 @@ const App: React.FC = () => {
                 <p className={cx('text-sm', th.text.muted)}>{t('confirmNew')}</p>
               </div>
             </div>
-            
+
             {/* Body */}
             <div className="px-6 py-4">
               <div className={cx('flex items-start gap-3 text-sm', th.text.secondary)}>
@@ -1255,7 +1422,7 @@ const App: React.FC = () => {
                 <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
               <button
@@ -1288,13 +1455,13 @@ const App: React.FC = () => {
       <SlideHistory
         isOpen={showSlideHistory}
         onClose={() => setShowSlideHistory(false)}
-        slideId={currentSlideId}
-        slideIndex={slides.findIndex(s => s.id === currentSlideId)}
-        slideTitle={currentSlide?.title || ''}
-        onRestore={handleRestoreSlide}
+        deckId={currentDbDeckId}
+        onRestore={handleRestoreVersion}
         lang={language}
         theme={theme}
       />
+
+
     </div>
   );
 };

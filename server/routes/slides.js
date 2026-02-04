@@ -1,18 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const slideService = require('../services/slideService');
+const deckHistoryService = require('../services/deckHistoryService');
 
-// GET /api/slides/:slideId/history - Get history for a slide
+// GET /api/slides/:slideId/history - Get history for a slide (now returns deck history)
 router.get('/:slideId/history', async (req, res) => {
   try {
+    // Get the slide to find its deck
+    const slideResult = await slideService.getSlideById(req.params.slideId);
+    if (!slideResult) {
+      return res.status(404).json({ success: false, error: 'Slide not found' });
+    }
+    
+    // Return deck-level history instead
     const { limit = 50 } = req.query;
-    const history = await slideService.getSlideHistory(
-      req.params.slideId, 
-      parseInt(limit)
-    );
+    const history = await deckHistoryService.getVersions(slideResult.deck_id, parseInt(limit));
     res.json({ success: true, data: history });
   } catch (error) {
-    console.error('Error fetching slide history:', error);
+    console.error('Error fetching history:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -20,7 +25,7 @@ router.get('/:slideId/history', async (req, res) => {
 // GET /api/slides/history/:historyId - Get a specific history version
 router.get('/history/:historyId', async (req, res) => {
   try {
-    const version = await slideService.getHistoryVersion(req.params.historyId);
+    const version = await deckHistoryService.getVersion(req.params.historyId);
     if (!version) {
       return res.status(404).json({ success: false, error: 'Version not found' });
     }
@@ -31,7 +36,7 @@ router.get('/history/:historyId', async (req, res) => {
   }
 });
 
-// POST /api/slides/:slideId/restore - Restore to a historical version
+// POST /api/slides/:slideId/restore - Restore to a historical version (loads deck version)
 router.post('/:slideId/restore', async (req, res) => {
   try {
     const { historyId } = req.body;
@@ -42,14 +47,15 @@ router.post('/:slideId/restore', async (req, res) => {
       });
     }
     
-    const restored = await slideService.restoreSlideVersion(
-      req.params.slideId,
-      historyId
-    );
+    // Get the deck version
+    const version = await deckHistoryService.getVersion(historyId);
+    if (!version) {
+      return res.status(404).json({ success: false, error: 'Version not found' });
+    }
     
-    res.json({ success: true, data: restored });
+    res.json({ success: true, data: version });
   } catch (error) {
-    console.error('Error restoring slide:', error);
+    console.error('Error restoring version:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -66,17 +72,17 @@ router.put('/:slideId', async (req, res) => {
   }
 });
 
-// GET /api/decks/:deckId/slides/history - Get all slide history for a deck
+// GET /api/decks/:deckId/slides/history - Get deck history
 router.get('/deck/:deckId/history', async (req, res) => {
   try {
-    const { limitPerSlide = 10 } = req.query;
-    const history = await slideService.getDeckSlideHistory(
+    const { limit = 50 } = req.query;
+    const history = await deckHistoryService.getVersions(
       req.params.deckId,
-      parseInt(limitPerSlide)
+      parseInt(limit)
     );
     res.json({ success: true, data: history });
   } catch (error) {
-    console.error('Error fetching deck slide history:', error);
+    console.error('Error fetching deck history:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

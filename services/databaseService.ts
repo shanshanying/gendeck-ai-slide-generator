@@ -30,6 +30,14 @@ export interface DatabaseDeck {
   color_palette: string;
   slide_count: number;
   total_cost: number;
+  full_html?: string;
+  document_content?: string;
+  outline_provider?: string;
+  outline_model?: string;
+  outline_base_url?: string;
+  slides_provider?: string;
+  slides_model?: string;
+  slides_base_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +69,18 @@ export interface SlideHistoryItem {
   html_content: string;
   notes: string;
   layout_suggestion: string;
+  version: number;
+  saved_at: string;
+}
+
+// Deck history (full deck versions)
+export interface DeckHistoryItem {
+  id: string;
+  deck_id: string;
+  topic: string;
+  full_html?: string;
+  outline?: any;
+  color_palette?: string;
   version: number;
   saved_at: string;
 }
@@ -109,6 +129,14 @@ export const deckApi = {
     colorPalette?: string;
     slides: SlideData[];
     totalCost?: number;
+    fullHtml?: string;
+    documentContent?: string;
+    outlineProvider?: string;
+    outlineModel?: string;
+    outlineBaseUrl?: string;
+    slidesProvider?: string;
+    slidesModel?: string;
+    slidesBaseUrl?: string;
   }): Promise<{ success: boolean; data: { id: string } }> =>
     api('/decks', {
       method: 'POST',
@@ -119,6 +147,14 @@ export const deckApi = {
         colorPalette: deck.colorPalette || '',
         slides: deck.slides.map((s, i) => slideDataToDbSlide(s, i)),
         totalCost: deck.totalCost || 0,
+        fullHtml: deck.fullHtml,
+        documentContent: deck.documentContent,
+        outlineProvider: deck.outlineProvider,
+        outlineModel: deck.outlineModel,
+        outlineBaseUrl: deck.outlineBaseUrl,
+        slidesProvider: deck.slidesProvider,
+        slidesModel: deck.slidesModel,
+        slidesBaseUrl: deck.slidesBaseUrl,
       }),
     }),
 
@@ -136,6 +172,28 @@ export const deckApi = {
   // Search decks
   search: (query: string, limit = 20): Promise<{ success: boolean; data: DatabaseDeck[] }> =>
     api(`/decks/search?q=${encodeURIComponent(query)}&limit=${limit}`),
+
+  // Download full HTML
+  downloadHtml: (id: string): Promise<Blob> =>
+    fetch(`${API_BASE_URL}/decks/${id}/html`).then(r => r.blob()),
+
+  // Deck History
+  saveVersion: (deckId: string, version: {
+    topic: string;
+    fullHtml?: string;
+    outline?: any;
+    colorPalette?: string;
+  }): Promise<{ success: boolean; data: DeckHistoryItem }> =>
+    api(`/decks/${deckId}/history`, {
+      method: 'POST',
+      body: JSON.stringify(version),
+    }),
+
+  getVersions: (deckId: string, limit = 50): Promise<{ success: boolean; data: DeckHistoryItem[] }> =>
+    api(`/decks/${deckId}/history?limit=${limit}`),
+
+  getVersion: (historyId: string): Promise<{ success: boolean; data: DeckHistoryItem }> =>
+    api(`/decks/history/${historyId}`),
 };
 
 // Slide API

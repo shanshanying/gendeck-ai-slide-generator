@@ -1,20 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, FileText, Trash2, X, FolderOpen, Loader2 } from 'lucide-react';
-import { deckApi, DeckApi, DatabaseDeck, DatabaseDeckWithSlides, dbSlideToSlideData } from '../services/databaseService';
-import { SlideData } from '../types';
+import { Search, Clock, FileText, Trash2, X, FolderOpen, Loader2, Download, ChevronDown, Type, Layout, Presentation } from 'lucide-react';
+import { deckApi, DatabaseDeck, DatabaseDeckWithSlides } from '../services/databaseService';
 import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
+
+export type LoadStage = 'input' | 'outline' | 'deck';
 
 interface DeckBrowserProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoadDeck: (deck: {
-    id: string;
-    topic: string;
-    slides: SlideData[];
-    colorPalette: string;
-  }) => void;
+  onLoadDeck: (deck: DatabaseDeckWithSlides, stage: LoadStage) => void;
   lang: 'en' | 'zh';
   theme: 'dark' | 'light';
 }
@@ -25,14 +21,18 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [selectedDeck, setSelectedDeck] = useState<DatabaseDeck | null>(null);
+  const [showLoadOptions, setShowLoadOptions] = useState(false);
 
   const th = getThemeClasses(theme);
   const isDark = theme === 'dark';
-  const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (isOpen) {
       loadDecks();
+      setSelectedDeck(null);
+      setShowLoadOptions(false);
     }
   }, [isOpen]);
 
@@ -75,6 +75,10 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
     try {
       await deckApi.delete(id);
       setDecks(decks.filter(d => d.id !== id));
+      if (selectedDeck?.id === id) {
+        setSelectedDeck(null);
+        setShowLoadOptions(false);
+      }
     } catch (err) {
       alert(lang === 'zh' ? '删除失败' : 'Delete failed');
     } finally {
@@ -82,23 +86,44 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
     }
   };
 
-  const handleLoad = async (deck: DatabaseDeck) => {
+  const handleSelectDeck = (deck: DatabaseDeck) => {
+    setSelectedDeck(deck);
+    setShowLoadOptions(true);
+  };
+
+  const handleLoad = async (stage: LoadStage) => {
+    if (!selectedDeck) return;
+    
     setLoading(true);
     try {
-      const response = await deckApi.get(deck.id);
+      const response = await deckApi.get(selectedDeck.id);
       const fullDeck = response.data;
-      
-      onLoadDeck({
-        id: fullDeck.id,
-        topic: fullDeck.topic,
-        slides: fullDeck.slides.map(dbSlideToSlideData),
-        colorPalette: fullDeck.color_palette,
-      });
+      onLoadDeck(fullDeck, stage);
       onClose();
     } catch (err) {
       alert(lang === 'zh' ? '加载失败' : 'Failed to load deck');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async (deck: DatabaseDeck, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDownloadingId(deck.id);
+    try {
+      const blob = await deckApi.downloadHtml(deck.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${deck.topic.replace(/\s+/g, '-').toLowerCase()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(lang === 'zh' ? '下载失败：此演示文稿没有保存完整HTML' : 'Download failed: Full HTML not available');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -125,7 +150,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
       
       {/* Modal */}
       <div className={cx(
-        'relative w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl border flex flex-col',
+        'relative w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl border flex flex-col',
         isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
       )}>
         {/* Header */}
@@ -207,49 +232,117 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
               {decks.map((deck) => (
                 <div
                   key={deck.id}
-                  onClick={() => handleLoad(deck)}
+                  onClick={() => handleSelectDeck(deck)}
                   className={cx(
-                    'group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all',
-                    isDark 
-                      ? 'bg-slate-800/50 border-white/5 hover:bg-slate-800 hover:border-purple-500/30' 
-                      : 'bg-gray-50 border-gray-200 hover:bg-white hover:border-purple-300'
+                    'group p-4 rounded-xl border cursor-pointer transition-all',
+                    selectedDeck?.id === deck.id
+                      ? (isDark ? 'bg-purple-500/10 border-purple-500/50' : 'bg-purple-50 border-purple-300')
+                      : (isDark ? 'bg-slate-800/50 border-white/5 hover:bg-slate-800 hover:border-white/10' : 'bg-gray-50 border-gray-200 hover:bg-white hover:border-gray-300')
                   )}
                 >
-                  <div className={cx(
-                    'w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold',
-                    isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'
-                  )}>
-                    {deck.slide_count}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className={cx('font-medium truncate', th.text.primary)}>{deck.topic}</h4>
-                    <div className={cx('flex items-center gap-3 text-xs mt-1', th.text.muted)}>
-                      {deck.audience && <span>{deck.audience}</span>}
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(deck.updated_at)}
-                      </span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cx(
+                        'w-14 h-14 rounded-lg flex items-center justify-center text-lg font-bold',
+                        isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'
+                      )}>
+                        {deck.slide_count}
+                      </div>
+                      
+                      <div>
+                        <h4 className={cx('font-medium', th.text.primary)}>{deck.topic}</h4>
+                        <div className={cx('flex items-center gap-3 text-xs mt-1', th.text.muted)}>
+                          {deck.audience && <span>{deck.audience}</span>}
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDate(deck.updated_at)}
+                          </span>
+                        </div>
+                        
+                        {/* Load Options - show when selected */}
+                        {selectedDeck?.id === deck.id && showLoadOptions && (
+                          <div className="flex items-center gap-2 mt-3">
+                            <span className={cx('text-xs mr-1', th.text.muted)}>
+                              {lang === 'zh' ? '加载到:' : 'Load to:'}
+                            </span>
+                            
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleLoad('input'); }}
+                              disabled={loading}
+                              className={cx(
+                                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                isDark ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                              )}
+                              title={lang === 'zh' ? '加载源文本、目标受众等' : 'Load source text, target audience, etc.'}
+                            >
+                              <Type className="w-3 h-3" />
+                              {lang === 'zh' ? '输入' : 'Input'}
+                            </button>
+                            
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleLoad('outline'); }}
+                              disabled={loading}
+                              className={cx(
+                                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                isDark ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+                              )}
+                              title={lang === 'zh' ? '加载大纲和主题' : 'Load outline and themes'}
+                            >
+                              <Layout className="w-3 h-3" />
+                              {lang === 'zh' ? '大纲' : 'Outline'}
+                            </button>
+                            
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleLoad('deck'); }}
+                              disabled={loading}
+                              className={cx(
+                                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                isDark ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
+                              )}
+                              title={lang === 'zh' ? '加载完整演示文稿' : 'Load full deck'}
+                            >
+                              <Presentation className="w-3 h-3" />
+                              {lang === 'zh' ? '演示' : 'Deck'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleDownload(deck, e)}
+                        disabled={downloadingId === deck.id}
+                        className={cx(
+                          'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
+                          isDark ? 'hover:bg-blue-500/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600'
+                        )}
+                        title={lang === 'zh' ? '下载HTML' : 'Download HTML'}
+                      >
+                        {downloadingId === deck.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4" />
+                        )}
+                      </button>
+
+                      <button
+                        onClick={(e) => handleDelete(deck.id, e)}
+                        disabled={deletingId === deck.id}
+                        className={cx(
+                          'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
+                          isDark ? 'hover:bg-red-500/10 hover:text-red-400' : 'hover:bg-red-50 hover:text-red-600'
+                        )}
+                        title={lang === 'zh' ? '删除' : 'Delete'}
+                      >
+                        {deletingId === deck.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    onClick={(e) => handleDelete(deck.id, e)}
-                    disabled={deletingId === deck.id}
-                    className={cx(
-                      'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
-                      isDark 
-                        ? 'hover:bg-red-500/10 hover:text-red-400' 
-                        : 'hover:bg-red-50 hover:text-red-600'
-                    )}
-                    title={lang === 'zh' ? '删除' : 'Delete'}
-                  >
-                    {deletingId === deck.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
                 </div>
               ))}
             </div>
