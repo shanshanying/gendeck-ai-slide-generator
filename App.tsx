@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, Theme } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
+import { ThemeProvider, useThemeContext } from './contexts/ThemeContext';
+import { componentStyles, cls } from './styles/themeUtils';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
@@ -17,15 +19,7 @@ const App: React.FC = () => {
     return (saved === 'en' || saved === 'zh') ? saved : 'en';
   });
 
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('gendeck_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
-  });
+  const { theme, toggleTheme, isDark } = useThemeContext();
   
   const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(null);
@@ -54,11 +48,7 @@ const App: React.FC = () => {
     localStorage.setItem('gendeck_lang', language);
   }, [language]);
 
-  useEffect(() => {
-    localStorage.setItem('gendeck_theme', theme);
-    // Apply theme class to document for global styling
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+
 
   // Ensure currentSlideId is valid when slides change
   useEffect(() => {
@@ -725,11 +715,12 @@ const App: React.FC = () => {
   const generatedCount = slides.filter(s => s.htmlContent).length;
   const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
 
-  const themeClasses = theme === 'dark' 
+  // Use centralized theme classes
+  const themeClasses = isDark
     ? 'bg-slate-950 text-slate-100 selection:bg-purple-500/30 selection:text-purple-100'
     : 'bg-gray-50 text-gray-900 selection:bg-purple-200 selection:text-purple-900';
 
-  const bgGradient = theme === 'dark'
+  const bgGradient = isDark
     ? 'from-purple-900/20 via-slate-950 to-slate-950'
     : 'from-purple-100/50 via-gray-50 to-gray-50';
 
@@ -749,30 +740,31 @@ const App: React.FC = () => {
       )}
 
       {/* Glass Header */}
-      <header className={`h-16 border-b backdrop-blur-xl flex items-center justify-between px-6 z-50 relative ${
-        theme === 'dark' 
-          ? 'border-white/5 bg-slate-950/80' 
-          : 'border-gray-200/50 bg-white/70'
-      }`}>
+      <header className={cls(
+        'h-16 border-b backdrop-blur-xl flex items-center justify-between px-6 z-50 relative',
+        isDark ? 'border-white/5 bg-slate-950/80' : 'border-gray-200/50 bg-white/70'
+      )}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25 ring-1 ring-white/20">G</div>
-          <h1 className={`text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${
-            theme === 'dark' ? 'from-white via-slate-200 to-slate-400' : 'from-gray-900 via-gray-700 to-gray-600'
-          }`}>GenDeck</h1>
+          <h1 className={cls(
+            'text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r',
+            isDark ? 'from-white via-slate-200 to-slate-400' : 'from-gray-900 via-gray-700 to-gray-600'
+          )}>GenDeck</h1>
         </div>
         
         <div className="flex items-center gap-3">
             {/* Theme Toggle */}
             <button
-              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
-                theme === 'dark'
+              onClick={toggleTheme}
+              className={cls(
+                'flex items-center justify-center w-8 h-8 rounded-lg border transition-all',
+                isDark
                   ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20 text-slate-400 hover:text-yellow-400'
                   : 'bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:text-orange-500'
-              }`}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              )}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
             {/* Language Switcher */}
