@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SlideData, Language, Theme } from '../types';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, ChevronDown, ChevronUp, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
 import { COLOR_THEMES, TRANSLATIONS } from '../constants';
+import { getThemeClasses, cx } from '../styles/theme';
 
 interface OutlineEditorProps {
   slides: SlideData[];
@@ -25,6 +26,10 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 }) => {
   const [colorPalette, setColorPalette] = useState(COLOR_THEMES[0].colors.join(', '));
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
+  
+  // Use centralized theme classes
+  const th = getThemeClasses(theme);
+  const isDark = theme === 'dark';
   
   const handleUpdateSlide = (id: string, field: keyof SlideData, value: any) => {
     onUpdateSlides(slides.map(slide => 
@@ -151,23 +156,23 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-[95%] mx-auto p-6 h-full flex flex-col ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}>
+    <div className={cx('w-full max-w-[95%] mx-auto p-6 h-full flex flex-col', th.bg.secondary)}>
       <div className="flex justify-between items-center mb-6 shrink-0">
         <div>
-          <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('reviewStyle')}</h2>
-          <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>{t('refineStructure')}</p>
+          <h2 className={cx('text-2xl font-bold', th.text.primary)}>{t('reviewStyle')}</h2>
+          <p className={cx('text-sm', th.text.muted)}>{t('refineStructure')}</p>
         </div>
         <div className="flex gap-3">
            <button 
              onClick={handleDownloadOutline}
-             className={`px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-white/10 hover:border-white/20' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'}`}
+             className={cx('px-3 py-2 rounded-lg transition-all flex items-center gap-2 border', th.button.primary)}
              title={t('exportOutline')}
            >
              <FileDown className="w-4 h-4" />
            </button>
            <button 
              onClick={onCancel}
-             className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${theme === 'dark' ? 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-white/10 hover:border-white/20' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'}`}
+             className={cx('px-4 py-2 rounded-lg transition-all flex items-center gap-2 border', th.button.primary)}
            >
              <ArrowLeft className="w-4 h-4" /> {t('back')}
            </button>
@@ -181,47 +186,62 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       </div>
 
       {/* Theme Selection Section - Collapsible */}
-      <div className={`mb-8 backdrop-blur rounded-xl overflow-hidden shrink-0 transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/50 border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+      <div className={cx('mb-8 backdrop-blur rounded-xl overflow-hidden shrink-0 transition-all duration-300 border', th.bg.glass, th.border.primary)}>
          <button 
            onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-           className={`w-full px-6 py-4 flex items-center justify-between transition-all ${theme === 'dark' ? 'bg-slate-900/50 hover:bg-slate-800/50' : 'bg-gray-50 hover:bg-gray-100'}`}
+           className={cx('w-full px-6 py-4 flex items-center justify-between transition-all', th.bg.glass, th.bg.hover)}
          >
-            <h3 className={`text-sm font-semibold flex items-center gap-2 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>
+            <h3 className={cx('text-sm font-semibold flex items-center gap-2', th.text.secondary)}>
                <PaintBucket className="w-4 h-4 text-yellow-400"/> {t('selectPalette')}
             </h3>
-            {isPaletteOpen ? <ChevronUp className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'}`} /> : <ChevronDown className={`w-4 h-4 ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'}`} />}
+            {isPaletteOpen ? <ChevronUp className={cx('w-4 h-4', th.text.muted)} /> : <ChevronDown className={cx('w-4 h-4', th.text.muted)} />}
          </button>
          
          {isPaletteOpen && (
            <div className="p-6 pt-0 animate-in slide-in-from-top-2 fade-in duration-200">
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
-                {COLOR_THEMES.map((theme) => {
-                  const isActive = colorPalette === theme.colors.join(', ');
+                {COLOR_THEMES.map((colorTheme) => {
+                  const isActive = colorPalette === colorTheme.colors.join(', ');
                   return (
                     <button 
-                      key={theme.id}
+                      key={colorTheme.id}
                       type="button"
-                      onClick={() => setColorPalette(theme.colors.join(', '))}
-                      className={`p-3 rounded-lg border text-left transition-all ${isActive ? (theme === 'dark' ? 'bg-slate-800 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10' : 'bg-gray-100 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10') : (theme === 'dark' ? 'bg-slate-950 border-white/5 hover:bg-slate-900 hover:border-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300')}`}
+                      onClick={() => setColorPalette(colorTheme.colors.join(', '))}
+                      className={cx(
+                        'p-3 rounded-lg border text-left transition-all',
+                        isActive 
+                          ? isDark 
+                            ? 'bg-slate-800 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10' 
+                            : 'bg-gray-100 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10'
+                          : isDark 
+                            ? 'bg-slate-950 border-white/5 hover:bg-slate-900 hover:border-white/10' 
+                            : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                      )}
                     >
                       <div className="flex gap-1.5 mb-2">
-                         {theme.colors.map((c, i) => (
+                         {colorTheme.colors.map((c, i) => (
                            <div key={i} style={{backgroundColor: c}} className="w-4 h-4 rounded-full border border-gray-600/50 shadow-sm" />
                          ))}
                       </div>
-                      <span className={`text-xs font-medium block truncate ${isActive ? (theme === 'dark' ? 'text-white' : 'text-gray-900') : (theme === 'dark' ? 'text-slate-400' : 'text-gray-500')}`}>{theme.label}</span>
+                      <span className={cx(
+                        'text-xs font-medium block truncate',
+                        isActive ? th.text.primary : th.text.muted
+                      )}>{colorTheme.label}</span>
                     </button>
                   );
                 })}
              </div>
              
              <div className="flex items-center gap-3">
-                 <label className={`text-xs whitespace-nowrap ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>{t('customPalette')}</label>
+                 <label className={cx('text-xs whitespace-nowrap', th.text.muted)}>{t('customPalette')}</label>
                  <input 
                     type="text"
                     value={colorPalette}
                     onChange={(e) => setColorPalette(e.target.value)}
-                    className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 font-mono transition-all ${theme === 'dark' ? 'bg-slate-950 border border-white/10 text-white focus:border-yellow-500/50 focus:ring-yellow-500/20' : 'bg-white border border-gray-200 text-gray-900 focus:border-yellow-500/50 focus:ring-yellow-500/20'}`}
+                    className={cx(
+                      'flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 font-mono transition-all border',
+                      th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                    )}
                     placeholder="#000000, #FFFFFF, #FF0000 (Custom Hex Codes)"
                   />
              </div>
@@ -234,32 +254,66 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           const isCover = index === 0;
           const isEnding = index === slides.length - 1 && slides.length > 1;
 
+          // Get slide-specific background styles
+          const getSlideBg = () => {
+            if (isDark) {
+              if (isCover) return 'bg-purple-500/5 border-purple-500/20';
+              if (isEnding) return 'bg-blue-500/5 border-blue-500/20';
+              return cx('bg-slate-900/50 border-white/5 shadow-black/10', 'group hover:border-white/10');
+            } else {
+              if (isCover) return 'bg-purple-50/70 border-purple-200';
+              if (isEnding) return 'bg-sky-50 border-sky-200';
+              return cx('bg-white border-gray-200 shadow-gray-200/50', 'group hover:border-gray-300');
+            }
+          };
+
+          // Get slide number badge styles
+          const getBadgeStyles = () => {
+            if (isCover) return 'bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25';
+            if (isEnding) return 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/25';
+            return isDark 
+              ? 'bg-slate-800 text-slate-300 ring-1 ring-white/10' 
+              : 'bg-gray-100 text-gray-600 ring-1 ring-gray-200';
+          };
+
+          // Get label color (Cover/Ending)
+          const getLabelColor = () => {
+            if (isCover) return isDark ? 'text-purple-400' : 'text-purple-600';
+            if (isEnding) return isDark ? 'text-blue-400' : 'text-blue-600';
+            return '';
+          };
+
           return (
-            <div key={slide.id} className={`backdrop-blur rounded-xl p-6 shadow-lg transition-all ${theme === 'dark' ? (isCover ? 'bg-purple-500/5 border-purple-500/20' : isEnding ? 'bg-blue-500/5 border-blue-500/20' : 'bg-slate-900/50 border-white/5 shadow-black/10') + ' group hover:border-white/10' : (isCover ? 'bg-purple-50 border-purple-200' : isEnding ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 shadow-gray-200/50') + ' group hover:border-gray-300'}`}>
-              <div className={`flex items-center justify-between mb-6 pb-4 border-b ${theme === 'dark' ? 'border-gray-700/50' : 'border-gray-200'}`}>
+            <div key={slide.id} className={cx('backdrop-blur rounded-xl p-6 shadow-lg transition-all', getSlideBg())}>
+              <div className={cx('flex items-center justify-between mb-6 pb-4 border-b', isDark ? 'border-gray-700/50' : 'border-gray-200')}>
                  <div className="flex items-center gap-4 w-full">
-                   <span className={`text-sm font-mono w-8 h-8 flex items-center justify-center rounded-lg shrink-0 ${isCover ? 'bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25' : isEnding ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/25' : theme === 'dark' ? 'bg-slate-800 text-slate-300 ring-1 ring-white/10' : 'bg-gray-100 text-gray-600 ring-1 ring-gray-200'}`}>
+                   <span className={cx('text-sm font-mono w-8 h-8 flex items-center justify-center rounded-lg shrink-0', getBadgeStyles())}>
                      {index + 1}
                    </span>
                    <div className="flex-1">
-                      {isCover && <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mb-1 block">{t('coverPage')}</span>}
-                      {isEnding && <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1 block">{t('endingPage')}</span>}
+                      {isCover && <span className={cx('text-[10px] uppercase tracking-wider font-bold mb-1 block', getLabelColor())}>{t('coverPage')}</span>}
+                      {isEnding && <span className={cx('text-[10px] uppercase tracking-wider font-bold mb-1 block', getLabelColor())}>{t('endingPage')}</span>}
                       <input 
                         type="text" 
                         value={slide.title}
                         onChange={(e) => handleUpdateSlide(slide.id, 'title', e.target.value)}
-                        className={`bg-transparent border-none font-bold focus:ring-0 w-full rounded px-2 ${theme === 'dark' ? 'text-white placeholder-slate-500 focus:bg-slate-950/50' : 'text-gray-900 placeholder-gray-400 focus:bg-gray-50'} ${isCover ? 'text-2xl' : 'text-xl'}`}
+                        className={cx(
+                          'bg-transparent border-none font-bold focus:ring-0 w-full rounded px-2',
+                          th.input.text, th.input.placeholder,
+                          isDark ? 'focus:bg-slate-950/50' : 'focus:bg-gray-50',
+                          isCover ? 'text-2xl' : 'text-xl'
+                        )}
                         placeholder={t('slideTitlePlaceholder')}
                       />
                    </div>
                  </div>
                  <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button onClick={() => handleMove(index, 'up')} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-400 hover:text-slate-200' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'}`} title="Move Up"><MoveUp className="w-4 h-4"/></button>
-                   <button onClick={() => handleMove(index, 'down')} className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-400 hover:text-slate-200' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'}`} title="Move Down"><MoveDown className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'up')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title="Move Up"><MoveUp className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'down')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title="Move Down"><MoveDown className="w-4 h-4"/></button>
                    <button 
                     type="button"
                     onClick={(e) => handleDelete(e, slide.id)} 
-                    className={`p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg ml-2 cursor-pointer transition-colors ${theme === 'dark' ? 'text-slate-400' : 'text-gray-400'}`} 
+                    className={cx('p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg ml-2 cursor-pointer transition-colors', th.text.tertiary)} 
                     title="Delete"
                    >
                      <Trash2 className="w-4 h-4"/>
@@ -273,39 +327,42 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                     <>
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col">
-                                <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>
                                 {t('subtitle')}
                                 </label>
                                 <textarea 
                                 value={slide.contentPoints[0] || ''}
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
-                                className={`w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner ${theme === 'dark' ? 'bg-gray-900/30 border border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'}`}
+                                className={cx(
+                                  'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
+                                  isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'
+                                )}
                                 placeholder={t('subtitlePlaceholder')}
                                 />
                             </div>
                             
                             <div className="flex flex-col">
-                                <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>
                                 {t('titleStyle')}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button 
                                         onClick={() => handleCoverStyle(slide.id, 'modern')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <AlignLeft className="w-4 h-4 mb-1" />
                                         <span className="text-[10px]">Modern Left</span>
                                     </button>
                                     <button 
                                         onClick={() => handleCoverStyle(slide.id, 'elegant')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="flex gap-0.5"><Type className="w-4 h-4 mb-1" /><AlignCenter className="w-4 h-4 mb-1" /></div>
                                         <span className="text-[10px]">Elegant Serif</span>
                                     </button>
                                     <button 
                                         onClick={() => handleCoverStyle(slide.id, 'bold')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <Bold className="w-4 h-4 mb-1" />
                                         <span className="text-[10px]">Big & Bold</span>
@@ -314,11 +371,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-col">
-                             <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('visualNotes')}</label>
+                             <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>{t('visualNotes')}</label>
                              <textarea
                                value={slide.layoutSuggestion || ''}
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
-                               className={`w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner ${theme === 'dark' ? 'bg-gray-900/30 border border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'}`}
+                               className={cx(
+                                 'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
+                                 isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+                               )}
                                placeholder={t('visualNotesPlaceholder')}
                              />
                         </div>
@@ -328,39 +388,42 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                     <>
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col">
-                                <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>
                                 {t('closingMessage')}
                                 </label>
                                 <textarea 
                                 value={slide.contentPoints[0] || ''}
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
-                                className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner"
+                                className={cx(
+                                  'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
+                                  isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-blue-500 focus:ring-blue-500/20'
+                                )}
                                 placeholder={t('closingPlaceholder')}
                                 />
                             </div>
                             
                             <div className="flex flex-col">
-                                <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>
                                 {t('endingStyle')}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <button 
                                         onClick={() => handleEndingStyle(slide.id, 'minimal')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="w-4 h-4 border border-gray-400 rounded-sm mb-1" />
                                         <span className="text-[10px]">Minimal</span>
                                     </button>
                                     <button 
                                         onClick={() => handleEndingStyle(slide.id, 'contact')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="flex gap-0.5"><Layout className="w-4 h-4 mb-1" /></div>
                                         <span className="text-[10px]">Contact Info</span>
                                     </button>
                                     <button 
                                         onClick={() => handleEndingStyle(slide.id, 'brand')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded border transition-all ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 hover:border-gray-500 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700'}`}
+                                        className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="w-4 h-4 bg-gray-500 rounded-full mb-1" />
                                         <span className="text-[10px]">Brand Focus</span>
@@ -369,11 +432,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-col">
-                             <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('visualNotes')}</label>
+                             <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>{t('visualNotes')}</label>
                              <textarea
                                value={slide.layoutSuggestion || ''}
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
-                               className="w-full flex-1 bg-gray-900/30 border border-gray-700 rounded-lg p-4 text-sm text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner"
+                               className={cx(
+                                 'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
+                                 isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-blue-500 focus:ring-blue-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+                               )}
                                placeholder={t('visualNotesPlaceholder')}
                              />
                         </div>
@@ -382,49 +448,55 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                     // Standard Slide Editor
                     <>
                         <div className="flex flex-col">
-                            <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold mb-2 flex items-center justify-between">
+                            <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between', th.text.tertiary)}>
                             {t('contentPoints')}
-                            <span className={`text-[10px] normal-case opacity-50 px-2 py-0.5 rounded ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>{t('onePointPerLine')}</span>
+                            <span className={cx('text-[10px] normal-case opacity-50 px-2 py-0.5 rounded', isDark ? 'bg-gray-700' : 'bg-gray-200')}>{t('onePointPerLine')}</span>
                             </label>
                             <textarea 
                             value={slide.contentPoints.join('\n')}
                             onChange={(e) => handleUpdatePoints(slide.id, e.target.value)}
-                            className={`w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner ${theme === 'dark' ? 'bg-gray-900/30 border border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'}`}
+                            className={cx(
+                              'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
+                              isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'
+                            )}
                             placeholder={t('pointsPlaceholder')}
                             />
                         </div>
                         <div className="flex flex-col">
                             <div className="flex justify-between items-center mb-2">
-                                <label className="block text-xs uppercase tracking-wider text-gray-400 font-semibold">{t('layoutPreset')}</label>
+                                <label className={cx('block text-xs uppercase tracking-wider font-semibold', th.text.tertiary)}>{t('layoutPreset')}</label>
                             </div>
                             
                             {/* Standard Slide Presets Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                                <button onClick={() => handleStandardLayout(slide.id, 'standard')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Standard List">
+                                <button onClick={() => handleStandardLayout(slide.id, 'standard')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Standard List">
                                     <Layout className="w-3 h-3 mb-1" /> <span className="text-[9px]">Standard</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'split')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Comparison">
+                                <button onClick={() => handleStandardLayout(slide.id, 'split')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Comparison">
                                     <Columns className="w-3 h-3 mb-1" /> <span className="text-[9px]">Compare</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'grid')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Grid/Cards">
+                                <button onClick={() => handleStandardLayout(slide.id, 'grid')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Grid/Cards">
                                     <Grip className="w-3 h-3 mb-1" /> <span className="text-[9px]">Grid</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'timeline')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Timeline">
+                                <button onClick={() => handleStandardLayout(slide.id, 'timeline')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Timeline">
                                     <Calendar className="w-3 h-3 mb-1" /> <span className="text-[9px]">Timeline</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'data')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Big Number/Chart">
+                                <button onClick={() => handleStandardLayout(slide.id, 'data')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Big Number/Chart">
                                     <BarChart2 className="w-3 h-3 mb-1" /> <span className="text-[9px]">Data</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'quote')} className={`flex flex-col items-center p-2 rounded border ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`} title="Quote/Center">
+                                <button onClick={() => handleStandardLayout(slide.id, 'quote')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Quote/Center">
                                     <Quote className="w-3 h-3 mb-1" /> <span className="text-[9px]">Quote</span>
                                 </button>
                             </div>
 
-                            <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('visualNotes')}</label>
+                            <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2', th.text.tertiary)}>{t('visualNotes')}</label>
                             <textarea
                             value={slide.layoutSuggestion || ''}
                             onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
-                            className={`w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner ${theme === 'dark' ? 'bg-gray-900/30 border border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'}`}
+                            className={cx(
+                              'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
+                              isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+                            )}
                             placeholder={t('visualNotesPlaceholder')}
                             />
                         </div>
@@ -437,7 +509,12 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
         
         <button 
           onClick={handleAddSlide}
-          className={`w-full py-6 border-2 border-dashed rounded-xl transition-all flex items-center justify-center gap-3 font-semibold text-lg ${theme === 'dark' ? 'border-gray-700 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-gray-800/50' : 'border-gray-300 text-gray-400 hover:text-purple-500 hover:border-purple-500/50 hover:bg-purple-50/50'}`}
+          className={cx(
+            'w-full py-6 border-2 border-dashed rounded-xl transition-all flex items-center justify-center gap-3 font-semibold text-lg',
+            isDark 
+              ? 'border-gray-700 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-gray-800/50' 
+              : 'border-gray-300 text-gray-400 hover:text-purple-500 hover:border-purple-500/50 hover:bg-purple-50/50'
+          )}
         >
           <Plus className="w-6 h-6" /> {t('addNewSlide')}
         </button>

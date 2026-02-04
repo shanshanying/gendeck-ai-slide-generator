@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
 import { ThemeProvider, useThemeContext } from './contexts/ThemeContext';
-import { componentStyles, cls } from './styles/themeUtils';
+import { cls } from './styles/themeUtils';
+import { getThemeClasses, cx } from './styles/theme';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   });
 
   const { theme, toggleTheme, isDark } = useThemeContext();
+  const th = getThemeClasses(theme);
   
   const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(null);
@@ -756,7 +758,7 @@ const App: React.FC = () => {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={cls(
+              className={cx(
                 'flex items-center justify-center w-8 h-8 rounded-lg border transition-all',
                 isDark
                   ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20 text-slate-400 hover:text-yellow-400'
@@ -770,11 +772,7 @@ const App: React.FC = () => {
             {/* Language Switcher */}
             <button 
                 onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all ${
-                  theme === 'dark'
-                    ? 'text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20'
-                    : 'text-gray-600 hover:text-gray-900 bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300'
-                }`}
+                className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
                 title="Switch Language"
             >
                 <Languages className="w-3.5 h-3.5" />
@@ -783,24 +781,16 @@ const App: React.FC = () => {
 
             {/* Cost Display */}
             {totalCost > 0 && (
-            <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${
-              theme === 'dark'
-                ? 'bg-slate-900/80 border-emerald-500/20'
-                : 'bg-white/80 border-emerald-500/30'
-            }`}>
+            <div className={cx('hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm', isDark ? 'bg-slate-900/80 border-emerald-500/20' : 'bg-white/80 border-emerald-500/30')}>
                 <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                <span className={`text-xs font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>
+                <span className={cx('text-xs font-mono', th.text.secondary)}>
                 {t('estCost')}: ${totalCost.toFixed(4)}
                 </span>
             </div>
             )}
 
             {status === GenerationStatus.REVIEWING_OUTLINE && (
-            <div className={`px-3 py-1.5 rounded-full text-xs font-medium animate-pulse ${
-              theme === 'dark'
-                ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
-                : 'bg-blue-100 text-blue-700 border border-blue-200'
-            }`}>
+            <div className={cx('px-3 py-1.5 rounded-full text-xs font-medium animate-pulse border', isDark ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' : 'bg-blue-100 text-blue-700 border-blue-200')}>
                 {t('outlineEditor')}
             </div>
             )}
@@ -808,14 +798,10 @@ const App: React.FC = () => {
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
-                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm ${
-                     theme === 'dark'
-                       ? 'bg-purple-500/10 text-purple-200 border-purple-500/20'
-                       : 'bg-purple-100 text-purple-700 border-purple-200'
-                   }`}>
+                   <div className={cx('flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm', isDark ? 'bg-purple-500/10 text-purple-200 border-purple-500/20' : 'bg-purple-100 text-purple-700 border-purple-200')}>
                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                      <span className="text-xs font-medium">{t('generating')} {Math.round(progressPercent)}%</span>
-                     <div className={`h-3 w-px mx-1 ${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-300'}`} />
+                     <div className={cx('h-3 w-px mx-1', isDark ? 'bg-purple-500/20' : 'bg-purple-300')} />
                      {isPaused ? (
                         <button onClick={handleResumeGeneration} className="hover:opacity-70 transition-colors" title={t('resume')}>
                             <Play className="w-3.5 h-3.5 fill-current" />
@@ -835,11 +821,7 @@ const App: React.FC = () => {
                  <div className="relative">
                     <button 
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        theme === 'dark'
-                          ? 'bg-slate-900/80 hover:bg-slate-800 text-white border-white/10 hover:border-white/20'
-                          : 'bg-white/80 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300'
-                      } border`}
+                      className={cx('flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border', th.button.primary)}
                     >
                       <Download className="w-4 h-4" />
                       <span className="hidden sm:inline">{t('otherFormats')}</span>
@@ -849,52 +831,32 @@ const App: React.FC = () => {
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
-                        <div className={`absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border ${
-                          theme === 'dark'
-                            ? 'bg-slate-900/95 border-white/10'
-                            : 'bg-white/95 border-gray-200'
-                        }`}>
+                        <div className={cx('absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border', isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-gray-200')}>
                           <div className="p-1">
                              <button 
                                onClick={handleExportHtml}
-                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
-                                 theme === 'dark'
-                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
-                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                               }`}
+                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <FileJson className="w-4 h-4" />
                                {t('downloadHtml')}
                              </button>
                              <button 
                                onClick={handleExportPdf}
-                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
-                                 theme === 'dark'
-                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
-                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                               }`}
+                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <Printer className="w-4 h-4" />
                                {t('exportPdf')}
                              </button>
                              <button 
                                onClick={handleExportMarkdown}
-                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
-                                 theme === 'dark'
-                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
-                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                               }`}
+                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <FileText className="w-4 h-4" />
                                {t('exportOutline')}
                              </button>
                              <button 
                                onClick={handleExportNotes}
-                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
-                                 theme === 'dark'
-                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
-                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                               }`}
+                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
                              >
                                <MessageSquareText className="w-4 h-4" />
                                {t('exportNotes')}
@@ -919,11 +881,7 @@ const App: React.FC = () => {
             {status !== GenerationStatus.IDLE && (
               <button 
                 onClick={handleNewDeck}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ml-2 ${
-                  theme === 'dark'
-                    ? 'bg-slate-900/80 hover:bg-slate-800 text-white border-white/10 hover:border-white/20'
-                    : 'bg-white/80 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300'
-                }`}
+                className={cx('flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ml-2', th.button.primary)}
                 title={t('new')}
               >
                 <Plus className="w-4 h-4" />
@@ -934,7 +892,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className={`flex-1 overflow-hidden relative ${theme === 'light' ? 'bg-gray-50/50' : ''}`}>
+      <main className={cx('flex-1 overflow-hidden relative', !isDark && 'bg-gray-50/50')}>
         {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
           <div className="h-full overflow-y-auto">
             <InputForm 
@@ -986,13 +944,9 @@ const App: React.FC = () => {
                    <div className="absolute bottom-6 right-6 z-40">
                       <button 
                         onClick={handleGenerateNotes}
-                        className={`backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border ${
-                          theme === 'dark'
-                            ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20'
-                            : 'bg-white/90 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300 shadow-gray-200/50'
-                        }`}
+                        className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border', isDark ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20' : 'bg-white/90 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300 shadow-gray-200/50')}
                       >
-                         <MessageSquareText className={`w-4 h-4 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                         <MessageSquareText className={cx('w-4 h-4', isDark ? 'text-green-400' : 'text-green-600')} />
                          {t('generateNotes')}
                       </button>
                    </div>
@@ -1000,12 +954,8 @@ const App: React.FC = () => {
 
                {isGeneratingNotes && (
                    <div className="absolute bottom-6 right-6 z-40">
-                      <div className={`backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border ${
-                        theme === 'dark'
-                          ? 'bg-slate-900/90 text-white border-white/10 shadow-black/20'
-                          : 'bg-white/90 text-gray-900 border-gray-200 shadow-gray-200/50'
-                      }`}>
-                         <Loader2 className={`w-4 h-4 animate-spin ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                      <div className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border', isDark ? 'bg-slate-900/90 text-white border-white/10 shadow-black/20' : 'bg-white/90 text-gray-900 border-gray-200 shadow-gray-200/50')}>
+                         <Loader2 className={cx('w-4 h-4 animate-spin', isDark ? 'text-green-400' : 'text-green-600')} />
                          Generating speaker notes...
                       </div>
                    </div>
@@ -1024,60 +974,36 @@ const App: React.FC = () => {
           }}
         >
           {/* Backdrop */}
-          <div className={`absolute inset-0 backdrop-blur-sm transition-opacity ${
-            theme === 'dark' ? 'bg-slate-950/80' : 'bg-gray-900/40'
-          }`} />
+          <div className={cx('absolute inset-0 backdrop-blur-sm transition-opacity', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
           
           {/* Modal Content */}
-          <div className={`relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200 ${
-            theme === 'dark'
-              ? 'bg-slate-900 border-white/10'
-              : 'bg-white border-gray-200'
-          }`}>
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
             {/* Header */}
-            <div className={`flex items-center gap-3 px-6 py-5 border-b ${
-              theme === 'dark' ? 'border-white/5' : 'border-gray-100'
-            }`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ring-1 ${
-                theme === 'dark'
-                  ? 'bg-amber-500/10 ring-amber-500/20'
-                  : 'bg-amber-100 ring-amber-200'
-              }`}>
-                <Plus className={`w-5 h-5 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} />
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-100 ring-amber-200')}>
+                <Plus className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
               </div>
               <div>
-                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('new')}</h3>
-                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>{t('confirmNew')}</p>
+                <h3 className={cx('text-lg font-semibold', th.text.primary)}>{t('new')}</h3>
+                <p className={cx('text-sm', th.text.muted)}>{t('confirmNew')}</p>
               </div>
             </div>
             
             {/* Body */}
             <div className="px-6 py-4">
-              <div className={`flex items-start gap-3 text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1 ${
-                  theme === 'dark'
-                    ? 'bg-red-500/10 ring-red-500/20'
-                    : 'bg-red-100 ring-red-200'
-                }`}>
-                  <span className={`font-bold text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>!</span>
+              <div className={cx('flex items-start gap-3 text-sm', th.text.secondary)}>
+                <div className={cx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1', isDark ? 'bg-red-500/10 ring-red-500/20' : 'bg-red-100 ring-red-200')}>
+                  <span className={cx('font-bold text-xs', isDark ? 'text-red-400' : 'text-red-600')}>!</span>
                 </div>
                 <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
               </div>
             </div>
             
             {/* Footer */}
-            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl ${
-              theme === 'dark'
-                ? 'border-white/5 bg-slate-900/50'
-                : 'border-gray-100 bg-gray-50/50'
-            }`}>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
               <button
                 onClick={cancelNewDeck}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all border ${
-                  theme === 'dark'
-                    ? 'text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-white/5'
-                    : 'text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-100 border-gray-200'
-                }`}
+                className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
               >
                 {language === 'zh' ? '取消' : 'Cancel'}
               </button>

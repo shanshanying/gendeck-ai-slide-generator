@@ -433,7 +433,7 @@ export const generateSlideHtml = async (
   } catch (error) {
     // Error handled by returning fallback HTML
     return {
-      data: `<section class="slide flex items-center justify-center bg-gray-900 text-red-500 text-3xl" style="width:1920px;height:1080px;">Error generating slide.</section>`,
+      data: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Error generating slide</div><div style="font-size:18px;margin-top:8px;opacity:0.7;">Please try regenerating</div></div></section>`,
       cost: 0
     };
   }
