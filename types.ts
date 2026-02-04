@@ -58,3 +58,5 @@ export interface ServiceResponse<T> {
 }
 
 export type Language = 'en' | 'zh';
+
+export type Theme = 'dark' | 'light';

@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, Theme } from './types';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon } from 'lucide-react';
 import { TRANSLATIONS } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -15,6 +15,16 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('gendeck_lang');
     return (saved === 'en' || saved === 'zh') ? saved : 'en';
+  });
+
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('gendeck_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    // Check system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+    return 'dark';
   });
   
   const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
@@ -43,6 +53,12 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('gendeck_lang', language);
   }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('gendeck_theme', theme);
+    // Apply theme class to document for global styling
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Ensure currentSlideId is valid when slides change
   useEffect(() => {
@@ -709,10 +725,18 @@ const App: React.FC = () => {
   const generatedCount = slides.filter(s => s.htmlContent).length;
   const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
 
+  const themeClasses = theme === 'dark' 
+    ? 'bg-slate-950 text-slate-100 selection:bg-purple-500/30 selection:text-purple-100'
+    : 'bg-gray-50 text-gray-900 selection:bg-purple-200 selection:text-purple-900';
+
+  const bgGradient = theme === 'dark'
+    ? 'from-purple-900/20 via-slate-950 to-slate-950'
+    : 'from-purple-100/50 via-gray-50 to-gray-50';
+
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans relative selection:bg-purple-500/30 selection:text-purple-100">
+    <div className={`h-screen flex flex-col overflow-hidden font-sans relative ${themeClasses}`}>
       {/* Animated Background Gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-950 to-slate-950 pointer-events-none" />
+      <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] ${bgGradient} pointer-events-none`} />
       
       {/* Progress Bar Overlay */}
       {status === GenerationStatus.GENERATING_SLIDES && (
@@ -725,17 +749,40 @@ const App: React.FC = () => {
       )}
 
       {/* Glass Header */}
-      <header className="h-16 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl flex items-center justify-between px-6 z-50 relative">
+      <header className={`h-16 border-b backdrop-blur-xl flex items-center justify-between px-6 z-50 relative ${
+        theme === 'dark' 
+          ? 'border-white/5 bg-slate-950/80' 
+          : 'border-gray-200/50 bg-white/70'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25 ring-1 ring-white/20">G</div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">GenDeck</h1>
+          <h1 className={`text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${
+            theme === 'dark' ? 'from-white via-slate-200 to-slate-400' : 'from-gray-900 via-gray-700 to-gray-600'
+          }`}>GenDeck</h1>
         </div>
         
         <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
+                theme === 'dark'
+                  ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20 text-slate-400 hover:text-yellow-400'
+                  : 'bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:text-orange-500'
+              }`}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
             {/* Language Switcher */}
             <button 
                 onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
-                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all ${
+                  theme === 'dark'
+                    ? 'text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20'
+                    : 'text-gray-600 hover:text-gray-900 bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300'
+                }`}
                 title="Switch Language"
             >
                 <Languages className="w-3.5 h-3.5" />
@@ -744,16 +791,24 @@ const App: React.FC = () => {
 
             {/* Cost Display */}
             {totalCost > 0 && (
-            <div className="hidden md:flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-emerald-500/20 shadow-sm">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-xs font-mono text-slate-300">
+            <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${
+              theme === 'dark'
+                ? 'bg-slate-900/80 border-emerald-500/20'
+                : 'bg-white/80 border-emerald-500/30'
+            }`}>
+                <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                <span className={`text-xs font-mono ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>
                 {t('estCost')}: ${totalCost.toFixed(4)}
                 </span>
             </div>
             )}
 
             {status === GenerationStatus.REVIEWING_OUTLINE && (
-            <div className="px-3 py-1.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-full text-xs font-medium animate-pulse">
+            <div className={`px-3 py-1.5 rounded-full text-xs font-medium animate-pulse ${
+              theme === 'dark'
+                ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
+                : 'bg-blue-100 text-blue-700 border border-blue-200'
+            }`}>
                 {t('outlineEditor')}
             </div>
             )}
@@ -761,20 +816,24 @@ const App: React.FC = () => {
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
-                   <div className="flex items-center gap-2 bg-purple-500/10 text-purple-200 px-3 py-1.5 rounded-lg border border-purple-500/20 backdrop-blur-sm">
+                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm ${
+                     theme === 'dark'
+                       ? 'bg-purple-500/10 text-purple-200 border-purple-500/20'
+                       : 'bg-purple-100 text-purple-700 border-purple-200'
+                   }`}>
                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                      <span className="text-xs font-medium">{t('generating')} {Math.round(progressPercent)}%</span>
-                     <div className="h-3 w-px bg-purple-500/20 mx-1" />
+                     <div className={`h-3 w-px mx-1 ${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-300'}`} />
                      {isPaused ? (
-                        <button onClick={handleResumeGeneration} className="hover:text-white transition-colors" title={t('resume')}>
+                        <button onClick={handleResumeGeneration} className="hover:opacity-70 transition-colors" title={t('resume')}>
                             <Play className="w-3.5 h-3.5 fill-current" />
                         </button>
                      ) : (
-                        <button onClick={handlePauseGeneration} className="hover:text-white transition-colors" title={t('pause')}>
+                        <button onClick={handlePauseGeneration} className="hover:opacity-70 transition-colors" title={t('pause')}>
                             <Pause className="w-3.5 h-3.5 fill-current" />
                         </button>
                      )}
-                     <button onClick={handleCancelGeneration} className="hover:text-white transition-colors ml-1" title={t('cancel')}>
+                     <button onClick={handleCancelGeneration} className="hover:opacity-70 transition-colors ml-1" title={t('cancel')}>
                         <XCircle className="w-3.5 h-3.5" />
                      </button>
                    </div>
@@ -784,7 +843,11 @@ const App: React.FC = () => {
                  <div className="relative">
                     <button 
                       onClick={() => setShowExportMenu(!showExportMenu)}
-                      className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 text-sm font-medium transition-all"
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        theme === 'dark'
+                          ? 'bg-slate-900/80 hover:bg-slate-800 text-white border-white/10 hover:border-white/20'
+                          : 'bg-white/80 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300'
+                      } border`}
                     >
                       <Download className="w-4 h-4" />
                       <span className="hidden sm:inline">{t('otherFormats')}</span>
@@ -794,32 +857,52 @@ const App: React.FC = () => {
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95">
+                        <div className={`absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border ${
+                          theme === 'dark'
+                            ? 'bg-slate-900/95 border-white/10'
+                            : 'bg-white/95 border-gray-200'
+                        }`}>
                           <div className="p-1">
                              <button 
                                onClick={handleExportHtml}
-                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
+                                 theme === 'dark'
+                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                               }`}
                              >
                                <FileJson className="w-4 h-4" />
                                {t('downloadHtml')}
                              </button>
                              <button 
                                onClick={handleExportPdf}
-                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
+                                 theme === 'dark'
+                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                               }`}
                              >
                                <Printer className="w-4 h-4" />
                                {t('exportPdf')}
                              </button>
                              <button 
                                onClick={handleExportMarkdown}
-                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
+                                 theme === 'dark'
+                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                               }`}
                              >
                                <FileText className="w-4 h-4" />
                                {t('exportOutline')}
                              </button>
                              <button 
                                onClick={handleExportNotes}
-                               className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                               className={`w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors ${
+                                 theme === 'dark'
+                                   ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                               }`}
                              >
                                <MessageSquareText className="w-4 h-4" />
                                {t('exportNotes')}
@@ -844,7 +927,11 @@ const App: React.FC = () => {
             {status !== GenerationStatus.IDLE && (
               <button 
                 onClick={handleNewDeck}
-                className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-white px-3 py-2 rounded-lg border border-white/10 hover:border-white/20 text-sm font-medium transition-all ml-2"
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ml-2 ${
+                  theme === 'dark'
+                    ? 'bg-slate-900/80 hover:bg-slate-800 text-white border-white/10 hover:border-white/20'
+                    : 'bg-white/80 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300'
+                }`}
                 title={t('new')}
               >
                 <Plus className="w-4 h-4" />
@@ -855,7 +942,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden relative">
+      <main className={`flex-1 overflow-hidden relative ${theme === 'light' ? 'bg-gray-50/50' : ''}`}>
         {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
           <div className="h-full overflow-y-auto">
             <InputForm 
@@ -864,6 +951,7 @@ const App: React.FC = () => {
               isGenerating={status === GenerationStatus.GENERATING_OUTLINE} 
               lang={language}
               t={t}
+              theme={theme}
             />
           </div>
         )}
@@ -876,6 +964,7 @@ const App: React.FC = () => {
             onCancel={handleCancelOutline}
             lang={language}
             t={t}
+            theme={theme}
           />
         )}
 
@@ -888,6 +977,7 @@ const App: React.FC = () => {
               isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES && !isPaused}
               lang={language}
               t={t}
+              theme={theme}
             />
             <div className="flex-1 relative">
                <SlidePreview 
@@ -896,6 +986,7 @@ const App: React.FC = () => {
                  colorPalette={colorPalette}
                  lang={language}
                  t={t}
+                 theme={theme}
                />
                
                {/* Notes Generation CTA Overlay if complete but no notes */}
@@ -903,9 +994,13 @@ const App: React.FC = () => {
                    <div className="absolute bottom-6 right-6 z-40">
                       <button 
                         onClick={handleGenerateNotes}
-                        className="bg-slate-900/90 hover:bg-slate-800 backdrop-blur text-white px-4 py-2 rounded-lg shadow-xl shadow-black/20 border border-white/10 hover:border-white/20 flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all"
+                        className={`backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border ${
+                          theme === 'dark'
+                            ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20'
+                            : 'bg-white/90 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300 shadow-gray-200/50'
+                        }`}
                       >
-                         <MessageSquareText className="w-4 h-4 text-green-400" />
+                         <MessageSquareText className={`w-4 h-4 ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
                          {t('generateNotes')}
                       </button>
                    </div>
@@ -913,8 +1008,12 @@ const App: React.FC = () => {
 
                {isGeneratingNotes && (
                    <div className="absolute bottom-6 right-6 z-40">
-                      <div className="bg-slate-900/90 backdrop-blur text-white px-4 py-2 rounded-lg shadow-xl shadow-black/20 border border-white/10 flex items-center gap-2 text-sm font-medium">
-                         <Loader2 className="w-4 h-4 animate-spin text-green-400" />
+                      <div className={`backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border ${
+                        theme === 'dark'
+                          ? 'bg-slate-900/90 text-white border-white/10 shadow-black/20'
+                          : 'bg-white/90 text-gray-900 border-gray-200 shadow-gray-200/50'
+                      }`}>
+                         <Loader2 className={`w-4 h-4 animate-spin ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
                          Generating speaker notes...
                       </div>
                    </div>
@@ -933,36 +1032,60 @@ const App: React.FC = () => {
           }}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" />
+          <div className={`absolute inset-0 backdrop-blur-sm transition-opacity ${
+            theme === 'dark' ? 'bg-slate-950/80' : 'bg-gray-900/40'
+          }`} />
           
           {/* Modal Content */}
-          <div className="relative bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200">
+          <div className={`relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200 ${
+            theme === 'dark'
+              ? 'bg-slate-900 border-white/10'
+              : 'bg-white border-gray-200'
+          }`}>
             {/* Header */}
-            <div className="flex items-center gap-3 px-6 py-5 border-b border-white/5">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center ring-1 ring-amber-500/20">
-                <Plus className="w-5 h-5 text-amber-400" />
+            <div className={`flex items-center gap-3 px-6 py-5 border-b ${
+              theme === 'dark' ? 'border-white/5' : 'border-gray-100'
+            }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ring-1 ${
+                theme === 'dark'
+                  ? 'bg-amber-500/10 ring-amber-500/20'
+                  : 'bg-amber-100 ring-amber-200'
+              }`}>
+                <Plus className={`w-5 h-5 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">{t('new')}</h3>
-                <p className="text-sm text-slate-400">{t('confirmNew')}</p>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('new')}</h3>
+                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>{t('confirmNew')}</p>
               </div>
             </div>
             
             {/* Body */}
             <div className="px-6 py-4">
-              <div className="flex items-start gap-3 text-sm text-slate-300">
-                <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5 ring-1 ring-red-500/20">
-                  <span className="text-red-400 font-bold text-xs">!</span>
+              <div className={`flex items-start gap-3 text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1 ${
+                  theme === 'dark'
+                    ? 'bg-red-500/10 ring-red-500/20'
+                    : 'bg-red-100 ring-red-200'
+                }`}>
+                  <span className={`font-bold text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>!</span>
                 </div>
                 <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
               </div>
             </div>
             
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/5 bg-slate-900/50 rounded-b-2xl">
+            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl ${
+              theme === 'dark'
+                ? 'border-white/5 bg-slate-900/50'
+                : 'border-gray-100 bg-gray-50/50'
+            }`}>
               <button
                 onClick={cancelNewDeck}
-                className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all border border-white/5"
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all border ${
+                  theme === 'dark'
+                    ? 'text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-white/5'
+                    : 'text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-100 border-gray-200'
+                }`}
               >
                 {language === 'zh' ? '取消' : 'Cancel'}
               </button>

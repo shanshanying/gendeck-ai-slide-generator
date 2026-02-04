@@ -1,7 +1,7 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
 import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target, XCircle, AlertTriangle } from 'lucide-react';
-import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
+import { PresentationConfig, ApiSettings, ApiProvider, Language, Theme } from '../types';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
 
 interface InputFormProps {
@@ -10,6 +10,7 @@ interface InputFormProps {
   isGenerating: boolean;
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
+  theme: Theme;
 }
 
 // Helper to safely load from local storage
@@ -27,7 +28,7 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t, theme }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', "Gemini 1.5 Pro Overview"));
   const [audience, setAudience] = useState(() => loadStr('gendeck_audience', AUDIENCE_PRESETS[lang][0]));
@@ -188,7 +189,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-slate-900/50 backdrop-blur rounded-2xl shadow-2xl shadow-black/20 border border-white/10">
+    <div className={`max-w-5xl mx-auto p-6 backdrop-blur rounded-2xl shadow-2xl border ${
+      theme === 'dark'
+        ? 'bg-slate-900/50 shadow-black/20 border-white/10'
+        : 'bg-white/70 shadow-gray-200/50 border-gray-200'
+    }`}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-purple-400" />
@@ -196,7 +201,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         </h2>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className={`transition-all flex items-center gap-2 px-3 py-1.5 rounded-lg border ${showSettings ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10' : 'border-white/10 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/20'}`}
+          className={`transition-all flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+            showSettings
+              ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10'
+              : theme === 'dark'
+                ? 'border-white/10 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/20'
+                : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:border-gray-300'
+          }`}
           title="Configure AI Model"
         >
           <Settings className="w-4 h-4" />
@@ -208,12 +219,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {/* Advanced Model Configuration Panel */}
         {showSettings && (
-          <div className="p-5 bg-slate-950/80 backdrop-blur rounded-xl border border-purple-500/20 mb-6 animate-in fade-in slide-in-from-top-2 space-y-6">
+          <div className={`p-5 backdrop-blur rounded-xl border mb-6 animate-in fade-in slide-in-from-top-2 space-y-6 ${
+            theme === 'dark'
+              ? 'bg-slate-950/80 border-purple-500/20'
+              : 'bg-gray-50/80 border-purple-200'
+          }`}>
 
             {errorMsg && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                    <p className="text-sm text-red-200">{errorMsg}</p>
+                <div className={`border rounded-lg p-3 flex items-start gap-3 ${
+                  theme === 'dark'
+                    ? 'bg-red-500/10 border-red-500/20'
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                    <AlertTriangle className={`w-5 h-5 shrink-0 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`} />
+                    <p className={`text-sm ${theme === 'dark' ? 'text-red-200' : 'text-red-700'}`}>{errorMsg}</p>
                 </div>
             )}
 
