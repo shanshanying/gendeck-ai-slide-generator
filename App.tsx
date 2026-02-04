@@ -10,7 +10,10 @@ import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
 import { ImportResult } from './services/importService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon } from 'lucide-react';
+import { deckApi, slideApi, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
+import DeckBrowser from './components/DeckBrowser';
+import SlideHistory from './components/SlideHistory';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -66,6 +69,13 @@ const App: React.FC = () => {
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showNewDeckConfirm, setShowNewDeckConfirm] = useState(false);
+  
+  // Database-related state
+  const [showDeckBrowser, setShowDeckBrowser] = useState(false);
+  const [showSlideHistory, setShowSlideHistory] = useState(false);
+  const [currentDbDeckId, setCurrentDbDeckId] = useState<string | null>(null);
+  const [isSavingToDb, setIsSavingToDb] = useState(false);
+  const [hasDatabase, setHasDatabase] = useState(!!import.meta.env.VITE_API_URL);
   
   // New State for Pause/Resume
   const [isPaused, setIsPaused] = useState(false);
@@ -315,6 +325,85 @@ const App: React.FC = () => {
   // Cancel new deck confirmation
   const cancelNewDeck = () => {
     setShowNewDeckConfirm(false);
+  };
+
+  // ==================== DATABASE FUNCTIONS ====================
+
+  // Save current deck to database
+  const handleSaveToDatabase = async () => {
+    if (!config || slides.length === 0 || !hasDatabase) return;
+    
+    setIsSavingToDb(true);
+    try {
+      const response = await deckApi.create({
+        topic: config.topic,
+        audience: config.audience,
+        purpose: config.purpose,
+        colorPalette,
+        slides,
+        totalCost,
+      });
+      
+      setCurrentDbDeckId(response.data.id);
+      alert(lang === 'zh' ? '保存成功！' : 'Saved to database!');
+    } catch (error: any) {
+      console.error('Failed to save to database:', error);
+      alert(lang === 'zh' ? '保存失败: ' + error.message : 'Save failed: ' + error.message);
+    } finally {
+      setIsSavingToDb(false);
+    }
+  };
+
+  // Load deck from database
+  const handleLoadFromDatabase = (deckData: {
+    id: string;
+    topic: string;
+    slides: SlideData[];
+    colorPalette: string;
+  }) => {
+    setCurrentDbDeckId(deckData.id);
+    setSlides(deckData.slides);
+    setColorPalette(deckData.colorPalette);
+    
+    // Reconstruct config
+    const loadedConfig: PresentationConfig = {
+      topic: deckData.topic,
+      audience: '',
+      purpose: '',
+      slideCount: deckData.slides.length,
+      apiSettings: config?.apiSettings || {
+        apiKeys: {},
+        outline: { provider: 'google', modelId: 'gemini-3-flash-preview' },
+        slides: { provider: 'google', modelId: 'gemini-3-flash-preview' },
+      },
+      documentContent: '',
+    };
+    
+    setConfig(loadedConfig);
+    setStatus(GenerationStatus.COMPLETE);
+    localStorage.setItem('gendeck_topic', deckData.topic);
+  };
+
+  // Save single slide to database (for auto-save)
+  const handleSaveSlideToDb = async (slideIndex: number, slide: SlideData) => {
+    if (!currentDbDeckId || !hasDatabase) return;
+    
+    try {
+      await slideApi.save(currentDbDeckId, slideIndex, slide);
+    } catch (error) {
+      console.error('Failed to save slide:', error);
+    }
+  };
+
+  // Restore slide from history
+  const handleRestoreSlide = (restoredSlide: SlideData) => {
+    if (!currentSlideId) return;
+    
+    setSlides(prev => prev.map(s => 
+      s.id === currentSlideId 
+        ? { ...restoredSlide, id: s.id, isRegenerating: false }
+        : s
+    ));
   };
 
   // Step 1: Generate Outline Only
@@ -915,6 +1004,47 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* Database Actions */}
+            {hasDatabase && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowDeckBrowser(true)}
+                  className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
+                  title={language === 'zh' ? '浏览保存的演示文稿' : 'Browse saved decks'}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{language === 'zh' ? '浏览' : 'Browse'}</span>
+                </button>
+                
+                {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && slides.length > 0 && (
+                  <button
+                    onClick={handleSaveToDatabase}
+                    disabled={isSavingToDb}
+                    className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
+                    title={language === 'zh' ? '保存到数据库' : 'Save to database'}
+                  >
+                    {isSavingToDb ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span className="hidden sm:inline">{language === 'zh' ? '保存' : 'Save'}</span>
+                  </button>
+                )}
+
+                {currentSlide && currentSlideId && (
+                  <button
+                    onClick={() => setShowSlideHistory(true)}
+                    className={cx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border', th.button.primary)}
+                    title={language === 'zh' ? '查看历史版本' : 'View history'}
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{language === 'zh' ? '历史' : 'History'}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
             {status === GenerationStatus.REVIEWING_OUTLINE && (
             <div className={cx('px-3 py-1.5 rounded-full text-xs font-medium animate-pulse border', isDark ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' : 'bg-blue-100 text-blue-700 border-blue-200')}>
                 {t('outlineEditor')}
@@ -1144,6 +1274,27 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Database Browser Modal */}
+      <DeckBrowser
+        isOpen={showDeckBrowser}
+        onClose={() => setShowDeckBrowser(false)}
+        onLoadDeck={handleLoadFromDatabase}
+        lang={language}
+        theme={theme}
+      />
+
+      {/* Slide History Modal */}
+      <SlideHistory
+        isOpen={showSlideHistory}
+        onClose={() => setShowSlideHistory(false)}
+        slideId={currentSlideId}
+        slideIndex={slides.findIndex(s => s.id === currentSlideId)}
+        slideTitle={currentSlide?.title || ''}
+        onRestore={handleRestoreSlide}
+        lang={language}
+        theme={theme}
+      />
     </div>
   );
 };
