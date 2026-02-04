@@ -1,11 +1,12 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target } from 'lucide-react';
+import { FileText, Upload, Sparkles, Settings, Users, Layers, Image as ImageIcon, Key, Target, XCircle, AlertTriangle } from 'lucide-react';
 import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
 
 interface InputFormProps {
   onGenerate: (config: PresentationConfig) => void;
+  onCancel: () => void;
   isGenerating: boolean;
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
@@ -26,7 +27,7 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', "Gemini 1.5 Pro Overview"));
   const [audience, setAudience] = useState(() => loadStr('gendeck_audience', AUDIENCE_PRESETS[lang][0]));
@@ -34,6 +35,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
   const [showSettings, setShowSettings] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Settings State with Persistence
   const [apiKeys, setApiKeys] = useState<Partial<Record<ApiProvider, string>>>(() => 
@@ -80,7 +82,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (isGenerating) {
-        const messages = lang === 'zh' ? [
+        const stages = lang === 'zh' ? [
             "正在分析文档内容...",
             "正在识别目标受众...",
             "正在构建演示流程...",
@@ -97,11 +99,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
         ];
         
         let i = 0;
-        setProgressMessage(messages[0]);
+        setProgressMessage(`Stage 1/${stages.length}: ${stages[0]}`);
         
         interval = setInterval(() => {
-            i = (i + 1) % messages.length;
-            setProgressMessage(messages[i]);
+            i = (i + 1) % stages.length;
+            setProgressMessage(`Stage ${i + 1}/${stages.length}: ${stages[i]}`);
         }, 3000);
     } else {
         setProgressMessage("");
@@ -113,6 +115,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
   // Helper to handle key changes
   const handleKeyChange = (provider: ApiProvider, value: string) => {
     setApiKeys(prev => ({ ...prev, [provider]: value }));
+    if (errorMsg) setErrorMsg(null); // Clear error on edit
   };
 
   // Helper to update model when provider changes
@@ -146,6 +149,25 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
+
+    // Validate API Keys
+    const providersToCheck = new Set<ApiProvider>();
+    if (outlineProvider !== 'custom') providersToCheck.add(outlineProvider);
+    if (slideProvider !== 'custom') providersToCheck.add(slideProvider);
+
+    const missingKeys: string[] = [];
+    providersToCheck.forEach(p => {
+        if (!apiKeys[p] || apiKeys[p]!.trim() === '') {
+            missingKeys.push(PROVIDERS.find(prov => prov.id === p)?.name || p);
+        }
+    });
+
+    if (missingKeys.length > 0) {
+        setShowSettings(true);
+        setErrorMsg(`Missing API Keys for: ${missingKeys.join(', ')}. Please enter them in Model Settings.`);
+        return;
+    }
     
     // Construct simplified settings object
     const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
@@ -190,30 +212,33 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
         {showSettings && (
           <div className="p-5 bg-gray-900/80 rounded-lg border border-purple-500/30 mb-6 animate-in fade-in slide-in-from-top-2 space-y-6">
             
+            {errorMsg && (
+                <div className="bg-red-900/30 border border-red-500/50 rounded p-3 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                    <p className="text-sm text-red-200">{errorMsg}</p>
+                </div>
+            )}
+
             {/* 1. API Keys Section */}
             <div>
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                  <Key className="w-3 h-3" /> {t('apiCredentials')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PROVIDERS.filter(p => p.id !== 'google' && p.id !== 'custom').map(p => (
+                {PROVIDERS.filter(p => p.id !== 'custom').map(p => (
                   <div key={p.id}>
-                    <label className="block text-xs text-gray-500 mb-1">{p.name} API Key</label>
+                    <label className={`block text-xs mb-1 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-400 font-bold' : 'text-gray-500'}`}>
+                        {p.name} API Key {(!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id)) ? '*' : ''}
+                    </label>
                     <input 
                       type="password"
                       value={apiKeys[p.id] || ''}
                       onChange={(e) => handleKeyChange(p.id, e.target.value)}
                       placeholder={p.placeholderKey}
-                      className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-white text-xs focus:border-purple-500 outline-none"
+                      className={`w-full bg-gray-800 border rounded px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-1 ${!apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500 focus:border-red-500 ring-red-500/50' : 'border-gray-700 focus:border-purple-500'}`}
                     />
                   </div>
                 ))}
-                <div>
-                   <label className="block text-xs text-gray-500 mb-1">Google Gemini API Key</label>
-                   <div className="w-full bg-gray-800/50 border border-gray-700 rounded px-3 py-1.5 text-gray-500 text-xs italic">
-                     {t('googleApiKeyNote')}
-                   </div>
-                </div>
               </div>
             </div>
 
@@ -408,26 +433,39 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isGenerating, lang, t
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isGenerating || !content.trim()}
-          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg flex items-center justify-center gap-3 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-        >
-          {isGenerating ? (
-            <>
-              <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="animate-pulse">{progressMessage || t('thinking')}</span>
-            </>
-          ) : (
-            <>
-              <FileText className="w-6 h-6" />
-              {t('generateBtn')}
-            </>
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={isGenerating || !content.trim()}
+            className={`flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg flex items-center justify-center gap-3 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-lg ${isGenerating ? 'cursor-not-allowed' : ''}`}
+          >
+            {isGenerating ? (
+              <>
+                <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="animate-pulse">{progressMessage || t('thinking')}</span>
+              </>
+            ) : (
+              <>
+                <FileText className="w-6 h-6" />
+                {t('generateBtn')}
+              </>
+            )}
+          </button>
+          
+          {isGenerating && (
+             <button
+                type="button"
+                onClick={onCancel}
+                className="bg-red-900/50 hover:bg-red-900 border border-red-700 text-red-200 font-bold py-4 px-6 rounded-lg shadow-lg flex items-center justify-center gap-2 transform transition-all active:scale-95 animate-in fade-in"
+             >
+                <XCircle className="w-6 h-6" />
+                {t('cancel')}
+             </button>
           )}
-        </button>
+        </div>
       </form>
     </div>
   );

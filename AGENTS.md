@@ -2,16 +2,17 @@
 
 ## Project Overview
 
-GenDeck is an AI-powered HTML presentation deck generator that converts unstructured text documents into professionally designed, HTML/Tailwind CSS-based slide presentations. It uses large language models (LLMs) to generate structured outlines and individual slide HTML code.
+GenDeck is an AI-powered HTML presentation deck generator that converts unstructured text documents into professionally designed, HTML/Tailwind CSS-based slide presentations. It uses large language models (LLMs) to generate structured outlines and individual slide HTML code through a two-phase generation process.
 
 ### Key Capabilities
 
 - **Outline Generation**: Converts raw text into structured presentation outlines with titles, content points, and layout suggestions
 - **Slide HTML Generation**: Creates individual slide HTML fragments using Tailwind CSS with a strict design system
 - **Multi-Provider AI Support**: Works with Google Gemini, OpenAI, DeepSeek, Moonshot (Kimi), Anthropic Claude, and custom OpenAI-compatible APIs
-- **Visual Themes**: 17+ predefined color palettes (Tech Giants, Professional, Minimalist, Creative themes)
-- **Export Options**: HTML deck (with built-in presentation viewer), Markdown outline, speaker notes
+- **Visual Themes**: 20+ predefined color palettes (Tech Giants, Professional, Minimalist, Creative themes)
+- **Export Options**: HTML deck (with built-in presentation viewer), Markdown outline, speaker notes, and PDF print support
 - **Interactive Editor**: Review and edit outlines before generating slides, with layout presets and drag-drop reordering
+- **Internationalization**: Support for English and Chinese (UI and content generation)
 
 ## Technology Stack
 
@@ -32,12 +33,14 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 ├── index.tsx               # React application entry point
 ├── App.tsx                 # Main application component (state management, export logic)
 ├── types.ts                # TypeScript type definitions
-├── constants.ts            # AI providers, pricing, themes, presets
+├── constants.ts            # AI providers, pricing, themes, translations, presets
 ├── vite.config.ts          # Vite configuration with env variable injection
 ├── tsconfig.json           # TypeScript configuration
 ├── package.json            # Dependencies and scripts
 ├── metadata.json           # Project metadata
 ├── .env.local              # Environment variables (GEMINI_API_KEY)
+├── .gitignore              # Git ignore patterns
+├── README.md               # Basic project documentation
 ├── components/
 │   ├── InputForm.tsx       # Initial configuration form (topic, audience, model settings)
 │   ├── OutlineEditor.tsx   # Outline review/editor with theme selection
@@ -97,7 +100,7 @@ import { Something } from '@/types';
 1. **InputForm** → User configures topic, audience, purpose, slide count, and AI model settings
 2. **App** → Calls `generateOutline()` to create initial slide structure
 3. **OutlineEditor** → User reviews/edits outline and selects color theme
-4. **App** → Sequentially calls `generateSlideHtml()` for each slide (queued processing)
+4. **App** → Sequentially calls `generateSlideHtml()` for each slide (queued processing with pause/resume support)
 5. **Sidebar + SlidePreview** → User can navigate, preview, and regenerate individual slides
 6. **Export** → Generates standalone HTML file with embedded presentation viewer
 
@@ -167,6 +170,8 @@ interface ApiSettings {
 }
 
 type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
+
+type Language = 'en' | 'zh';
 ```
 
 ## Code Style Guidelines
@@ -206,6 +211,7 @@ User preferences are automatically saved to localStorage with keys prefixed by `
 - `gendeck_topic`, `gendeck_audience`, `gendeck_purpose`
 - `gendeck_count`, `gendeck_content`
 - `gendeck_api_keys`
+- `gendeck_lang` (language preference)
 - `gendeck_p_outline`, `gendeck_m_outline` (outline provider/model)
 - `gendeck_p_slide`, `gendeck_m_slide` (slide provider/model)
 
@@ -213,11 +219,12 @@ User preferences are automatically saved to localStorage with keys prefixed by `
 
 ### HTML Deck
 Standalone HTML file with:
-- Built-in keyboard navigation (arrow keys, space, page up/down)
+- Built-in keyboard navigation (arrow keys, space, page up/down, Home, End)
 - Theme toggle (dark/light mode)
 - Fullscreen support
 - Progress bar
 - Print-ready CSS for PDF conversion
+- Auto-scaling to fit viewport
 
 ### Markdown Outline
 Structure format:
@@ -234,6 +241,9 @@ Structure format:
 ### Speaker Notes
 Plain text format with slide numbers.
 
+### PDF Export
+Injected auto-print script opens browser print dialog with optimized CSS for 1920x1080 page size.
+
 ## Security Considerations
 
 - API keys for non-Google providers are stored in localStorage (user's browser)
@@ -247,3 +257,45 @@ Plain text format with slide numbers.
 - No linting/formatting tools are configured (consider adding ESLint/Prettier)
 - The project uses ES modules (`"type": "module"` in package.json)
 - Importmap in index.html enables CDN-based dependencies during development
+- Tailwind CSS is loaded via CDN (not bundled)
+
+## Layout Presets
+
+The following layout presets are available for slides:
+
+| Preset | Description | Use Case |
+|--------|-------------|----------|
+| Cover | Central focus, big typography | First slide |
+| Ending | Thank you / Call to action | Last slide |
+| Standard | Title + bullet points | General content |
+| Compare | Split screen (Left/Right) | Pros/cons, before/after |
+| Grid | 2x2 or 3x2 cards | Features, pillars |
+| Timeline | Horizontal flow | Roadmaps, history |
+| Data | Big numbers, metrics | Statistics focus |
+| Quote | Centered statement | Key messages |
+
+## Supported AI Models
+
+### Google Gemini
+- gemini-3-flash-preview
+- gemini-3-pro-preview
+- gemini-2.5-flash-latest
+
+### OpenAI
+- gpt-4o
+- gpt-4o-mini
+
+### DeepSeek
+- deepseek-chat (V3)
+- deepseek-reasoner (R1)
+
+### Moonshot (Kimi)
+- kimi-k2-0905-preview
+- kimi-k2-turbo-preview
+
+### Anthropic Claude
+- claude-3-5-sonnet-20240620
+- claude-3-haiku-20240307
+
+### Custom
+- Any OpenAI-compatible API (e.g., Ollama local models)

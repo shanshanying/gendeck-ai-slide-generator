@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language } from './types';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, MoreVertical, Languages, Play, Pause, XCircle, Printer } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, MoreVertical, Languages, Play, Pause, XCircle, Printer, Plus } from 'lucide-react';
 import { TRANSLATIONS } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -31,6 +32,9 @@ const App: React.FC = () => {
   // Refs for process control
   const shouldStopRef = React.useRef(false);
   const processingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Ref for aborting outline generation
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Helper function for translations
   const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[language][key];
@@ -141,6 +145,32 @@ const App: React.FC = () => {
     setStatus(GenerationStatus.REVIEWING_OUTLINE);
   };
 
+  // Completely reset the app to IDLE state
+  const handleNewDeck = () => {
+    if (confirm("Are you sure? All progress will be lost.")) {
+      // 1. Stop any ongoing operations
+      shouldStopRef.current = true;
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // 2. Reset UI State
+      setIsPaused(false);
+      setStatus(GenerationStatus.IDLE);
+      
+      // 3. Reset Data State
+      setSlides([]);
+      setConfig(null);
+      setTotalCost(0);
+      setCurrentSlideId(null);
+      setColorPalette('');
+      setIsGeneratingNotes(false);
+    }
+  };
+
   // Step 1: Generate Outline Only
   const handleGenerateOutline = async (newConfig: PresentationConfig) => {
     setConfig(newConfig);
@@ -149,6 +179,10 @@ const App: React.FC = () => {
     setCurrentSlideId(null);
     setTotalCost(0); // Reset cost for new deck
 
+    // Create abort controller
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const result = await generateOutline(
         newConfig.documentContent, 
@@ -156,7 +190,8 @@ const App: React.FC = () => {
         newConfig.audience,
         newConfig.purpose, // Pass the purpose here
         newConfig.slideCount,
-        newConfig.apiSettings
+        newConfig.apiSettings,
+        controller.signal // Pass signal
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -174,11 +209,26 @@ const App: React.FC = () => {
       setSlides(initialSlides);
       setStatus(GenerationStatus.REVIEWING_OUTLINE);
 
-    } catch (error) {
-      console.error(error);
-      setStatus(GenerationStatus.ERROR);
-      alert("Failed to generate outline. Please check your settings, API Key, or text content.");
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Outline generation aborted by user.');
+        setStatus(GenerationStatus.IDLE);
+      } else {
+        console.error(error);
+        setStatus(GenerationStatus.ERROR);
+        alert("Failed to generate outline. Please check your settings, API Key, or text content.");
+        setStatus(GenerationStatus.IDLE);
+      }
+    } finally {
+        abortControllerRef.current = null;
     }
+  };
+
+  const handleCancelOutlineGeneration = () => {
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    setStatus(GenerationStatus.IDLE);
   };
 
   const handleGenerateNotes = async () => {
@@ -770,16 +820,12 @@ const App: React.FC = () => {
             
             {status !== GenerationStatus.IDLE && (
               <button 
-                onClick={() => {
-                   if (confirm("Are you sure? All progress will be lost.")) {
-                     handleCancelGeneration();
-                     setStatus(GenerationStatus.IDLE);
-                   }
-                }}
-                className="text-gray-400 hover:text-white p-2"
+                onClick={handleNewDeck}
+                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-700 text-sm font-medium transition-colors ml-2"
                 title={t('new')}
               >
-                <MoreVertical className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('new')}</span>
               </button>
             )}
         </div>
@@ -791,6 +837,7 @@ const App: React.FC = () => {
           <div className="h-full overflow-y-auto">
             <InputForm 
               onGenerate={handleGenerateOutline} 
+              onCancel={handleCancelOutlineGeneration}
               isGenerating={status === GenerationStatus.GENERATING_OUTLINE} 
               lang={language}
               t={t}

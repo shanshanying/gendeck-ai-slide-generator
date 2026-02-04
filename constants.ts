@@ -1,3 +1,4 @@
+
 import { ApiProvider } from "./types";
 
 export interface ModelPricing {
@@ -17,7 +18,7 @@ export const PROVIDERS: {
   { 
     id: 'google', 
     name: 'Google Gemini', 
-    placeholderKey: 'Managed by Env (process.env.API_KEY)',
+    placeholderKey: 'Enter your Gemini API Key',
     models: [
       { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash', inputPrice: 0.1, outputPrice: 0.4 },
       { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro', inputPrice: 1.25, outputPrice: 5.0 },
@@ -189,6 +190,7 @@ export const TRANSLATIONS = {
     generateBtn: "Generate Outline",
     thinking: "Thinking...",
     googleApiKeyNote: "Managed via system environment",
+    cancel: "Cancel",
     
     // OutlineEditor
     reviewStyle: "Review & Style",
@@ -231,7 +233,6 @@ export const TRANSLATIONS = {
     instructions: "Instructions for regeneration",
     instructionPlaceholder: "e.g., Change layout to compare two items...",
     apply: "Apply",
-    cancel: "Cancel",
     overwriteConfirm: "Overwrite current slide design?",
     yesRegenerate: "Yes, Regenerate",
     constraints: "Active System Constraints",
@@ -281,6 +282,7 @@ export const TRANSLATIONS = {
     generateBtn: "生成大纲",
     thinking: "思考中...",
     googleApiKeyNote: "通过系统环境变量管理",
+    cancel: "取消",
     
     // OutlineEditor
     reviewStyle: "审查与样式",
@@ -323,7 +325,6 @@ export const TRANSLATIONS = {
     instructions: "重新生成指令",
     instructionPlaceholder: "例如：更改布局以对比两个项目...",
     apply: "应用",
-    cancel: "取消",
     overwriteConfirm: "覆盖当前幻灯片设计？",
     yesRegenerate: "是的，重新生成",
     constraints: "当前系统约束",

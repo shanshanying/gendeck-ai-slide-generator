@@ -40,7 +40,8 @@ const callLLM = async (
   prompt: string, 
   modelSelection: ModelSelection,
   apiKeys: Partial<Record<ApiProvider, string>>,
-  jsonMode: boolean = false
+  jsonMode: boolean = false,
+  signal?: AbortSignal
 ): Promise<{ text: string; cost: number }> => {
   
   const { provider, modelId, baseUrl } = modelSelection;
@@ -50,11 +51,16 @@ const callLLM = async (
   
   // 1. Google Gemini Strategy
   if (provider === 'google') {
-    const effectiveKey = apiKey || process.env.API_KEY;
-    if (!effectiveKey) throw new Error("Missing Google API Key");
+    if (!apiKey) throw new Error("Missing Google API Key");
 
-    const ai = new GoogleGenAI({ apiKey: effectiveKey });
+    const ai = new GoogleGenAI({ apiKey });
     
+    // Note: The Google GenAI SDK might not fully support AbortSignal in all environments yet, 
+    // but we check the signal before making the request.
+    if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+    }
+
     let response;
     if (jsonMode) {
        response = await ai.models.generateContent({
@@ -104,7 +110,8 @@ const callLLM = async (
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         ...(jsonMode && provider === 'openai' ? { response_format: { type: "json_object" } } : {})
-      })
+      }),
+      signal
     });
 
     if (!response.ok) {
@@ -132,7 +139,8 @@ const callLLM = async (
         model: modelId,
         max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }]
-      })
+      }),
+      signal
     });
 
     if (!response.ok) {
@@ -158,7 +166,8 @@ export const generateOutline = async (
   audience: string,
   purpose: string,
   slideCount: number,
-  apiSettings: ApiSettings
+  apiSettings: ApiSettings,
+  signal?: AbortSignal
 ): Promise<ServiceResponse<OutlineItem[]>> => {
   try {
     const prompt = `
@@ -223,7 +232,7 @@ export const generateOutline = async (
     `;
 
     // Use Outline settings
-    const { text, cost } = await callLLM(prompt, apiSettings.outline, apiSettings.apiKeys, true);
+    const { text, cost } = await callLLM(prompt, apiSettings.outline, apiSettings.apiKeys, true, signal);
     const jsonString = cleanJson(text);
     
     let parsed: any;
@@ -245,6 +254,9 @@ export const generateOutline = async (
     return { data: items, cost };
 
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+       throw error;
+    }
     console.error("Error generating outline:", error);
     throw error;
   }
@@ -373,7 +385,7 @@ export const generateSlideHtml = async (
       4. **Grid**: 2x2 or 3x2 cards. Good for lists/features.
       5. **Timeline**: Horizontal flow with steps.
       6. **Data**: Big numbers, charts (simulated via CSS shapes/bars), or metric cards.
-      7. **Center**: Single powerful statement/quote in middle.
+      7. **Center**: Single powerful statement or quote.
       8. **Standard**: Text on left, visual/icon composition on right.
 
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
