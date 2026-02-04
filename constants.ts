@@ -8,70 +8,85 @@ export interface ModelPricing {
   outputPrice: number; // Per 1M tokens
 }
 
-export const PROVIDERS: { 
-  id: ApiProvider; 
-  name: string; 
-  defaultBaseUrl?: string; 
+export const PROVIDERS: {
+  id: ApiProvider;
+  name: string;
+  defaultBaseUrl?: string;
   placeholderKey?: string;
   models: ModelPricing[];
 }[] = [
-  { 
-    id: 'google', 
-    name: 'Google Gemini', 
+  {
+    id: 'google',
+    name: 'Google Gemini',
     placeholderKey: 'Enter your Gemini API Key',
     models: [
-      { id: 'gemini-3-flash-preview', name: 'Gemini 3.0 Flash', inputPrice: 0.1, outputPrice: 0.4 },
-      { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro', inputPrice: 1.25, outputPrice: 5.0 },
-      { id: 'gemini-2.5-flash-latest', name: 'Gemini 2.5 Flash', inputPrice: 0.075, outputPrice: 0.3 },
+      // Gemini 3 Series (Latest)
+      { id: 'gemini-3-pro-exp', name: 'Gemini 3 Pro (Exp)', inputPrice: 1.25, outputPrice: 5.0 },
+      { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)', inputPrice: 0.075, outputPrice: 0.30 },
+      // Gemini 2.5 Series
+      { id: 'gemini-2.5-pro-preview-03-25', name: 'Gemini 2.5 Pro (Preview)', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash (Preview)', inputPrice: 0.075, outputPrice: 0.30 },
+      { id: 'gemini-2.5-flash-lite-preview', name: 'Gemini 2.5 Flash-Lite (Preview)', inputPrice: 0.0375, outputPrice: 0.15 },
     ]
   },
-  { 
-    id: 'openai', 
-    name: 'OpenAI (ChatGPT)', 
-    defaultBaseUrl: 'https://api.openai.com/v1', 
+  {
+    id: 'openai',
+    name: 'OpenAI (ChatGPT)',
+    defaultBaseUrl: 'https://api.openai.com/v1',
     placeholderKey: 'sk-...',
     models: [
-      { id: 'gpt-4o', name: 'GPT-4o', inputPrice: 2.5, outputPrice: 10.0 },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', inputPrice: 0.15, outputPrice: 0.6 },
+      // GPT-5.x Chat Series (Latest)
+      { id: 'gpt-5.2', name: 'GPT-5.2', inputPrice: 1.75, outputPrice: 14.0 },
+      { id: 'gpt-5.1', name: 'GPT-5.1', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gpt-5', name: 'GPT-5', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gpt-5-mini', name: 'GPT-5 Mini', inputPrice: 0.25, outputPrice: 2.0 },
+      { id: 'gpt-5-nano', name: 'GPT-5 Nano', inputPrice: 0.05, outputPrice: 0.40 },
+      { id: 'gpt-5.2-chat-latest', name: 'GPT-5.2 Chat (Latest)', inputPrice: 1.75, outputPrice: 14.0 },
+      { id: 'gpt-5.1-chat-latest', name: 'GPT-5.1 Chat (Latest)', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gpt-5-chat-latest', name: 'GPT-5 Chat (Latest)', inputPrice: 1.25, outputPrice: 10.0 },
+
+      // GPT-5 Codex Series
+      { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', inputPrice: 1.75, outputPrice: 14.0 },
+      { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', inputPrice: 1.25, outputPrice: 10.0 },
+      { id: 'gpt-5-codex', name: 'GPT-5 Codex', inputPrice: 1.25, outputPrice: 10.0 },
+
+      // GPT-5 Pro Series
+      { id: 'gpt-5.2-pro', name: 'GPT-5.2 Pro', inputPrice: 21.0, outputPrice: 168.0 },
+      { id: 'gpt-5-pro', name: 'GPT-5 Pro', inputPrice: 15.0, outputPrice: 120.0 },
     ]
   },
-  { 
-    id: 'deepseek', 
-    name: 'DeepSeek', 
-    defaultBaseUrl: 'https://api.deepseek.com', 
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    defaultBaseUrl: 'https://api.deepseek.com',
     placeholderKey: 'dsk-...',
     models: [
-      { id: 'deepseek-chat', name: 'DeepSeek V3', inputPrice: 0.14, outputPrice: 0.28 },
-      { id: 'deepseek-reasoner', name: 'DeepSeek R1', inputPrice: 0.55, outputPrice: 2.19 },
+      { id: 'deepseek-chat', name: 'deepseek-chat', inputPrice: 0.14, outputPrice: 0.28 },
+      { id: 'deepseek-reasoner', name: 'deepseek-reasoner', inputPrice: 0.55, outputPrice: 2.19 },
     ]
   },
-  { 
-    id: 'moonshot', 
-    name: 'Moonshot (Kimi)', 
-    defaultBaseUrl: 'https://api.moonshot.ai/v1', 
+  {
+    id: 'moonshot',
+    name: 'Moonshot (Kimi)',
+    defaultBaseUrl: 'https://api.moonshot.ai/v1',
     placeholderKey: 'sk-...',
     models: [
-      { id: 'kimi-k2-0905-preview', name: 'Kimi K2 (0905 Preview)', inputPrice: 0.012, outputPrice: 0.012 },
-      { id: 'kimi-k2-turbo-preview', name: 'Kimi K2 Turbo', inputPrice: 0.008, outputPrice: 0.008 },
+      { id: 'kimi-k2.5', name: 'Kimi K2.5(Multi-Modal)', inputPrice: 0.10, outputPrice: 0.60 },
+      { id: 'kimi-k2-0905-preview', name: 'Kimi K2 (Latest)', inputPrice: 0.15, outputPrice: 0.60 },
+      { id: 'kimi-k2-turbo-preview', name: 'Kimi K2 Turbo (Recommended)', inputPrice: 0.15, outputPrice: 1.15 },
     ]
   },
-  { 
-    id: 'anthropic', 
-    name: 'Anthropic (Claude)', 
-    defaultBaseUrl: 'https://api.anthropic.com/v1', 
+  {
+    id: 'anthropic',
+    name: 'Anthropic (Claude)',
+    defaultBaseUrl: 'https://api.anthropic.com/v1',
     placeholderKey: 'sk-ant-...',
     models: [
-      { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet', inputPrice: 3.0, outputPrice: 15.0 },
-      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', inputPrice: 0.25, outputPrice: 1.25 },
-    ]
-  },
-  { 
-    id: 'custom', 
-    name: 'Custom (OpenAI Compatible)', 
-    defaultBaseUrl: 'http://localhost:11434/v1', 
-    placeholderKey: 'Bearer token...',
-    models: [
-      { id: 'llama3', name: 'Llama 3 (Local)', inputPrice: 0, outputPrice: 0 },
+      // Claude 4.5 Series (Latest)
+      { id: 'claude-opus-4.5-20251101', name: 'Claude Opus 4.5', inputPrice: 5.0, outputPrice: 25.0 },
+      { id: 'claude-sonnet-4.5-20251101', name: 'Claude Sonnet 4.5', inputPrice: 3.0, outputPrice: 15.0 },
+      { id: 'claude-haiku-4.5-20251101', name: 'Claude Haiku 4.5', inputPrice: 1.0, outputPrice: 5.0 },
     ]
   },
 ];
@@ -169,7 +184,7 @@ export const TRANSLATIONS = {
     exportPdf: "Print / Save as PDF",
     new: "New",
     confirmNew: "Are you sure? All progress will be lost.",
-    
+
     // InputForm
     createNewDeck: "Create New Deck",
     modelSettings: "Model Settings",
@@ -192,7 +207,7 @@ export const TRANSLATIONS = {
     thinking: "Thinking...",
     googleApiKeyNote: "Managed via system environment",
     cancel: "Cancel",
-    
+
     // OutlineEditor
     reviewStyle: "Review & Style",
     refineStructure: "Refine your structure, choose layouts, and pick a theme.",
@@ -216,11 +231,11 @@ export const TRANSLATIONS = {
     onePointPerLine: "One point per line",
     pointsPlaceholder: "• Point 1\n• Point 2\n• Point 3",
     layoutPreset: "Layout Preset",
-    
+
     // Sidebar
     slidesHeader: "Slides",
     noSlides: "No slides yet. Configure and generate to start.",
-    
+
     // SlidePreview
     noSlideSelected: "No Slide Selected",
     selectSlidePrompt: "Select a slide from the sidebar to preview, regenerate, or edit.",
@@ -262,7 +277,7 @@ export const TRANSLATIONS = {
     exportPdf: "打印 / 另存为 PDF",
     new: "新建",
     confirmNew: "确定要重新开始吗？所有进度将丢失。",
-    
+
     // InputForm
     createNewDeck: "创建新演示文稿",
     modelSettings: "模型设置",
@@ -285,7 +300,7 @@ export const TRANSLATIONS = {
     thinking: "思考中...",
     googleApiKeyNote: "通过系统环境变量管理",
     cancel: "取消",
-    
+
     // OutlineEditor
     reviewStyle: "审查与样式",
     refineStructure: "优化结构，选择布局，挑选主题。",
@@ -309,11 +324,11 @@ export const TRANSLATIONS = {
     onePointPerLine: "每行一个要点",
     pointsPlaceholder: "• 要点 1\n• 要点 2\n• 要点 3",
     layoutPreset: "布局预设",
-    
+
     // Sidebar
     slidesHeader: "幻灯片",
     noSlides: "暂无幻灯片。请配置并生成以开始。",
-    
+
     // SlidePreview
     noSlideSelected: "未选择幻灯片",
     selectSlidePrompt: "从侧边栏选择一张幻灯片以预览、重新生成或编辑。",

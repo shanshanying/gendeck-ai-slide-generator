@@ -19,7 +19,7 @@ export interface SlideData {
   cost?: number;
 }
 
-export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
+export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot';
 
 export interface ModelSelection {
   provider: ApiProvider;

@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, MoreVertical, Languages, Play, Pause, XCircle, Printer, Plus } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus } from 'lucide-react';
 import { TRANSLATIONS } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -108,7 +108,7 @@ const App: React.FC = () => {
         return next;
       });
     } catch (e) {
-      console.error("Failed to generate slide", slideToProcess.id, e);
+      // Failed to generate slide - will retry automatically
       setSlides(prev => {
          const next = prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s);
          // Even on error, try to continue if not stopped
@@ -231,10 +231,10 @@ const App: React.FC = () => {
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        console.log('Outline generation aborted by user.');
+        // Outline generation aborted by user - silently return to idle
         setStatus(GenerationStatus.IDLE);
       } else {
-        console.error(error);
+        // Error handled via alert
         setStatus(GenerationStatus.ERROR);
         alert("Failed to generate outline. Please check your settings, API Key, or text content.");
         setStatus(GenerationStatus.IDLE);
@@ -890,7 +890,6 @@ const App: React.FC = () => {
                <SlidePreview 
                  slide={currentSlide}
                  onRegenerate={handleRegenerateSlide}
-                 styleDescription={colorPalette} // reusing prop for palette
                  colorPalette={colorPalette}
                  lang={language}
                  t={t}

@@ -93,9 +93,9 @@ const callLLM = async (
     }
   }
 
-  // 2. OpenAI Compatible Strategy (OpenAI, DeepSeek, Moonshot, Custom)
-  else if (['openai', 'deepseek', 'moonshot', 'custom'].includes(provider)) {
-    if (!apiKey && provider !== 'custom') throw new Error(`Missing API Key for ${provider}`);
+  // 2. OpenAI Compatible Strategy (OpenAI, DeepSeek, Moonshot)
+  else if (['openai', 'deepseek', 'moonshot'].includes(provider)) {
+    if (!apiKey) throw new Error(`Missing API Key for ${provider}`);
     
     const url = `${baseUrl?.replace(/\/+$/, '')}/chat/completions`;
     
@@ -257,7 +257,7 @@ export const generateOutline = async (
     if (error instanceof DOMException && error.name === 'AbortError') {
        throw error;
     }
-    console.error("Error generating outline:", error);
+    // Error will be propagated to caller
     throw error;
   }
 };
@@ -301,14 +301,14 @@ export const generateSpeakerNotes = async (
         notes = parsed.notes.map(String);
       }
     } catch (e) {
-      console.error("Error parsing notes", e);
+      // Parse error handled by fallback
       // Fallback: return empty strings if parse fails
       notes = slides.map(() => "");
     }
 
     return { data: notes, cost };
   } catch (error) {
-    console.error("Error generating notes:", error);
+    // Error will be propagated to caller
     throw error;
   }
 }
@@ -416,7 +416,7 @@ export const generateSlideHtml = async (
     return { data: cleanHtml(text), cost };
 
   } catch (error) {
-    console.error("Error generating slide:", error);
+    // Error handled by returning fallback HTML
     return { 
       data: `<section class="slide flex items-center justify-center bg-gray-900 text-red-500 text-3xl" style="width:1920px;height:1080px;">Error generating slide.</section>`, 
       cost: 0 

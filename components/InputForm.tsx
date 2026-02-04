@@ -38,22 +38,22 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Settings State with Persistence
-  const [apiKeys, setApiKeys] = useState<Partial<Record<ApiProvider, string>>>(() => 
+  const [apiKeys, setApiKeys] = useState<Partial<Record<ApiProvider, string>>>(() =>
     loadJson('gendeck_api_keys', {})
   );
-  
+
   // Independent Selection with Persistence
-  const [outlineProvider, setOutlineProvider] = useState<ApiProvider>(() => 
+  const [outlineProvider, setOutlineProvider] = useState<ApiProvider>(() =>
     loadStr('gendeck_p_outline', 'google') as ApiProvider
   );
-  const [outlineModel, setOutlineModel] = useState(() => 
+  const [outlineModel, setOutlineModel] = useState(() =>
     loadStr('gendeck_m_outline', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
   );
-  
-  const [slideProvider, setSlideProvider] = useState<ApiProvider>(() => 
+
+  const [slideProvider, setSlideProvider] = useState<ApiProvider>(() =>
     loadStr('gendeck_p_slide', 'google') as ApiProvider
   );
-  const [slideModel, setSlideModel] = useState(() => 
+  const [slideModel, setSlideModel] = useState(() =>
     loadStr('gendeck_m_slide', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
   );
 
@@ -67,7 +67,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_count', slideCount.toString()), [slideCount]);
   useEffect(() => localStorage.setItem('gendeck_content', content), [content]);
   useEffect(() => localStorage.setItem('gendeck_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
-  
+
   useEffect(() => {
     localStorage.setItem('gendeck_p_outline', outlineProvider);
     localStorage.setItem('gendeck_m_outline', outlineModel);
@@ -97,10 +97,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             "Refining layout suggestions...",
             "Finalizing outline..."
         ];
-        
+
         let i = 0;
         setProgressMessage(`Stage 1/${stages.length}: ${stages[0]}`);
-        
+
         interval = setInterval(() => {
             i = (i + 1) % stages.length;
             setProgressMessage(`Stage ${i + 1}/${stages.length}: ${stages[i]}`);
@@ -120,12 +120,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
   // Helper to update model when provider changes
   const handleProviderChange = (
-    type: 'outline' | 'slides', 
+    type: 'outline' | 'slides',
     providerId: ApiProvider
   ) => {
     const providerConfig = PROVIDERS.find(p => p.id === providerId);
     const defaultModel = providerConfig?.models[0]?.id || '';
-    
+
     if (type === 'outline') {
       setOutlineProvider(providerId);
       setOutlineModel(defaultModel);
@@ -152,9 +152,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     setErrorMsg(null);
 
     // Validate API Keys
-    const providersToCheck = new Set<ApiProvider>();
-    if (outlineProvider !== 'custom') providersToCheck.add(outlineProvider);
-    if (slideProvider !== 'custom') providersToCheck.add(slideProvider);
+    const providersToCheck = new Set<ApiProvider>([outlineProvider, slideProvider]);
 
     const missingKeys: string[] = [];
     providersToCheck.forEach(p => {
@@ -168,7 +166,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         setErrorMsg(`Missing API Keys for: ${missingKeys.join(', ')}. Please enter them in Model Settings.`);
         return;
     }
-    
+
     // Construct simplified settings object
     const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
 
@@ -196,7 +194,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           <Sparkles className="w-6 h-6 text-purple-400" />
           {t('createNewDeck')}
         </h2>
-        <button 
+        <button
           onClick={() => setShowSettings(!showSettings)}
           className={`transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg border ${showSettings ? 'bg-purple-900/50 border-purple-500 text-white' : 'border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700'}`}
           title="Configure AI Model"
@@ -207,11 +205,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        
+
         {/* Advanced Model Configuration Panel */}
         {showSettings && (
           <div className="p-5 bg-gray-900/80 rounded-lg border border-purple-500/30 mb-6 animate-in fade-in slide-in-from-top-2 space-y-6">
-            
+
             {errorMsg && (
                 <div className="bg-red-900/30 border border-red-500/50 rounded p-3 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
@@ -225,12 +223,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                  <Key className="w-3 h-3" /> {t('apiCredentials')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PROVIDERS.filter(p => p.id !== 'custom').map(p => (
+                {PROVIDERS.map(p => (
                   <div key={p.id}>
                     <label className={`block text-xs mb-1 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-400 font-bold' : 'text-gray-500'}`}>
                         {p.name} API Key {(!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id)) ? '*' : ''}
                     </label>
-                    <input 
+                    <input
                       type="password"
                       value={apiKeys[p.id] || ''}
                       onChange={(e) => handleKeyChange(p.id, e.target.value)}
@@ -254,7 +252,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                  <div className="space-y-3">
                    <div>
                      <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
-                     <select 
+                     <select
                         value={outlineProvider}
                         onChange={(e) => handleProviderChange('outline', e.target.value as ApiProvider)}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
@@ -264,7 +262,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                    </div>
                    <div>
                      <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
-                     <select 
+                     <select
                         value={outlineModel}
                         onChange={(e) => setOutlineModel(e.target.value)}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
@@ -272,7 +270,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                        {PROVIDERS.find(p => p.id === outlineProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
                        ))}
-                       {outlineProvider === 'custom' && <option value="custom">Custom Model</option>}
                      </select>
                    </div>
                  </div>
@@ -286,7 +283,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                  <div className="space-y-3">
                    <div>
                      <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
-                     <select 
+                     <select
                         value={slideProvider}
                         onChange={(e) => handleProviderChange('slides', e.target.value as ApiProvider)}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
@@ -296,7 +293,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                    </div>
                    <div>
                      <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
-                     <select 
+                     <select
                         value={slideModel}
                         onChange={(e) => setSlideModel(e.target.value)}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white"
@@ -304,7 +301,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                        {PROVIDERS.find(p => p.id === slideProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
                        ))}
-                        {slideProvider === 'custom' && <option value="custom">Custom Model</option>}
                      </select>
                    </div>
                  </div>
@@ -316,7 +312,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {/* Form Fields - Vertical Layout (consistent across all screen sizes) */}
         <div className="space-y-6">
-          
+
           {/* 1. Topic/Title */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('topicLabel')}</label>
@@ -336,10 +332,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <label className="block text-sm font-medium text-gray-300">{t('slideCountLabel')}</label>
               <span className="text-sm font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded">{slideCount}</span>
             </div>
-            <input 
-              type="range" 
-              min="3" 
-              max="20" 
+            <input
+              type="range"
+              min="3"
+              max="20"
               value={slideCount}
               onChange={(e) => setSlideCount(parseInt(e.target.value))}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
@@ -362,8 +358,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   type="button"
                   onClick={() => setAudience(aud)}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
-                    audience === aud 
-                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/50' 
+                    audience === aud
+                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/50'
                     : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
                   }`}
                  >
@@ -371,9 +367,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                  </button>
                ))}
              </div>
-             <input 
-                type="text" 
-                value={audience} 
+             <input
+                type="text"
+                value={audience}
                 onChange={(e) => setAudience(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 placeholder={t('audiencePlaceholder')}
@@ -392,8 +388,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   type="button"
                   onClick={() => setPurpose(p)}
                   className={`px-3 py-2 text-xs rounded-md border text-left transition-all ${
-                    purpose === p 
-                    ? 'bg-blue-900/40 border-blue-500 text-blue-100' 
+                    purpose === p
+                    ? 'bg-blue-900/40 border-blue-500 text-blue-100'
                     : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
                   }`}
                  >
@@ -450,7 +446,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               </>
             )}
           </button>
-          
+
           {isGenerating && (
              <button
                 type="button"

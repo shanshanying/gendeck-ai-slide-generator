@@ -7,7 +7,6 @@ import { TRANSLATIONS } from '../constants';
 interface SlidePreviewProps {
   slide: SlideData | undefined;
   onRegenerate: (id: string, customPrompt?: string) => void;
-  styleDescription: string;
   colorPalette: string;
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
