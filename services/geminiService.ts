@@ -15,47 +15,47 @@ const cleanHtml = (text: string): string => {
 
 // Helper to estimate cost
 const calculateEstimatedCost = (
-  providerId: string, 
-  modelId: string, 
-  inputChars: number, 
+  providerId: string,
+  modelId: string,
+  inputChars: number,
   outputChars: number
 ): number => {
   const provider = PROVIDERS.find(p => p.id === providerId);
   const model = provider?.models.find(m => m.id === modelId);
-  
+
   if (!model) return 0;
 
   // Rough estimation: 1 token ~= 4 chars
   const inputTokens = inputChars / 4;
   const outputTokens = outputChars / 4;
 
-  const cost = (inputTokens / 1_000_000 * model.inputPrice) + 
+  const cost = (inputTokens / 1_000_000 * model.inputPrice) +
                (outputTokens / 1_000_000 * model.outputPrice);
-  
+
   return cost;
 };
 
 // --- Generic LLM Caller ---
 const callLLM = async (
-  prompt: string, 
+  prompt: string,
   modelSelection: ModelSelection,
   apiKeys: Partial<Record<ApiProvider, string>>,
   jsonMode: boolean = false,
   signal?: AbortSignal
 ): Promise<{ text: string; cost: number }> => {
-  
+
   const { provider, modelId, baseUrl } = modelSelection;
   const apiKey = apiKeys[provider] || '';
 
   let outputText = "";
-  
+
   // 1. Google Gemini Strategy
   if (provider === 'google') {
     if (!apiKey) throw new Error("Missing Google API Key");
 
     const ai = new GoogleGenAI({ apiKey });
-    
-    // Note: The Google GenAI SDK might not fully support AbortSignal in all environments yet, 
+
+    // Note: The Google GenAI SDK might not fully support AbortSignal in all environments yet,
     // but we check the signal before making the request.
     if (signal?.aborted) {
         throw new DOMException('Aborted', 'AbortError');
@@ -96,9 +96,9 @@ const callLLM = async (
   // 2. OpenAI Compatible Strategy (OpenAI, DeepSeek, Moonshot)
   else if (['openai', 'deepseek', 'moonshot'].includes(provider)) {
     if (!apiKey) throw new Error(`Missing API Key for ${provider}`);
-    
+
     const url = `${baseUrl?.replace(/\/+$/, '')}/chat/completions`;
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -126,7 +126,7 @@ const callLLM = async (
   // 3. Anthropic Strategy
   else if (provider === 'anthropic') {
     if (!apiKey) throw new Error("Missing Anthropic API Key");
-    
+
     const response = await fetch(`${baseUrl?.replace(/\/+$/, '')}/messages`, {
       method: 'POST',
       headers: {
@@ -178,7 +178,7 @@ export const generateOutline = async (
       - Restructuring content from an "Executive Perspective".
       - Outputting a professional, restrained, conclusion-first presentation outline.
       - Visualizing how content should be presented on a slide (Layout Strategy).
-      
+
       Goal:
       Convert the user's unstructured input into a structured outline suitable for a PPT, tailored to the target audience and logic.
 
@@ -195,10 +195,11 @@ export const generateOutline = async (
       - Tech Team: Focus on Principles, Implementation, Toolchains.
 
       Content Rules:
-      - Titles must be "Viewpoint / Judgment / Conclusion" (No noun piling, Conclusion first).
-      - Bullet points: Concise, Executive-friendly, Value/Capability focused (not just implementation details).
-      - Information Density: Max 1 core conclusion per slide, max 6 main bullets per slide.
-      
+      - Titles must be "Viewpoint / Judgment / Conclusion" (No noun piling, Conclusion first). Avoid using the word "Slide" in titles.
+      - Bullet points: Concise, Executive-friendly, Value/Capability focused (not just implementation details). Use sentence fragments, not full sentences.
+      - Information Density: Max 1 core conclusion per slide, 3-5 content points maximum per slide.
+      - Language: The output language MUST match the language of the 'User Input'.
+
       Layout Strategy (Crucial - Must map to Renderer capabilities):
       - 'Cover': Only for Slide 1.
       - 'Ending': Only for the last Slide.
@@ -210,7 +211,7 @@ export const generateOutline = async (
       - 'Standard': Use for standard title + bullet points (default).
 
       Structure Requirements (MANDATORY):
-      1. **Slide 1 (Cover Page)**: 
+      1. **Slide 1 (Cover Page)**:
          - Title: Generate a compelling, professional title based on the input content (do NOT just use the provided 'Topic', make it descriptive).
          - ContentPoints: Use the first point for a subtitle/summary.
          - Layout: 'Cover'
@@ -220,7 +221,7 @@ export const generateOutline = async (
 
       Output Format:
       - Return a RAW JSON array of slides.
-      - JSON Structure: 
+      - JSON Structure:
         [
           {
             "title": "Slide Title",
@@ -228,13 +229,12 @@ export const generateOutline = async (
             "layoutSuggestion": "Layout Name"
           }
         ]
-      - Language: The output language MUST match the language of the 'User Input'.
     `;
 
     // Use Outline settings
     const { text, cost } = await callLLM(prompt, apiSettings.outline, apiSettings.apiKeys, true, signal);
     const jsonString = cleanJson(text);
-    
+
     let parsed: any;
     try {
       parsed = JSON.parse(jsonString);
@@ -242,7 +242,7 @@ export const generateOutline = async (
       // Last ditch effort to fix common JSON errors
       parsed = [];
     }
-    
+
     let items: OutlineItem[] = [];
     if (Array.isArray(parsed)) items = parsed as OutlineItem[];
     else if (parsed.slides && Array.isArray(parsed.slides)) items = parsed.slides as OutlineItem[];
@@ -270,21 +270,29 @@ export const generateSpeakerNotes = async (
 ): Promise<ServiceResponse<string[]>> => {
   try {
     const prompt = `
-      You are an expert presentation speaker.
+      You are an expert presentation coach.
       Write engaging speaker notes for the following presentation slides.
-      
+
       Context:
       - Topic: ${topic}
       - Audience: ${audience}
+      - Tone: Professional but conversational
+
+      Speaker Notes Requirements:
+      - Write 2-4 sentences per slide
+      - Include: (1) Key message to emphasize, (2) Transition from previous slide (except Slide 1), (3) Suggested delivery tip
+      - Write in first person ("I", "we") as if the speaker is talking
+      - Do NOT read bullet points verbatim - add context, insights, and stories instead
+      - Match the language of the slide content
 
       Slides Content:
       ${JSON.stringify(slides.map((s, i) => ({ index: i, title: s.title, points: s.contentPoints })))}
 
-      Instructions:
-      - Write a paragraph of speaker notes for EACH slide.
-      - Ensure smooth transitions between slides.
-      - Return ONLY a JSON array of strings. 
-      - The array length MUST match the number of slides exactly.
+      Output:
+      - Return ONLY a JSON array of strings
+      - Each string is the speaker notes for the corresponding slide
+      - Array length MUST match the number of slides exactly
+      - Ensure smooth transitions between slides
       - Example format: ["Notes for slide 1", "Notes for slide 2", ...]
     `;
 
@@ -335,20 +343,23 @@ export const generateSlideHtml = async (
       3. **Units**: Use ABSOLUTE UNITS (px) only for layout stability. NO rem, vh, vw.
       4. **Scrolling**: \`overflow: hidden\`. Content MUST fit.
       5. **Images**: NO external images (jpg/png). Use ONLY SVG icons (inline <svg>).
-      6. **Backgrounds**: 
-         - ALL slides (Content, Cover, Ending) MUST have a SOLID background (using \`bg-[var(--c-bg)]\`). 
+      6. **Backgrounds**:
+         - ALL slides (Content, Cover, Ending) MUST have a SOLID background (using \`bg-[var(--c-bg)]\`).
          - **ABSOLUTELY NO GRADIENTS** on backgrounds.
       7. **Print**: \`print-color-adjust: exact\`.
-      8. **CSS Variables**: DO NOT generate a <style> block. The following variables are injected globally:
+      8. **Typography**: Use clear visual hierarchy - Titles 48-72px, Body 24-32px, Captions 18-20px.
+      9. **Contrast**: Ensure text has sufficient contrast against background (WCAG AA minimum).
+      10. **Spacing**: Use consistent spacing based on 8px scale: 48px, 32px, 24px, 16px, 8px.
+      11. **CSS Variables**: DO NOT generate a <style> block. The following variables are injected globally:
          - \`--c-bg\`: Main background
          - \`--c-surface\`: Card/Section background
          - \`--c-text\`: Main text
          - \`--c-text-muted\`: Secondary text
          - \`--c-accent\`: Highlight/Brand color
-      
+
       ## 📐 DOM STRUCTURE (MANDATORY)
       Inside the \`<section class="slide ...">\`, you must follow this structure:
-      
+
       \`\`\`html
       <!-- 1. Header (Except Cover/Ending) -->
       <header class="absolute top-0 left-0 w-full p-12 flex justify-between items-start z-10">
@@ -378,15 +389,17 @@ export const generateSlideHtml = async (
 
       ## 📊 LAYOUT LOGIC
       Select layout based on Input Data 'Layout Hint':
-      
-      1. **Cover**: Central focus, big typography. No gradients. No header/footer.
-      2. **Ending**: Central focus. MUST include a large 'Thank You' or concluding statement in the center. MUST include a large SVG placeholder for a Company Logo (geometric shape). Clean, professional conclusion. No header/footer.
-      3. **Compare**: Split screen (Left/Right) or Top/Bottom. Good for Pros/Cons.
-      4. **Grid**: 2x2 or 3x2 cards. Good for lists/features.
-      5. **Timeline**: Horizontal flow with steps.
-      6. **Data**: Big numbers, charts (simulated via CSS shapes/bars), or metric cards.
-      7. **Center**: Single powerful statement or quote.
-      8. **Standard**: Text on left, visual/icon composition on right.
+
+      1. **Cover**: Central focus, big typography (72-96px title). No gradients. No header/footer.
+      2. **Ending**: Central focus. MUST include a large 'Thank You' or concluding statement. MUST include a large SVG placeholder for a Company Logo. Clean, professional. No header/footer.
+      3. **Compare**: Split screen (Left/Right). Good for Pros/Cons, Before/After, or comparisons.
+      4. **Grid**: 2x2 or 3x2 cards. Good for lists/features, pillars, or equal-weight items.
+      5. **Timeline**: Horizontal flow with connected steps. Good for roadmaps, history, or processes.
+      6. **Data**: Big numbers prominently displayed, charts (simulated via CSS shapes/bars), or metric cards.
+      7. **Center**: Single powerful statement or quote. Minimal elements, maximum impact.
+      8. **Quote**: Large decorative quotation marks, italic text, attribution at bottom right.
+      9. **Image-Heavy**: For diagrams/screenshots (use placeholder rectangles with descriptive labels).
+      10. **Standard**: Title on left, bullet points below, visual/icon composition on right (default).
 
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
       If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant Tailwind classes to the structure.
@@ -394,11 +407,13 @@ export const generateSlideHtml = async (
       - All Caps -> \`uppercase\`
       - Bold -> \`font-extrabold\`
       - Centered -> \`text-center\` or flex centering.
-      
+
       ## 🧿 ICONOGRAPHY
       - Use high-quality inline SVGs (Lucide/Feather style).
       - Stroke width: 1.5 or 2.
       - Color: \`var(--c-accent)\` or \`var(--c-text)\`.
+      - Size: Icons should be 24px (inline), 32px (medium), or 48px (large hero) depending on context.
+      - Use consistent icon style throughout the slide.
 
       ## INPUT DATA
       - Title: ${slide.title}
@@ -417,9 +432,9 @@ export const generateSlideHtml = async (
 
   } catch (error) {
     // Error handled by returning fallback HTML
-    return { 
-      data: `<section class="slide flex items-center justify-center bg-gray-900 text-red-500 text-3xl" style="width:1920px;height:1080px;">Error generating slide.</section>`, 
-      cost: 0 
+    return {
+      data: `<section class="slide flex items-center justify-center bg-gray-900 text-red-500 text-3xl" style="width:1920px;height:1080px;">Error generating slide.</section>`,
+      cost: 0
     };
   }
 };
