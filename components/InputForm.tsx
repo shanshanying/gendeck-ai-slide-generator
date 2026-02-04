@@ -238,13 +238,15 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
             {/* 1. API Keys Section */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                  <Key className="w-3 h-3" /> {t('apiCredentials')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {PROVIDERS.map(p => (
                   <div key={p.id}>
-                    <label className={`block text-xs mb-1.5 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-400 font-bold' : 'text-slate-400'}`}>
+                    <label className={`block text-xs mb-1.5 ${!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id) ? 'text-orange-500 font-bold' : theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
                         {p.name} API Key {(!apiKeys[p.id] && (outlineProvider === p.id || slideProvider === p.id)) ? '*' : ''}
                     </label>
                     <input
@@ -252,39 +254,53 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                       value={apiKeys[p.id] || ''}
                       onChange={(e) => handleKeyChange(p.id, e.target.value)}
                       placeholder={p.placeholderKey}
-                      className={`w-full bg-slate-900 border rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${!apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-purple-500/50'}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                        theme === 'dark' 
+                          ? 'bg-slate-900 text-white border-white/10 focus:border-purple-500/50' 
+                          : 'bg-white text-gray-900 border-gray-300 focus:border-purple-500'
+                      } ${!apiKeys[p.id] && errorMsg && (outlineProvider === p.id || slideProvider === p.id) ? 'border-red-500/50 focus:border-red-500' : ''}`}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="h-px bg-white/5 w-full" />
+            <div className={`h-px w-full ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-200'}`} />
 
             {/* 2. Model Selection Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Outline Config */}
-              <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+              <div className={`p-3 rounded-lg border ${
+                theme === 'dark' ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
+              }`}>
                  <label className="block text-xs font-bold text-blue-400 mb-2 flex items-center gap-1">
                     <Layers className="w-3 h-3" /> {t('step1Outline')}
                  </label>
                  <div className="space-y-3">
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
+                     <label className={`block text-[10px] mb-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>{t('provider')}</label>
                      <select
                         value={outlineProvider}
                         onChange={(e) => handleProviderChange('outline', e.target.value as ApiProvider)}
-                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                        className={`w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                          theme === 'dark'
+                            ? 'bg-slate-950 border-white/10 text-white focus:border-purple-500/50'
+                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                        }`}
                      >
                        {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                      </select>
                    </div>
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
+                     <label className={`block text-[10px] mb-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>{t('model')}</label>
                      <select
                         value={outlineModel}
                         onChange={(e) => setOutlineModel(e.target.value)}
-                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                        className={`w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                          theme === 'dark'
+                            ? 'bg-slate-950 border-white/10 text-white focus:border-purple-500/50'
+                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                        }`}
                      >
                        {PROVIDERS.find(p => p.id === outlineProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
@@ -295,27 +311,37 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               </div>
 
               {/* Slide Config */}
-              <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+              <div className={`p-3 rounded-lg border ${
+                theme === 'dark' ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
+              }`}>
                  <label className="block text-xs font-bold text-green-400 mb-2 flex items-center gap-1">
                     <ImageIcon className="w-3 h-3" /> {t('step2Slides')}
                  </label>
                  <div className="space-y-3">
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">{t('provider')}</label>
+                     <label className={`block text-[10px] mb-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>{t('provider')}</label>
                      <select
                         value={slideProvider}
                         onChange={(e) => handleProviderChange('slides', e.target.value as ApiProvider)}
-                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                        className={`w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                          theme === 'dark'
+                            ? 'bg-slate-950 border-white/10 text-white focus:border-purple-500/50'
+                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                        }`}
                      >
                        {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                      </select>
                    </div>
                    <div>
-                     <label className="block text-[10px] text-gray-500 mb-1">{t('model')}</label>
+                     <label className={`block text-[10px] mb-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>{t('model')}</label>
                      <select
                         value={slideModel}
                         onChange={(e) => setSlideModel(e.target.value)}
-                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                        className={`w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                          theme === 'dark'
+                            ? 'bg-slate-950 border-white/10 text-white focus:border-purple-500/50'
+                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                        }`}
                      >
                        {PROVIDERS.find(p => p.id === slideProvider)?.models.map(m => (
                          <option key={m.id} value={m.id}>{m.name}</option>
@@ -334,12 +360,16 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
           {/* 1. Topic/Title */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">{t('topicLabel')}</label>
+            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>{t('topicLabel')}</label>
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+              className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all ${
+                theme === 'dark'
+                  ? 'bg-slate-950 border-white/10 text-white placeholder:text-slate-500 focus:border-purple-500/50'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-purple-500'
+              }`}
               placeholder={t('topicPlaceholder')}
               required
             />
@@ -348,8 +378,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           {/* 2. Number of Slides */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-300">{t('slideCountLabel')}</label>
-              <span className="text-sm font-bold text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded">{slideCount}</span>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t('slideCountLabel')}</label>
+              <span className={`text-sm font-bold text-purple-500 px-2 py-0.5 rounded ${
+                theme === 'dark' ? 'bg-purple-900/30' : 'bg-purple-100'
+              }`}>{slideCount}</span>
             </div>
             <input
               type="range"
@@ -357,9 +389,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               max="20"
               value={slideCount}
               onChange={(e) => setSlideCount(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-purple-500 ${
+                theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
+              }`}
             />
-            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+            <div className={`flex justify-between text-[10px] mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
               <span>3</span>
               <span>20</span>
             </div>
@@ -367,8 +401,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
           {/* 3. Target Audience */}
           <div>
-             <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-               <Users className="w-4 h-4 text-purple-400"/> {t('audienceLabel')}
+             <label className={`block text-sm font-medium mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+               <Users className="w-4 h-4 text-purple-500"/> {t('audienceLabel')}
              </label>
              <div className="flex flex-wrap gap-2 mb-2">
                {AUDIENCE_PRESETS[lang].map((aud) => (
@@ -378,8 +412,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   onClick={() => setAudience(aud)}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                     audience === aud
-                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/50'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/25'
+                    : theme === 'dark'
+                      ? 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                      : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
                   }`}
                  >
                    {aud}
@@ -390,15 +426,19 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 type="text"
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                className={`w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  theme === 'dark'
+                    ? 'bg-gray-900 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
                 placeholder={t('audiencePlaceholder')}
               />
           </div>
 
           {/* 4. Presentation Goal */}
           <div>
-             <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-               <Target className="w-4 h-4 text-blue-400"/> {t('purposeLabel')}
+             <label className={`block text-sm font-medium mb-2 flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+               <Target className="w-4 h-4 text-blue-500"/> {t('purposeLabel')}
              </label>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                {PRESENTATION_PURPOSES[lang].map((p) => (
@@ -408,8 +448,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   onClick={() => setPurpose(p)}
                   className={`px-3 py-2 text-xs rounded-md border text-left transition-all ${
                     purpose === p
-                    ? 'bg-blue-900/40 border-blue-500 text-blue-100'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-700'
+                      : theme === 'dark'
+                        ? 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                        : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
                   }`}
                  >
                    {p}
@@ -420,20 +462,28 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
           {/* 5. Source Document */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>
               {t('sourceLabel')}
-              <span className="text-xs text-slate-500 ml-2">({t('sourcePlaceholder')})</span>
+              <span className={`text-xs ml-2 ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>({t('sourcePlaceholder')})</span>
             </label>
             <div className="relative">
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={12}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm text-slate-300 placeholder:text-slate-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y"
+                className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y ${
+                  theme === 'dark'
+                    ? 'bg-slate-950 border-white/10 text-slate-300 placeholder:text-slate-500 focus:border-purple-500/50'
+                    : 'bg-white border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-purple-500'
+                }`}
                 placeholder={t('pastePlaceholder')}
               />
               <div className="absolute bottom-3 right-3">
-                <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border border-white/10 hover:border-white/20">
+                <label className={`cursor-pointer text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 hover:bg-slate-700 text-white border-white/10 hover:border-white/20'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}>
                   <Upload className="w-3 h-3" />
                   {t('uploadFile')}
                   <input type="file" accept=".txt,.md,.json" onChange={handleFileUpload} className="hidden" />
@@ -470,7 +520,11 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
              <button
                 type="button"
                 onClick={onCancel}
-                className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-200 font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 transform transition-all active:scale-95 animate-in fade-in"
+                className={`border font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 transform transition-all active:scale-95 animate-in fade-in ${
+                  theme === 'dark'
+                    ? 'bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-200'
+                    : 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700'
+                }`}
              >
                 <XCircle className="w-6 h-6" />
                 {t('cancel')}
