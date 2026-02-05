@@ -228,6 +228,28 @@ docker build -t gendeck-frontend:latest .
 
 A production-ready Helm chart is provided for deploying GenDeck on Kubernetes.
 
+### Minimal Deployment (Frontend Only)
+
+Deploy just the frontend without backend or PostgreSQL. All data persists in browser storage.
+
+```bash
+# Build and load frontend image only
+docker build -t gendeck-frontend:latest .
+minikube image load gendeck-frontend:latest
+
+# Deploy frontend only (no backend, no database)
+helm upgrade --install gendeck ./gendeck-chart \
+  --set backend.enabled=false \
+  --set service.frontend.type=NodePort
+
+# Access the application
+minikube service gendeck-frontend --url
+```
+
+**Note:** When backend is disabled, database features (save to database, browse decks, slide history) are not available. All work is auto-saved to browser storage.
+
+### Full Deployment (with Backend)
+
 ### Prerequisites
 
 - Kubernetes 1.24+
@@ -252,9 +274,10 @@ minikube image load gendeck-backend:latest
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `frontend.apiUrl` | Backend API URL for frontend | `http://localhost:3001/api` |
-| `database.host` | PostgreSQL host | `pg-cluster-postgresql-postgresql.demo.svc` |
-| `database.password` | PostgreSQL password | (required) |
+| `backend.enabled` | Deploy backend and database | `true` |
+| `backend.apiUrl` | Backend API URL for frontend | `http://localhost:3001/api` |
+| `database.host` | PostgreSQL host | `""` |
+| `database.password` | PostgreSQL password | `""` |
 | `database.url` | Full PostgreSQL connection URL | "" |
 | `apiKeys.gemini` | Google Gemini API key | "" |
 
@@ -268,7 +291,7 @@ minikube image load gendeck-backend:latest
 
 # Deploy with in-cluster backend URL
 helm upgrade --install gendeck ./gendeck-chart \
-  --set frontend.apiUrl=http://localhost:3001/api \
+  --set backend.apiUrl=http://localhost:3001/api \
   --set database.password=your-password \
   --set database.host=host.docker.internal
 
@@ -283,7 +306,7 @@ kubectl port-forward svc/gendeck-backend 3001:3001 &
 
 ```bash
 helm upgrade --install gendeck ./gendeck-chart \
-  --set frontend.apiUrl=https://api.example.com/api \
+  --set backend.apiUrl=https://api.example.com/api \
   --set database.url="postgresql://user:pass@host:5432/gendeck" \
   --set apiKeys.gemini=your-gemini-key
 ```
@@ -292,7 +315,7 @@ helm upgrade --install gendeck ./gendeck-chart \
 
 ```bash
 helm upgrade --install gendeck ./gendeck-chart \
-  --set frontend.apiUrl=http://$(minikube ip):30001/api \
+  --set backend.apiUrl=http://$(minikube ip):30001/api \
   --set database.password=your-password \
   --set service.frontend.type=NodePort \
   --set service.backend.type=NodePort
