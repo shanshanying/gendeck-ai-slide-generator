@@ -36,7 +36,7 @@ spec:
               protocol: TCP
           env:
             - name: VITE_API_URL
-              value: {{ .Values.frontend.apiUrl | quote }}
+              value: {{ .Values.backend.apiUrl | quote }}
           resources:
             {{- toYaml .Values.resources.frontend | nindent 12 }}
           {{- if .Values.probes.frontend.liveness.enabled }}

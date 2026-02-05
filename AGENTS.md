@@ -400,7 +400,8 @@ gendeck-chart/
 ### Key Helm Values
 
 ```yaml
-frontend:
+backend:
+  enabled: true        # Set to false to deploy frontend only
   apiUrl: "http://localhost:3001/api"  # Backend URL for frontend
 
 database:

@@ -1,3 +1,4 @@
+{{- if .Values.backend.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,9 +6,7 @@ metadata:
   labels:
     {{- include "gendeck.backend.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.backend.enabled }}
   replicas: {{ .Values.replicaCount.backend }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "gendeck.backend.selectorLabels" . | nindent 6 }}
@@ -90,3 +89,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

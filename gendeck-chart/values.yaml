@@ -12,10 +12,12 @@ replicaCount:
   frontend: 1
   backend: 1
 
-# Frontend configuration
-frontend:
+# Backend configuration
+backend:
+  enabled: true
   # API URL for backend (browser will access this URL)
   # Use in-cluster service URL for port-forward, or external URL for production
+  # When backend.enabled is false, this URL is not used
   apiUrl: "http://localhost:3001/api"
 
 # Image configurations
@@ -110,7 +112,9 @@ tolerations: []
 affinity: {}
 
 # Database configuration
+# Only used when backend.enabled is true
 database:
+
   host: ""
   port: 5432
   name: gendeck
