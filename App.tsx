@@ -28,6 +28,7 @@ interface AutosaveData {
   currentSlideId: string | null;
   totalCost: number;
   timestamp: number;
+  currentDbDeckId: string | null;
 }
 
 const AUTOSAVE_KEY = 'gendeck_autosave';
@@ -84,7 +85,7 @@ const App: React.FC = () => {
   // Database-related state
   const [showDeckBrowser, setShowDeckBrowser] = useState(false);
   const [showSlideHistory, setShowSlideHistory] = useState(false);
-  const [currentDbDeckId, setCurrentDbDeckId] = useState<string | null>(null);
+  const [currentDbDeckId, setCurrentDbDeckId] = useState<string | null>(initialState.currentDbDeckId ?? null);
   const [isSavingToDb, setIsSavingToDb] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [hasDatabase, setHasDatabase] = useState(true);
@@ -136,10 +137,11 @@ const App: React.FC = () => {
         currentSlideId,
         totalCost,
         timestamp: Date.now(),
+        currentDbDeckId,
       };
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
     }
-  }, [status, config, colorPalette, slides, currentSlideId, totalCost]);
+  }, [status, config, colorPalette, slides, currentSlideId, totalCost, currentDbDeckId]);
 
 
 
@@ -344,6 +346,7 @@ const App: React.FC = () => {
     setCurrentSlideId(null);
     setColorPalette('');
     setIsGeneratingNotes(false);
+    setCurrentDbDeckId(null);
 
     // 4. Clear autosave data
     localStorage.removeItem(AUTOSAVE_KEY);
