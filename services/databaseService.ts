@@ -1,11 +1,37 @@
 
 import { SlideData, PresentationConfig } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Runtime config from config.json (set by deployment env var)
+let API_BASE_URL = 'http://localhost:3001/api';
+
+// Load runtime config
+async function loadConfig(): Promise<void> {
+  try {
+    const response = await fetch('/config.json', { cache: 'no-cache' });
+    if (response.ok) {
+      const config = await response.json();
+      if (config.VITE_API_URL) {
+        API_BASE_URL = config.VITE_API_URL;
+      }
+    }
+  } catch {
+    // Use default
+  }
+}
+
+// Initialize
+const configPromise = loadConfig();
+
+// Helper to ensure config is loaded
+async function getApiBaseUrl(): Promise<string> {
+  await configPromise;
+  return API_BASE_URL;
+}
 
 // Helper for API calls
 async function api<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = await getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -133,15 +159,15 @@ export function slideDataToDbSlide(slide: SlideData, index: number) {
 // Deck API
 export const deckApi = {
   // List all decks
-  list: (limit = 50, offset = 0): Promise<{ success: boolean; data: DatabaseDeck[] }> =>
+  list: async (limit = 50, offset = 0): Promise<{ success: boolean; data: DatabaseDeck[] }> =>
     api(`/decks?limit=${limit}&offset=${offset}`),
 
   // Get single deck
-  get: (id: string): Promise<{ success: boolean; data: DatabaseDeckWithSlides }> =>
+  get: async (id: string): Promise<{ success: boolean; data: DatabaseDeckWithSlides }> =>
     api(`/decks/${id}`),
 
   // Create new deck
-  create: (deck: {
+  create: async (deck: {
     topic: string;
     audience?: string;
     purpose?: string;
@@ -178,26 +204,28 @@ export const deckApi = {
     }),
 
   // Update deck
-  update: (id: string, updates: UpdateDeckPayload): Promise<{ success: boolean }> =>
+  update: async (id: string, updates: UpdateDeckPayload): Promise<{ success: boolean }> =>
     api(`/decks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     }),
 
   // Delete deck
-  delete: (id: string): Promise<{ success: boolean }> =>
+  delete: async (id: string): Promise<{ success: boolean }> =>
     api(`/decks/${id}`, { method: 'DELETE' }),
 
   // Search decks
-  search: (query: string, limit = 20): Promise<{ success: boolean; data: DatabaseDeck[] }> =>
+  search: async (query: string, limit = 20): Promise<{ success: boolean; data: DatabaseDeck[] }> =>
     api(`/decks/search?q=${encodeURIComponent(query)}&limit=${limit}`),
 
   // Download full HTML
-  downloadHtml: (id: string): Promise<Blob> =>
-    fetch(`${API_BASE_URL}/decks/${id}/html`).then(r => r.blob()),
+  downloadHtml: async (id: string): Promise<Blob> => {
+    const baseUrl = await getApiBaseUrl();
+    return fetch(`${baseUrl}/decks/${id}/html`).then(r => r.blob());
+  },
 
   // Deck History
-  saveVersion: (deckId: string, version: {
+  saveVersion: async (deckId: string, version: {
     topic: string;
     fullHtml?: string;
     outline?: any;
@@ -208,57 +236,58 @@ export const deckApi = {
       body: JSON.stringify(version),
     }),
 
-  getVersions: (deckId: string, limit = 50): Promise<{ success: boolean; data: DeckHistoryItem[] }> =>
+  getVersions: async (deckId: string, limit = 50): Promise<{ success: boolean; data: DeckHistoryItem[] }> =>
     api(`/decks/${deckId}/history?limit=${limit}`),
 
-  getVersion: (historyId: string): Promise<{ success: boolean; data: DeckHistoryItem }> =>
+  getVersion: async (historyId: string): Promise<{ success: boolean; data: DeckHistoryItem }> =>
     api(`/decks/history/${historyId}`),
 };
 
 // Slide API
 export const slideApi = {
   // Get slide history
-  getHistory: (slideId: string, limit = 50): Promise<{ success: boolean; data: SlideHistoryItem[] }> =>
+  getHistory: async (slideId: string, limit = 50): Promise<{ success: boolean; data: SlideHistoryItem[] }> =>
     api(`/slides/${slideId}/history?limit=${limit}`),
 
   // Get specific history version
-  getHistoryVersion: (historyId: string): Promise<{ success: boolean; data: SlideHistoryItem }> =>
+  getHistoryVersion: async (historyId: string): Promise<{ success: boolean; data: SlideHistoryItem }> =>
     api(`/slides/history/${historyId}`),
 
   // Restore to history version
-  restore: (slideId: string, historyId: string): Promise<{ success: boolean; data: DatabaseSlide }> =>
+  restore: async (slideId: string, historyId: string): Promise<{ success: boolean; data: DatabaseSlide }> =>
     api(`/slides/${slideId}/restore`, {
       method: 'POST',
       body: JSON.stringify({ historyId }),
     }),
 
   // Update slide
-  update: (slideId: string, updates: Partial<DatabaseSlide>): Promise<{ success: boolean; data: DatabaseSlide }> =>
+  update: async (slideId: string, updates: Partial<DatabaseSlide>): Promise<{ success: boolean; data: DatabaseSlide }> =>
     api(`/slides/${slideId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     }),
 
   // Save single slide (for auto-save)
-  save: (deckId: string, slideIndex: number, slide: SlideData): Promise<{ success: boolean; data: DatabaseSlide }> =>
+  save: async (deckId: string, slideIndex: number, slide: SlideData): Promise<{ success: boolean; data: DatabaseSlide }> =>
     api(`/slides/deck/${deckId}/slide/${slideIndex}`, {
       method: 'POST',
       body: JSON.stringify(slideDataToDbSlide(slide, slideIndex)),
     }),
 
   // Get all slide history for a deck
-  getDeckHistory: (deckId: string, limitPerSlide = 10): Promise<{ success: boolean; data: Record<number, SlideHistoryItem[]> }> =>
+  getDeckHistory: async (deckId: string, limitPerSlide = 10): Promise<{ success: boolean; data: Record<number, SlideHistoryItem[]> }> =>
     api(`/slides/deck/${deckId}/history?limitPerSlide=${limitPerSlide}`),
 };
 
 // Health check (throws on failure)
-export const healthCheck = (): Promise<{ status: string; timestamp: string }> =>
+export const healthCheck = async (): Promise<{ status: string; timestamp: string }> =>
   api('/health');
 
 /** Returns true if backend is reachable, false on network/HTTP error. Does not throw. */
 export async function checkBackendAvailable(): Promise<boolean> {
   try {
-    const url = `${API_BASE_URL}/health`;
+    const baseUrl = await getApiBaseUrl();
+    const url = `${baseUrl}/health`;
     const res = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(5000) });
     return res.ok;
   } catch {

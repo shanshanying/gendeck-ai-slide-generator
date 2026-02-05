@@ -31,11 +31,9 @@ app.get('/api/health', (req, res) => {
 // Error handling
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ 
-    success: false, 
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message 
+  res.status(500).json({
+    success: false,
+    error: err.message
   });
 });
 

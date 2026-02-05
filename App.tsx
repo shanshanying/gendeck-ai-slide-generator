@@ -86,7 +86,7 @@ const App: React.FC = () => {
   const [currentDbDeckId, setCurrentDbDeckId] = useState<string | null>(null);
   const [isSavingToDb, setIsSavingToDb] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [hasDatabase, setHasDatabase] = useState(!!import.meta.env.VITE_API_URL);
+  const [hasDatabase, setHasDatabase] = useState(true);
   const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
 
   // New State for Pause/Resume
@@ -109,8 +109,16 @@ const App: React.FC = () => {
   // Check backend availability on mount so Browse/Save/History can be disabled when backend is down
   useEffect(() => {
     let cancelled = false;
+    if (!hasDatabase) {
+      console.log('[Gendeck] Database: disabled (no API URL configured)');
+      return;
+    }
+    console.log('[Gendeck] Database: checking backend...');
     checkBackendAvailable().then((ok) => {
-      if (!cancelled) setBackendAvailable(ok);
+      if (!cancelled) {
+        setBackendAvailable(ok);
+        console.log('[Gendeck] Database service:', ok ? 'available' : 'unavailable');
+      }
     });
     return () => { cancelled = true; };
   }, []);

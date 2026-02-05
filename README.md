@@ -31,6 +31,7 @@ GenDeck uses a two-phase workflow (outline → slide HTML) with a strict slide d
 | UI Icons | lucide-react |
 | AI SDK | @google/genai |
 | Backend (optional) | Node.js + Express + PostgreSQL |
+| Deployment | Docker, Kubernetes, Helm |
 
 ## Getting Started
 
@@ -38,7 +39,7 @@ GenDeck uses a two-phase workflow (outline → slide HTML) with a strict slide d
 
 - Node.js 18+
 - npm (or yarn)
-- PostgreSQL 12+ (optional, for database features)
+- PostgreSQL 12+ (optional, for backend database features)
 
 ### Installation
 
@@ -70,7 +71,7 @@ cp .env.local.example .env.local
 # Google Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Backend API URL (optional - enables database features)
+# Backend API URL (optional - enables database features when developing locally)
 VITE_API_URL=http://localhost:3001/api
 ```
 
@@ -97,7 +98,26 @@ npm run preview
 
 Enable PostgreSQL database to persist decks and track slide history. Works with local PostgreSQL, Docker, or any cloud-hosted PostgreSQL (Supabase, Railway, Render, Neon, AWS RDS, etc.).
 
-### Quick Setup
+### Quick Setup (Automated)
+
+Use the provided setup script to quickly create database, user, and schema:
+
+```bash
+# Option 1: Setup with local PostgreSQL
+./scripts/setup-db.sh
+
+# Option 2: Setup with specific host and password
+./scripts/setup-db.sh -H mydb.example.com -P mypassword123
+
+# Option 3: Setup using connection URL
+./scripts/setup-db.sh -U "postgresql://user:pass@host:5432/dbname"
+```
+
+The script will output connection details and environment variables for your `.env` file.
+
+### Manual Setup
+
+If you prefer manual setup:
 
 ```bash
 # 1. Create database (adjust host/user as needed)
@@ -129,7 +149,6 @@ DB_NAME=gendeck
 DB_USER=your_db_user      # NOT necessarily 'postgres'
 DB_PASSWORD=your_password
 PORT=3001
-NODE_ENV=development
 ```
 
 **Option 2: Connection URL (Cloud/Production)**
@@ -137,7 +156,6 @@ NODE_ENV=development
 # server/.env
 DATABASE_URL=postgresql://user:password@host:port/database
 PORT=3001
-NODE_ENV=production
 ```
 
 **Examples:**
@@ -166,23 +184,36 @@ See [DATABASE.md](DATABASE.md) for complete setup guide.
 
 ## Docker
 
-### Build Docker Image
+### Build Docker Images
 
 ```bash
-docker build -t gendeck .
+# Build frontend image
+docker build -t gendeck-frontend:latest .
+
+# Build backend image
+docker build -t gendeck-backend:latest ./server
 ```
 
 ### Run with Docker
 
+The frontend image uses runtime configuration via the `VITE_API_URL` environment variable. This is set at runtime, not build time.
+
 ```bash
-docker run -p 8080:80 gendeck
+# Run backend
+docker run -p 3001:3001 \
+  -e DB_HOST=your-db-host \
+  -e DB_PASSWORD=your-password \
+  gendeck-backend:latest
+
+# Run frontend (with backend URL)
+docker run -p 3000:3000 \
+  -e VITE_API_URL=http://localhost:3001/api \
+  gendeck-frontend:latest
 ```
 
-Open `http://localhost:8080`.
+Open `http://localhost:3000`.
 
 ### Gemini API key and Docker
-
-This image is a static build served by nginx. The Gemini key is embedded at build time by Vite, so setting `-e GEMINI_API_KEY=...` on `docker run` will **not** affect the already-built frontend.
 
 - **Option A (recommended)**: use non-Google providers configured in the UI (stored in localStorage)
 - **Option B**: set `GEMINI_API_KEY` in `.env.local` **before** building the image, then rebuild
@@ -190,8 +221,107 @@ This image is a static build served by nginx. The Gemini key is embedded at buil
 ```bash
 cp .env.local.example .env.local
 # edit .env.local to set GEMINI_API_KEY
-docker build -t gendeck .
+docker build -t gendeck-frontend:latest .
 ```
+
+## Kubernetes Deployment (Helm)
+
+A production-ready Helm chart is provided for deploying GenDeck on Kubernetes.
+
+### Prerequisites
+
+- Kubernetes 1.24+
+- Helm 3.12+
+- PostgreSQL (for backend database features)
+
+### Build and Load Images
+
+```bash
+# Build images
+docker build -t gendeck-frontend:latest .
+docker build -t gendeck-backend:latest ./server
+
+# For minikube - load images
+minikube image load gendeck-frontend:latest
+minikube image load gendeck-backend:latest
+```
+
+### Configuration
+
+**Key Configuration Values:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `frontend.apiUrl` | Backend API URL for frontend | `http://localhost:3001/api` |
+| `database.host` | PostgreSQL host | `pg-cluster-postgresql-postgresql.demo.svc` |
+| `database.password` | PostgreSQL password | (required) |
+| `database.url` | Full PostgreSQL connection URL | "" |
+| `apiKeys.gemini` | Google Gemini API key | "" |
+
+### Deployment Examples
+
+**Local Testing (with port-forward):**
+
+```bash
+# Setup PostgreSQL first
+./scripts/setup-db.sh --docker
+
+# Deploy with in-cluster backend URL
+helm upgrade --install gendeck ./gendeck-chart \
+  --set frontend.apiUrl=http://localhost:3001/api \
+  --set database.password=your-password \
+  --set database.host=host.docker.internal
+
+# Port forward both services
+kubectl port-forward svc/gendeck-frontend 3000:3000 &
+kubectl port-forward svc/gendeck-backend 3001:3001 &
+
+# Access http://localhost:3000
+```
+
+**Production (with external domain):**
+
+```bash
+helm upgrade --install gendeck ./gendeck-chart \
+  --set frontend.apiUrl=https://api.example.com/api \
+  --set database.url="postgresql://user:pass@host:5432/gendeck" \
+  --set apiKeys.gemini=your-gemini-key
+```
+
+**With NodePort (no ingress needed):**
+
+```bash
+helm upgrade --install gendeck ./gendeck-chart \
+  --set frontend.apiUrl=http://$(minikube ip):30001/api \
+  --set database.password=your-password \
+  --set service.frontend.type=NodePort \
+  --set service.backend.type=NodePort
+```
+
+### Accessing the Application
+
+```bash
+# Port-forward (local testing)
+kubectl port-forward svc/gendeck-frontend 3000:3000
+
+# Or get NodePort URL
+minikube service gendeck-frontend --url
+
+# Or for LoadBalancer
+kubectl get svc gendeck-frontend
+```
+
+### Helm Chart Features
+
+| Feature | Description |
+|---------|-------------|
+| **Separate Deployments** | Frontend and backend are separate for independent scaling |
+| **Runtime API URL** | Frontend backend URL is configured at runtime via env var |
+| **Horizontal Autoscaling** | HPA for frontend and backend |
+| **Private Registry** | Support for private Docker registries |
+| **API Keys as Secrets** | Secure storage of AI provider API keys |
+
+See `gendeck-chart/values.yaml` for all configuration options.
 
 ## Project Structure
 
@@ -212,14 +342,20 @@ docker build -t gendeck .
 ├── services/
 │   ├── geminiService.ts    # LLM API abstraction
 │   ├── importService.ts    # HTML import parsing
-│   └── databaseService.ts  # Database API client
+│   └── databaseService.ts  # Database API client (runtime config)
 ├── server/                 # Backend API (optional)
 │   ├── index.js            # Express server entry
 │   ├── db.js               # PostgreSQL connection
 │   ├── services/           # Business logic
 │   └── routes/             # API endpoints
-└── database/
-    └── schema.sql          # Database schema
+├── database/
+│   └── schema.sql          # Database schema
+├── gendeck-chart/          # Helm chart for Kubernetes
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+└── scripts/
+    └── setup-db.sh         # Database setup script
 ```
 
 ## AI Provider Configuration
@@ -304,6 +440,8 @@ Plain text format with slide numbers.
 
 ## Scripts Reference
 
+### Development
+
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Start Vite dev server |
@@ -313,18 +451,43 @@ Plain text format with slide numbers.
 | `npm run server:dev` | Start backend with nodemon |
 | `npm run setup-db` | Run database schema |
 
+### Database Setup
+
+| Command | Description |
+|---------|-------------|
+| `npm run setup-db` | Setup local PostgreSQL |
+| `npm run setup-db:docker` | Setup with Docker PostgreSQL |
+| `./scripts/setup-db.sh -U "postgresql://..."` | Setup with connection URL |
+| `./scripts/setup-db.sh --force` | Force recreate database |
+
+### Helm / Kubernetes
+
+| Command | Description |
+|---------|-------------|
+| `helm install gendeck ./gendeck-chart` | Install GenDeck to Kubernetes |
+| `helm upgrade gendeck ./gendeck-chart` | Upgrade deployment |
+| `helm uninstall gendeck` | Remove deployment |
+| `helm lint ./gendeck-chart` | Validate chart |
+| `helm template ./gendeck-chart` | Render templates |
+
 ## Environment Variables
 
-### Frontend (.env.local)
+### Frontend (.env.local - Development Only)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | Yes* | Google Gemini API key |
-| `VITE_API_URL` | No | Backend API URL (enables database features) |
+| `VITE_API_URL` | No | Backend API URL (local dev only) |
 
 \* Required only if using Google Gemini. Other providers configured in UI.
 
-### Backend (server/.env)
+### Frontend (Docker/Kubernetes Runtime)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API URL (e.g., `http://localhost:3001/api`) |
+
+### Backend (server/.env or env vars)
 
 | Variable | Description |
 |----------|-------------|

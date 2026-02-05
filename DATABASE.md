@@ -79,14 +79,12 @@ DB_NAME=gendeck
 DB_USER=gendeck_user
 DB_PASSWORD=your_secure_password
 PORT=3001
-NODE_ENV=development
 ```
 
 **Option B: Connection URL (Cloud/Production)**
 ```env
 DATABASE_URL=postgresql://user:password@host:port/database
 PORT=3001
-NODE_ENV=production
 ```
 
 ### 5. Test Connection
@@ -185,7 +183,6 @@ DB_PORT=5432
 DB_NAME=gendeck
 DB_USER=admin
 DB_PASSWORD=your_password
-DB_SSL=true
 ```
 
 ## API Endpoints
@@ -237,13 +234,21 @@ Every time you regenerate a slide, the previous version is automatically saved t
 
 ## Environment Variables
 
-### Frontend (.env.local)
+### Frontend (.env.local - Local Development)
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `VITE_API_URL` | Backend API URL | (empty) |
 
 When `VITE_API_URL` is not set, database features are hidden from the UI.
+
+### Frontend (Docker/Kubernetes Runtime)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API URL | `http://localhost:3001/api` |
+
+For Docker/Kubernetes deployments, the `VITE_API_URL` is set at runtime via environment variable (not build time). The frontend container creates a `config.json` file at startup with this value.
 
 ### Backend (server/.env)
 
@@ -256,10 +261,38 @@ When `VITE_API_URL` is not set, database features are hidden from the UI.
 | `DB_USER` | Database user | - |
 | `DB_PASSWORD` | Database password | - |
 | `PORT` | API server port | 3001 |
-| `NODE_ENV` | Environment | development |
-| `DB_SSL` | Enable SSL (for production) | false |
 
 **Note:** `DATABASE_URL` takes precedence over individual parameters if both are provided.
+
+## Kubernetes Deployment (Helm)
+
+When deploying to Kubernetes using the Helm chart:
+
+```bash
+helm upgrade --install gendeck ./gendeck-chart \
+  --set frontend.apiUrl=http://localhost:3001/api \
+  --set database.url="postgresql://user:password@host:5432/gendeck"
+```
+
+**Configuration via values.yaml:**
+
+```yaml
+frontend:
+  apiUrl: "https://api.example.com/api"
+
+database:
+  # Option 1: Connection URL (recommended)
+  url: "postgresql://user:password@host:5432/gendeck?sslmode=require"
+  
+  # Option 2: Individual parameters
+  host: "prod-postgres.example.com"
+  port: 5432
+  name: "gendeck"
+  user: "gendeck_user"
+  password: "your-secure-password"
+```
+
+The backend deployment automatically uses these settings from the ConfigMap and Secret created by Helm.
 
 ## Production Deployment
 
@@ -334,11 +367,6 @@ docker exec -i gendeck-db psql -U gendeck -d gendeck < database/schema.sql
 - Check `DB_USER` and `DB_PASSWORD`
 - Verify user exists and has correct password
 - For cloud DBs, reset password in dashboard if needed
-
-### SSL/TLS Errors
-- Set `DB_SSL=true` for cloud databases
-- Or add `?sslmode=require` to connection URL
-- For self-signed certs, may need to set `rejectUnauthorized: false`
 
 ### CORS Errors
 - Ensure `VITE_API_URL` matches the backend URL exactly

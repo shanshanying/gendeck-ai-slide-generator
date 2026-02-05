@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "server": "cd server && npm start",
     "server:dev": "cd server && npm run dev",
-    "setup-db": "cd server && npm run setup-db"
+    "setup-db": "./scripts/setup-db.sh"
   },
   "dependencies": {
     "uuid": "^13.0.0",

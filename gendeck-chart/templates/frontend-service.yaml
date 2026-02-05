@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gendeck.fullname" . }}-frontend
+  labels:
+    {{- include "gendeck.frontend.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.frontend.type }}
+  ports:
+    - port: {{ .Values.service.frontend.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "gendeck.frontend.selectorLabels" . | nindent 4 }}

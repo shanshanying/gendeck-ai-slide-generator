@@ -12,6 +12,7 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 - **Visual Themes**: 20+ predefined color palettes (Tech Giants, Professional, Minimalist, Creative themes)
 - **Export Options**: HTML deck (with built-in presentation viewer), Markdown outline, speaker notes, and PDF print support
 - **Interactive Editor**: Review and edit outlines before generating slides, with layout presets and drag-drop reordering
+- **Database Persistence**: Optional PostgreSQL backend for saving decks and slide version history
 - **Internationalization**: Support for English and Chinese (UI and content generation)
 
 ## Technology Stack
@@ -24,6 +25,7 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 | Styling | Tailwind CSS (via CDN) |
 | UI Icons | lucide-react |
 | AI SDK | @google/genai |
+| Backend | Node.js + Express + PostgreSQL |
 | Utilities | uuid |
 
 ## Project Structure
@@ -40,14 +42,31 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 ├── metadata.json           # Project metadata
 ├── .env.local              # Environment variables (GEMINI_API_KEY)
 ├── .gitignore              # Git ignore patterns
+├── Dockerfile              # Frontend container image
 ├── README.md               # Basic project documentation
 ├── components/
 │   ├── InputForm.tsx       # Initial configuration form (topic, audience, model settings)
 │   ├── OutlineEditor.tsx   # Outline review/editor with theme selection
 │   ├── Sidebar.tsx         # Slide thumbnail navigation
-│   └── SlidePreview.tsx    # Slide preview with zoom, code view, regeneration
-└── services/
-    └── geminiService.ts    # LLM API abstraction and prompt engineering
+│   ├── SlidePreview.tsx    # Slide preview with zoom, code view, regeneration
+│   ├── DeckBrowser.tsx     # Browse saved decks from database
+│   └── SlideHistory.tsx    # View slide version history
+├── services/
+│   ├── geminiService.ts    # LLM API abstraction and prompt engineering
+│   ├── importService.ts    # HTML import parsing
+│   └── databaseService.ts  # Database API client with runtime config
+├── server/                 # Backend API
+│   ├── Dockerfile          # Backend container image
+│   ├── index.js            # Express server entry
+│   ├── db.js               # PostgreSQL connection
+│   ├── services/           # Business logic
+│   └── routes/             # API endpoints
+├── database/
+│   └── schema.sql          # Database schema
+└── gendeck-chart/          # Helm chart for Kubernetes
+    ├── Chart.yaml
+    ├── values.yaml
+    └── templates/
 ```
 
 ## Build and Development Commands
@@ -64,6 +83,9 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Start backend server
+cd server && npm install && npm run dev
 ```
 
 ### Development Server
@@ -79,10 +101,27 @@ npm run preview
 Create a `.env.local` file in the project root:
 
 ```bash
+# Required for Google Gemini
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Optional - for local backend development
+VITE_API_URL=http://localhost:3001/api
 ```
 
 The Vite config injects this as `process.env.API_KEY` and `process.env.GEMINI_API_KEY` at build time.
+
+### Runtime Configuration (Docker/Kubernetes)
+
+The frontend uses **runtime configuration** via the `VITE_API_URL` environment variable:
+
+1. At container startup, the `start.sh` script creates `/app/dist/config.json`
+2. Frontend reads this file at runtime to get the backend API URL
+3. This allows the same Docker image to work with different backend URLs
+
+```bash
+# Docker run with runtime API URL
+docker run -e VITE_API_URL=http://backend:3001/api -p 3000:3000 gendeck-frontend
+```
 
 ### TypeScript Path Aliases
 
@@ -155,9 +194,9 @@ interface SlideData {
   id: string;
   title: string;
   contentPoints: string[];
-  htmlContent: string | null;  // Generated HTML
-  notes?: string;              // Speaker notes
-  layoutSuggestion?: string;   // AI layout hint
+  htmlContent: string | null;
+  notes?: string;
+  layoutSuggestion?: string;
   isRegenerating: boolean;
   cost?: number;
 }
@@ -165,13 +204,33 @@ interface SlideData {
 // AI provider configuration
 interface ApiSettings {
   apiKeys: Partial<Record<ApiProvider, string>>;
-  outline: ModelSelection;     // Provider/model for outline generation
-  slides: ModelSelection;      // Provider/model for slide generation
+  outline: ModelSelection;
+  slides: ModelSelection;
 }
 
 type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
 
 type Language = 'en' | 'zh';
+```
+
+## Database Service
+
+The `databaseService.ts` module provides:
+
+- **Runtime Config**: Reads `/config.json` at startup to get `VITE_API_URL`
+- **API Client**: Methods for decks, slides, and history operations
+- **Health Check**: `checkBackendAvailable()` to verify backend connectivity
+
+```typescript
+// API Base URL is determined at runtime
+const API_BASE_URL = await loadRuntimeConfig();
+
+// Check if backend is available
+const available = await checkBackendAvailable();
+
+// API operations
+const decks = await deckApi.list();
+const slide = await slideApi.save(deckId, index, slideData);
 ```
 
 ## Code Style Guidelines
@@ -258,6 +317,7 @@ Injected auto-print script opens browser print dialog with optimized CSS for 192
 - The project uses ES modules (`"type": "module"` in package.json)
 - Importmap in index.html enables CDN-based dependencies during development
 - Tailwind CSS is loaded via CDN (not bundled)
+- Backend API URL is configured at runtime via `config.json` (not build time)
 
 ## Layout Presets
 
@@ -299,3 +359,63 @@ The following layout presets are available for slides:
 
 ### Custom
 - Any OpenAI-compatible API (e.g., Ollama local models)
+
+## Kubernetes Deployment
+
+### Docker Images
+
+Two separate images are built:
+
+1. **Frontend**: `gendeck-frontend:latest`
+   - Serves static files with `serve`
+   - Runtime config via `VITE_API_URL` env var
+   - Port 3000
+
+2. **Backend**: `gendeck-frontend:latest`
+   - Express API server
+   - Connects to PostgreSQL
+   - Port 3001
+
+### Helm Chart Structure
+
+```
+gendeck-chart/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+    ├── _helpers.tpl           # Template helpers
+    ├── frontend-deployment.yaml
+    ├── backend-deployment.yaml
+    ├── frontend-service.yaml
+    ├── backend-service.yaml
+    ├── frontend-hpa.yaml      # Horizontal Pod Autoscaler
+    ├── backend-hpa.yaml
+    ├── configmap.yaml         # Backend config
+    ├── secret.yaml            # DB password, API keys
+    ├── serviceaccount.yaml
+    └── tests/
+        └── test-connection.yaml
+```
+
+### Key Helm Values
+
+```yaml
+frontend:
+  apiUrl: "http://localhost:3001/api"  # Backend URL for frontend
+
+database:
+  host: "your-postgres-host"
+  port: 5432
+  name: gendeck
+  user: gendeck_app
+  password: "required"
+  url: ""  # Or use full URL instead of individual params
+
+service:
+  frontend:
+    type: ClusterIP  # or NodePort, LoadBalancer
+    port: 3000
+  backend:
+    type: ClusterIP
+    port: 3001
+```
