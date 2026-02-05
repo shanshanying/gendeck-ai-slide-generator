@@ -323,7 +323,6 @@ export const generateSpeakerNotes = async (
 
 export const generateSlideHtml = async (
   slide: OutlineItem,
-  // style removed, replaced by colorPalette
   colorPalette: string,
   audience: string,
   apiSettings: ApiSettings,
@@ -426,8 +425,6 @@ export const generateSlideHtml = async (
       - NO markdown blocks.
     `;
 
-    // Use Slide settings
-    // Use model settings for slide generation
     const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false);
     return { data: cleanHtml(text), cost };
 

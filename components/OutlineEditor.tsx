@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { SlideData, Language, Theme } from '../types';
+import { SlideData, Language } from '../types';
+import type { Theme } from '../styles/theme';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, ChevronDown, ChevronUp, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
 import { COLOR_THEMES, TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';

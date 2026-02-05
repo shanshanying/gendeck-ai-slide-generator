@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { X, AlertTriangle, Sparkles } from 'lucide-react';
 import { PROVIDERS } from '../constants';
 import { ApiProvider } from '../types';
-import { getThemeClasses, cx } from '../styles/theme';
+import { getThemeClasses, cx, type Theme } from '../styles/theme';
 
 interface ProviderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (provider: ApiProvider, modelId: string) => void;
   lang: 'en' | 'zh';
-  theme: 'dark' | 'light';
+  theme: Theme;
 }
 
 const ProviderSelector: React.FC<ProviderSelectorProps> = ({

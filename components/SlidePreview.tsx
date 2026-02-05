@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SlideData, Language, Theme } from '../types';
+import { SlideData, Language } from '../types';
+import type { Theme } from '../styles/theme';
 import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, Sun, Moon, CheckCircle, AlertTriangle } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';

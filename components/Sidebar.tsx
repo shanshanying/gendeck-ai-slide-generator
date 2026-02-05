@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { SlideData, Language, Theme } from '../types';
+import { SlideData, Language } from '../types';
+import type { Theme } from '../styles/theme';
 import { Layout, CheckCircle, CircleDashed } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';

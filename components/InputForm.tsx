@@ -2,7 +2,8 @@
 import React, { useState, ChangeEvent, useEffect } from 'react';
 import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp } from 'lucide-react';
 import { parseExportedHtml, ImportResult } from '../services/importService';
-import { PresentationConfig, ApiSettings, ApiProvider, Language, Theme } from '../types';
+import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
+import type { Theme } from '../styles/theme';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 

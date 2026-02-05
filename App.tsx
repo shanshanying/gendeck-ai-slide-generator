@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, ApiSettings, ApiProvider } from './types';
-import { ThemeProvider, useThemeContext } from './contexts/ThemeContext';
+import type { Theme } from './styles/theme';
+import { useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
 import { getThemeClasses, cx } from './styles/theme';
 import InputForm from './components/InputForm';
@@ -10,7 +11,7 @@ import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
 import { ImportResult, parseExportedHtml } from './services/importService';
-import { deckApi, slideApi, checkBackendAvailable, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
+import { deckApi, checkBackendAvailable, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
 import DeckBrowser from './components/DeckBrowser';
 import SlideHistory from './components/SlideHistory';
 import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
@@ -68,7 +69,7 @@ const App: React.FC = () => {
   const initialState = getInitialState();
 
   const { theme, toggleTheme, isDark } = useThemeContext();
-  const th = getThemeClasses(theme);
+  const th = getThemeClasses(theme as Theme);
 
   const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
@@ -515,17 +516,6 @@ const App: React.FC = () => {
         setStatus(GenerationStatus.COMPLETE);
         localStorage.setItem('gendeck_topic', deck.topic);
         break;
-    }
-  };
-
-  // Save single slide to database (for auto-save)
-  const handleSaveSlideToDb = async (slideIndex: number, slide: SlideData) => {
-    if (!currentDbDeckId || !hasDatabase || backendAvailable !== true) return;
-
-    try {
-      await slideApi.save(currentDbDeckId, slideIndex, slide);
-    } catch (error) {
-      console.error('Failed to save slide:', error);
     }
   };
 

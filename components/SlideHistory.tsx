@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { History, X, RotateCcw, Clock, ChevronLeft, ChevronRight, FileCode } from 'lucide-react';
 import { deckApi, DeckHistoryItem } from '../services/databaseService';
 import { TRANSLATIONS } from '../constants';
-import { getThemeClasses, cx } from '../styles/theme';
+import { getThemeClasses, cx, type Theme } from '../styles/theme';
 
 interface SlideHistoryProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface SlideHistoryProps {
   deckId: string | null;
   onRestore: (version: DeckHistoryItem) => void;
   lang: 'en' | 'zh';
-  theme: 'dark' | 'light';
+  theme: Theme;
 }
 
 /** Decode HTML entities so escaped storage (e.g. &lt; &gt;) renders as HTML */

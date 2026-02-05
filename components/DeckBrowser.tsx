@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Clock, FileText, Trash2, X, FolderOpen, Loader2, Download, ChevronDown, Type, Layout, Presentation } from 'lucide-react';
 import { deckApi, DatabaseDeck, DatabaseDeckWithSlides } from '../services/databaseService';
 import { TRANSLATIONS } from '../constants';
-import { getThemeClasses, cx } from '../styles/theme';
+import { getThemeClasses, cx, type Theme } from '../styles/theme';
 
 export type LoadStage = 'input' | 'outline' | 'deck';
 
@@ -12,7 +12,7 @@ interface DeckBrowserProps {
   onClose: () => void;
   onLoadDeck: (deck: DatabaseDeckWithSlides, stage: LoadStage) => void;
   lang: 'en' | 'zh';
-  theme: 'dark' | 'light';
+  theme: Theme;
 }
 
 const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, lang, theme }) => {
