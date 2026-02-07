@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
-import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, ChevronDown, ChevronUp, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
-import { COLOR_THEMES, TRANSLATIONS } from '../constants';
+import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
+import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
 interface OutlineEditorProps {
@@ -25,8 +25,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   t,
   theme
 }) => {
-  const [colorPalette, setColorPalette] = useState(COLOR_THEMES[0].colors.join(', '));
-  const [isPaletteOpen, setIsPaletteOpen] = useState(true);
+  const [colorPalette] = useState('');
   
   // Use centralized theme classes
   const th = getThemeClasses(theme);
@@ -186,71 +185,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
         </div>
       </div>
 
-      {/* Theme Selection Section - Collapsible */}
-      <div className={cx('mb-8 backdrop-blur rounded-xl overflow-hidden shrink-0 transition-all duration-300 border', th.bg.glass, th.border.primary)}>
-         <button 
-           onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-           className={cx('w-full px-6 py-4 flex items-center justify-between transition-all', th.bg.glass, th.bg.hover)}
-         >
-            <h3 className={cx('text-sm font-semibold flex items-center gap-2', th.text.secondary)}>
-               <PaintBucket className="w-4 h-4 text-yellow-400"/> {t('selectPalette')}
-            </h3>
-            {isPaletteOpen ? <ChevronUp className={cx('w-4 h-4', th.text.muted)} /> : <ChevronDown className={cx('w-4 h-4', th.text.muted)} />}
-         </button>
-         
-         {isPaletteOpen && (
-           <div className="p-6 pt-0 animate-in slide-in-from-top-2 fade-in duration-200">
-             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
-                {COLOR_THEMES.map((colorTheme) => {
-                  const isActive = colorPalette === colorTheme.colors.join(', ');
-                  return (
-                    <button 
-                      key={colorTheme.id}
-                      type="button"
-                      onClick={() => setColorPalette(colorTheme.colors.join(', '))}
-                      className={cx(
-                        'p-3 rounded-lg border text-left transition-all',
-                        isActive 
-                          ? isDark 
-                            ? 'bg-slate-800 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10' 
-                            : 'bg-gray-100 border-yellow-500/50 ring-1 ring-yellow-500/50 shadow-lg shadow-yellow-500/10'
-                          : isDark 
-                            ? 'bg-slate-950 border-white/5 hover:bg-slate-900 hover:border-white/10' 
-                            : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                      )}
-                    >
-                      <div className="flex gap-1.5 mb-2">
-                         {colorTheme.colors.map((c, i) => (
-                           <div key={i} style={{backgroundColor: c}} className="w-4 h-4 rounded-full border border-gray-600/50 shadow-sm" />
-                         ))}
-                      </div>
-                      <span className={cx(
-                        'text-xs font-medium block truncate',
-                        isActive ? th.text.primary : th.text.muted
-                      )}>{colorTheme.label}</span>
-                    </button>
-                  );
-                })}
-             </div>
-             
-             <div className="flex items-center gap-3">
-                 <label className={cx('text-xs whitespace-nowrap', th.text.muted)}>{t('customPalette')}</label>
-                 <input 
-                    type="text"
-                    value={colorPalette}
-                    onChange={(e) => setColorPalette(e.target.value)}
-                    className={cx(
-                      'flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 font-mono transition-all border',
-                      th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                    )}
-                    placeholder="#000000, #FFFFFF, #FF0000 (Custom Hex Codes)"
-                  />
-             </div>
-           </div>
-         )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto pr-2 space-y-8 pb-20">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-8 pb-8">
         {slides.map((slide, index) => {
           const isCover = index === 0;
           const isEnding = index === slides.length - 1 && slides.length > 1;
@@ -519,6 +454,15 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
         >
           <Plus className="w-6 h-6" /> {t('addNewSlide')}
         </button>
+        
+        {/* Theme Hint - Selection moved to Deck Preview */}
+        <div className={cx('mt-8 p-4 rounded-lg border text-center', isDark ? 'bg-slate-900/50 border-white/10' : 'bg-gray-50 border-gray-200')}>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <PaintBucket className={cx('w-4 h-4', isDark ? 'text-yellow-400' : 'text-yellow-600')} />
+            <span className={cx('text-sm font-medium', th.text.secondary)}>{t('themeSelectionHint')}</span>
+          </div>
+          <p className={cx('text-xs', th.text.muted)}>{t('themeSelectionHintDesc')}</p>
+        </div>
       </div>
     </div>
   );

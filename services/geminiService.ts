@@ -160,6 +160,89 @@ const callLLM = async (
 };
 
 
+export interface ContentAnalysis {
+  audience: string;
+  purpose: string;
+  reasoning: string;
+}
+
+export const analyzeContent = async (
+  content: string,
+  lang: 'en' | 'zh',
+  apiSettings: ApiSettings,
+  signal?: AbortSignal
+): Promise<ServiceResponse<ContentAnalysis>> => {
+  try {
+    const prompt = lang === 'zh' ? `
+      角色定义:
+      你是一位专业的演示文稿策略顾问。你擅长分析内容并确定最适合的目标受众和演示目标。
+
+      任务:
+      分析用户提供的内容，推荐最适合的目标受众和演示目标。
+
+      输入内容:
+      ${content.substring(0, 15000)}
+
+      输出要求:
+      1. audience: 最适合的目标受众群体（简洁描述，如"技术高管/CTO"、"产品团队"、"投资者"等）
+      2. purpose: 演示的核心目标（简洁描述，如"说服投资"、"技术方案评审"、"产品发布"等）
+      3. reasoning: 简要解释为什么推荐这个受众和目标（1-2句话）
+
+      输出格式:
+      返回一个 JSON 对象，格式如下:
+      {
+        "audience": "推荐的目标受众",
+        "purpose": "演示目标",
+        "reasoning": "推荐理由"
+      }
+    ` : `
+      Role Definition:
+      You are a professional presentation strategy consultant. You excel at analyzing content and determining the most suitable target audience and presentation purpose.
+
+      Task:
+      Analyze the user's content and recommend the best target audience and presentation purpose.
+
+      Input Content:
+      ${content.substring(0, 15000)}
+
+      Output Requirements:
+      1. audience: The most suitable target audience (concise description, e.g., "Tech Executives/CTO", "Product Team", "Investors", etc.)
+      2. purpose: The core purpose of the presentation (concise description, e.g., "Secure Investment", "Technical Review", "Product Launch", etc.)
+      3. reasoning: Brief explanation of why this audience and purpose are recommended (1-2 sentences)
+
+      Output Format:
+      Return a JSON object in this format:
+      {
+        "audience": "Recommended target audience",
+        "purpose": "Presentation purpose",
+        "reasoning": "Reasoning for recommendation"
+      }
+    `;
+
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal);
+    const jsonString = cleanJson(text);
+
+    let parsed: ContentAnalysis;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (e) {
+      // Fallback parsing
+      parsed = {
+        audience: lang === 'zh' ? '技术高管/CTO' : 'Tech Executives/CTO',
+        purpose: lang === 'zh' ? '方案评审' : 'Technical Review',
+        reasoning: lang === 'zh' ? '基于内容类型自动推断' : 'Auto-inferred based on content type'
+      };
+    }
+
+    return { data: parsed, cost };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+    throw error;
+  }
+};
+
 export const generateOutline = async (
   content: string,
   topic: string,
@@ -350,11 +433,15 @@ export const generateSlideHtml = async (
       9. **Contrast**: Ensure text has sufficient contrast against background (WCAG AA minimum).
       10. **Spacing**: Use consistent spacing based on 8px scale: 48px, 32px, 24px, 16px, 8px.
       11. **CSS Variables**: DO NOT generate a <style> block. The following variables are injected globally:
-         - \`--c-bg\`: Main background
+         - \`--c-bg\`: Main background color (dark)
          - \`--c-surface\`: Card/Section background
-         - \`--c-text\`: Main text
-         - \`--c-text-muted\`: Secondary text
-         - \`--c-accent\`: Highlight/Brand color
+         - \`--c-text\`: Primary text color
+         - \`--c-text-muted\`: Secondary/muted text color
+         - \`--c-accent\`: Primary accent/brand color
+         - \`--c-accent-2\`: Secondary accent for highlights
+         - \`--c-success\`: Success/positive color (for good data, growth)
+         - \`--c-warning\`: Warning/attention color (for cautions, callouts)
+         - \`--c-error\`: Error/negative color (for problems, declines)
 
       ## 📐 DOM STRUCTURE (MANDATORY)
       Inside the \`<section class="slide ...">\`, you must follow this structure:

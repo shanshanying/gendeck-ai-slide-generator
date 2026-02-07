@@ -38,10 +38,11 @@ export interface ApiSettings {
 export interface PresentationConfig {
   topic: string;
   audience: string;
-  purpose: string; // Added purpose
+  purpose: string;
   slideCount: number;
   apiSettings: ApiSettings;
   documentContent: string;
+  extraPrompt?: string;
 }
 
 export interface OutlineItem {

@@ -1400,6 +1400,7 @@ const App: React.FC = () => {
                  slide={currentSlide}
                  onRegenerate={handleRegenerateSlide}
                  colorPalette={colorPalette}
+                 onColorPaletteChange={setColorPalette}
                  lang={language}
                  t={t}
                  theme={theme}

@@ -2,14 +2,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
-import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, Sun, Moon, CheckCircle, AlertTriangle } from 'lucide-react';
-import { TRANSLATIONS } from '../constants';
+import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, CheckCircle, AlertTriangle, PaintBucket, ChevronRight } from 'lucide-react';
+import { TRANSLATIONS, COLOR_THEMES } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
+
+// Group themes by category
+const THEME_CATEGORIES = [
+  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['navy', 'slate', 'charcoal'] },
+  { id: 'tech', label: 'Tech', labelZh: '科技', themeIds: ['cyber', 'matrix', 'azure'] },
+  { id: 'creative', label: 'Creative', labelZh: '创意', themeIds: ['sunset', 'berry', 'ocean', 'forest', 'royal', 'cherry'] },
+  { id: 'minimal', label: 'Minimal', labelZh: '极简', themeIds: ['ink', 'obsidian', 'carbon'] },
+  { id: 'data', label: 'Data', labelZh: '数据', themeIds: ['analyst', 'fintech', 'healthcare'] },
+  { id: 'giants', label: 'Tech Giants', labelZh: '科技大厂', themeIds: ['google', 'amazon', 'alibaba', 'huawei', 'meta', 'netflix', 'tesla', 'apple', 'microsoft', 'tencent', 'bytedance'] },
+  { id: 'giants-light', label: 'Tech Giants Light', labelZh: '大厂浅色', themeIds: ['google-light', 'amazon-light', 'alibaba-light', 'huawei-light', 'meta-light', 'netflix-light', 'tesla-light', 'apple-light', 'microsoft-light', 'tencent-light', 'bytedance-light'] },
+  { id: 'light', label: 'Light', labelZh: '浅色', themeIds: ['pure-white', 'soft-gray', 'warm-paper', 'cream', 'mint-light', 'sky-light', 'rose-light', 'lavender-light'] },
+];
 
 interface SlidePreviewProps {
   slide: SlideData | undefined;
   onRegenerate: (id: string, customPrompt?: string) => void;
   colorPalette: string;
+  onColorPaletteChange?: (palette: string) => void;
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
@@ -17,47 +30,45 @@ interface SlidePreviewProps {
 
 const DESIGN_CONSTRAINTS = [
   "Dimensions: 1920x1080px (Strict)",
-  "Theme: CSS Variables (Light/Dark)",
+  "Theme: CSS Variables for consistent branding",
   "Assets: Inline SVGs only (No bitmaps)",
   "Layout: Unique styles for Cover/Ending"
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, lang, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
   const [showCode, setShowCode] = useState(false);
   const [customInstruction, setCustomInstruction] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [scale, setScale] = useState(0.5);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to Dark Mode (root)
+  const [showThemePanel, setShowThemePanel] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['corporate', 'tech', 'creative']);
+  const [localPalette, setLocalPalette] = useState(colorPalette);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Update local palette when prop changes
+  useEffect(() => {
+    setLocalPalette(colorPalette);
+  }, [colorPalette]);
 
   const th = getThemeClasses(theme);
   const isDark = theme === 'dark';
 
   // Parse palette to CSS variables
-  // colors[0]: Dark BG
-  // colors[1]: Dark Surface
-  // colors[2]: Accent (Used in both modes)
-  // colors[3]: Light BG / Dark Text
+  // Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
   const colors = colorPalette.split(',').map(c => c.trim());
+  
   const themeStyles = {
-    '--c-bg': colors[0] || '#111',
-    '--c-surface': colors[1] || '#222',
-    '--c-accent': colors[2] || '#4f46e5',
-    '--c-text': colors[3] || '#fff',
-    '--c-text-muted': (colors[3] || '#fff') + '99',
+    '--c-bg': colors[0] || '#0a0a0a',
+    '--c-surface': colors[1] || '#1a1a1a',
+    '--c-text': colors[2] || '#ffffff',
+    '--c-text-muted': colors[3] || '#a1a1aa',
+    '--c-accent': colors[4] || '#3b82f6',
+    '--c-accent-2': colors[5] || '#8b5cf6',
+    '--c-success': colors[6] || '#22c55e',
+    '--c-warning': colors[7] || '#f59e0b',
+    '--c-error': colors[8] || '#ef4444',
   } as React.CSSProperties;
-
-  // Light mode override
-  const lightThemeStyles = {
-    '--c-bg': colors[3] || '#fff',
-    '--c-surface': '#f3f4f6',
-    '--c-accent': colors[2] || '#4f46e5', // Use the specific accent color for light mode too
-    '--c-text': colors[0] || '#000',
-    '--c-text-muted': (colors[0] || '#000') + '99',
-  } as React.CSSProperties;
-
-  const activeStyles = isDarkMode ? themeStyles : lightThemeStyles;
 
   // Auto-fit logic
   const fitToScreen = () => {
@@ -117,19 +128,6 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
     setCustomInstruction('');
   };
 
-  // Get theme toggle button styles
-  const getThemeToggleStyles = () => {
-    if (isDarkMode) {
-      return isDark
-        ? 'bg-slate-900 border-white/10 text-yellow-400 hover:bg-slate-800'
-        : 'bg-gray-800 border-gray-600 text-yellow-400 hover:bg-gray-700';
-    } else {
-      return isDark
-        ? 'bg-slate-200 border-white/20 text-orange-500 hover:bg-slate-300'
-        : 'bg-gray-100 border-gray-200 text-orange-500 hover:bg-gray-200';
-    }
-  };
-
   return (
     <div className={cx('flex-1 flex flex-col h-full border-l relative', th.bg.primary, th.border.primary)}>
       {/* Toolbar */}
@@ -152,13 +150,20 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 shrink-0">
-           {/* Theme Toggle */}
+           {/* Color Theme Button */}
            <button
-             onClick={() => setIsDarkMode(!isDarkMode)}
-             className={cx('p-2 rounded-lg transition-all border', getThemeToggleStyles())}
-             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+             onClick={() => setShowThemePanel(!showThemePanel)}
+             className={cx(
+               'text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border',
+               showThemePanel
+                 ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/25'
+                 : isDark
+                   ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10'
+                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+             )}
            >
-             {isDarkMode ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+             <PaintBucket className="w-3.5 h-3.5" />
+             {t('theme')}
            </button>
 
            <div className={cx('w-px h-4 mx-1', th.border.divider)} />
@@ -194,6 +199,163 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
            </button>
         </div>
       </div>
+
+      {/* Theme Selection Panel */}
+      {showThemePanel && (
+        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur-xl border-b p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 max-h-[28rem] overflow-y-auto', isDark ? 'bg-slate-950/98 border-white/10' : 'bg-white/98 border-gray-200 shadow-gray-200/50')}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className={cx('text-sm font-semibold', th.text.primary)}>{t('selectPalette')}</h4>
+              <p className={cx('text-[11px] mt-0.5', th.text.muted)}>{t('paletteHint')}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const allIds = THEME_CATEGORIES.map(c => c.id);
+                  setExpandedCategories(expandedCategories.length === allIds.length ? [] : allIds);
+                }}
+                className={cx('text-[11px] px-2 py-1 rounded border transition-all', th.button.primary)}
+              >
+                {expandedCategories.length === THEME_CATEGORIES.length ? (lang === 'zh' ? '折叠' : 'Collapse') : (lang === 'zh' ? '展开' : 'Expand')}
+              </button>
+              <button 
+                onClick={() => setShowThemePanel(false)}
+                className={cx('text-xs px-3 py-1.5 rounded-lg border transition-all', th.button.primary)}
+              >
+                {t('close')}
+              </button>
+            </div>
+          </div>
+          
+          {/* Theme Categories - Compact Layout */}
+          <div className="space-y-2 mb-4">
+            {THEME_CATEGORIES.map((category) => {
+              const isExpanded = expandedCategories.includes(category.id);
+              const categoryThemes = COLOR_THEMES.filter(t => category.themeIds.includes(t.id));
+              const hasActiveTheme = categoryThemes.some(t => localPalette === t.colors.join(', '));
+              
+              return (
+                <div key={category.id} className={cx('rounded-lg border overflow-hidden', isDark ? 'bg-slate-900/40 border-white/5' : 'bg-gray-50/50 border-gray-200')}>
+                  {/* Category Header */}
+                  <button
+                    onClick={() => {
+                      setExpandedCategories(prev => 
+                        isExpanded ? prev.filter(id => id !== category.id) : [...prev, category.id]
+                      );
+                    }}
+                    className={cx(
+                      'w-full px-3 py-2 flex items-center justify-between transition-colors',
+                      isDark ? 'hover:bg-slate-800/60' : 'hover:bg-white',
+                      hasActiveTheme && 'bg-indigo-500/10'
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cx('text-xs font-semibold', hasActiveTheme ? (isDark ? 'text-indigo-300' : 'text-indigo-600') : th.text.secondary)}>
+                        {lang === 'zh' ? category.labelZh : category.label}
+                      </span>
+                      <span className={cx('text-[10px] px-1.5 py-0.5 rounded-full', isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-200 text-gray-500')}>
+                        {categoryThemes.length}
+                      </span>
+                    </div>
+                    <ChevronRight className={cx('w-4 h-4 transition-transform', isExpanded ? 'rotate-90' : '', th.text.muted)} />
+                  </button>
+                  
+                  {/* Theme Grid - Compact */}
+                  {isExpanded && (
+                    <div className="p-2 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-1.5">
+                      {categoryThemes.map((colorTheme) => {
+                        const isActive = localPalette === colorTheme.colors.join(', ');
+                        return (
+                          <button
+                            key={colorTheme.id}
+                            type="button"
+                            onClick={() => {
+                              setLocalPalette(colorTheme.colors.join(', '));
+                              onColorPaletteChange?.(colorTheme.colors.join(', '));
+                            }}
+                            className={cx(
+                              'group relative p-1.5 rounded-lg border transition-all duration-150',
+                              isActive 
+                                ? isDark 
+                                  ? 'bg-slate-700 border-indigo-500 ring-1 ring-indigo-500/50' 
+                                  : 'bg-white border-indigo-500 ring-1 ring-indigo-500/30'
+                                : isDark 
+                                  ? 'bg-slate-800 border-white/10 hover:border-white/20' 
+                                  : 'bg-white border-gray-200 hover:border-gray-300'
+                            )}
+                            title={colorTheme.label}
+                          >
+                            {/* Mini Color Preview */}
+                            <div className="flex gap-px mb-1 rounded overflow-hidden h-5">
+                              {colorTheme.colors.slice(0, 6).map((c, i) => (
+                                <div key={i} style={{backgroundColor: c}} className="flex-1" />
+                              ))}
+                            </div>
+                            <span className={cx(
+                              'text-[9px] block truncate text-center',
+                              isActive ? (isDark ? 'text-indigo-300' : 'text-indigo-600') : th.text.secondary
+                            )}>{colorTheme.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Custom Color Input */}
+          <div className={cx('p-3 rounded-xl border', isDark ? 'bg-slate-900/60 border-white/5' : 'bg-gray-50/80 border-gray-200')}>
+            <div className="flex items-center gap-3">
+                <label className={cx('text-xs font-medium whitespace-nowrap', th.text.secondary)}>{t('customPalette')}</label>
+                <input 
+                   type="text"
+                   value={localPalette}
+                   onChange={(e) => {
+                     setLocalPalette(e.target.value);
+                     onColorPaletteChange?.(e.target.value);
+                   }}
+                   className={cx(
+                     'flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 font-mono transition-all border',
+                     th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                   )}
+                   placeholder="#0a0a0a, #1a1a1a, #ffffff, #a1a1aa, #3b82f6, #8b5cf6, #22c55e, #f59e0b, #ef4444"
+                 />
+            </div>
+            
+            {/* Live Color Preview */}
+            <div className="mt-3 pt-3 border-t border-dashed border-gray-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={cx('text-[11px] font-medium', th.text.muted)}>{t('livePreview')}</span>
+              </div>
+              <div className="flex items-start gap-1.5 flex-wrap">
+                {localPalette.split(',').slice(0, 9).map((color, idx) => {
+                  const trimmedColor = color.trim();
+                  const isValid = /^#([0-9A-Fa-f]{3}){1,2}$/.test(trimmedColor);
+                  const labels = [t('bg'), t('surface'), t('text'), t('muted'), t('accent'), t('accent2'), t('success'), t('warning'), t('error')];
+                  const fullNames = ['Background', 'Surface', 'Text', 'Muted', 'Accent', 'Accent 2', 'Success', 'Warning', 'Error'];
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1 w-8">
+                      <div 
+                        className={cx(
+                          'w-6 h-6 rounded-md border shadow-sm transition-all',
+                          isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                        )}
+                        style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                        title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                      />
+                      <span className={cx('text-[8px] font-bold uppercase tracking-wider text-center w-full truncate', th.text.muted)}>
+                        {labels[idx] || '-'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Regeneration Input Panel */}
       {isEditing && (
@@ -249,7 +411,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         >
           <div className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
           <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}> 
               <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-100 ring-amber-200')}>
                 <AlertTriangle className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
               </div>
@@ -258,7 +420,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                 <p className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '将使用新指令重新生成此幻灯片，当前内容将被替换。' : 'This slide will be regenerated with your instruction. Current content will be replaced.'}</p>
               </div>
             </div>
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}> 
               <button
                 onClick={() => setShowConfirmation(false)}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
@@ -298,9 +460,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     transition: 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                     boxShadow: '0 0 100px rgba(0,0,0,0.7)',
                     backfaceVisibility: 'hidden',
-                    ...activeStyles
+                    ...themeStyles
                 }}
-                className={`overflow-hidden shadow-2xl ${isDarkMode ? '' : 'theme-light'}`}
+                className="overflow-hidden shadow-2xl"
               >
                   {/* The Dangerous HTML is rendered here. */}
                   <div

@@ -90,36 +90,264 @@ export const PROVIDERS: {
   },
 ];
 
-// Format: [DarkBG, DarkSurface, Accent, LightBG/DarkText]
+// Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
+// 9-Color System optimized for presentation decks (dark mode optimized)
 export const COLOR_THEMES = [
-  // --- TECH GIANTS ---
-  { id: 'google', label: 'Google', colors: ['#202124', '#303134', '#4285F4', '#ffffff'] }, // Material
-  { id: 'meta', label: 'Meta', colors: ['#1c1e21', '#242526', '#0668E1', '#f0f2f5'] }, // Facebook Blue
-  { id: 'apple', label: 'Apple', colors: ['#000000', '#1c1c1e', '#2997ff', '#f5f5f7'] }, // Cupertino
-  { id: 'microsoft', label: 'Microsoft', colors: ['#171717', '#2b2b2b', '#0078D4', '#ffffff'] }, // Metro Blue
-  { id: 'amazon', label: 'Amazon', colors: ['#232F3E', '#374151', '#FF9900', '#ffffff'] }, // Squid Ink & Smile
-  { id: 'netflix', label: 'Netflix', colors: ['#000000', '#141414', '#E50914', '#ffffff'] }, // Red/Black
-  { id: 'alibaba', label: 'Alibaba', colors: ['#1f1f1f', '#2d2d2d', '#FF6A00', '#ffffff'] }, // Orange
-  { id: 'huawei', label: 'Huawei', colors: ['#1a1a1a', '#2a2a2a', '#C7000B', '#ffffff'] }, // Red
-  { id: 'tencent', label: 'Tencent', colors: ['#000000', '#18181b', '#0052D9', '#ffffff'] }, // Tech Blue
+  // === CORPORATE CLASSICS ===
+  { 
+    id: 'navy', 
+    label: 'Navy Corporate', 
+    colors: ['#0a1628', '#1e293b', '#f8fafc', '#94a3b8', '#3b82f6', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'slate', 
+    label: 'Slate Modern', 
+    colors: ['#0f172a', '#1e293b', '#f1f5f9', '#64748b', '#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'charcoal', 
+    label: 'Charcoal Pro', 
+    colors: ['#18181b', '#27272a', '#fafafa', '#a1a1aa', '#e4e4e7', '#a1a1aa', '#22c55e', '#eab308', '#ef4444'] 
+  },
 
-  // --- PROFESSIONAL / BUSINESS ---
-  { id: 'executive', label: 'Executive', colors: ['#0f172a', '#1e293b', '#d4af37', '#f8fafc'] }, // Navy & Gold
-  { id: 'finance', label: 'Wall St', colors: ['#022c22', '#064e3b', '#34d399', '#ecfdf5'] }, // Dark Green
-  { id: 'consulting', label: 'McKinsey', colors: ['#111827', '#374151', '#60a5fa', '#f3f4f6'] }, // Slate & Blue
-  { id: 'legal', label: 'Legal Firm', colors: ['#2a2a2a', '#404040', '#9ca3af', '#f5f5f5'] }, // Grey & White
+  // === TECH INNOVATION ===
+  { 
+    id: 'cyber', 
+    label: 'Cyberpunk', 
+    colors: ['#0a0a0f', '#1a1a2e', '#ffffff', '#64748b', '#d946ef', '#00d4ff', '#22c55e', '#fbbf24', '#f43f5e'] 
+  },
+  { 
+    id: 'matrix', 
+    label: 'Matrix Code', 
+    colors: ['#000000', '#052e16', '#86efac', '#86efac', '#4ade80', '#bbf7d0', '#4ade80', '#eab308', '#f87171'] 
+  },
+  { 
+    id: 'azure', 
+    label: 'Azure Cloud', 
+    colors: ['#0c1220', '#162544', '#e0f2fe', '#60a5fa', '#0ea5e9', '#22d3ee', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
 
-  // --- MINIMALIST / MODERN ---
-  { id: 'stark', label: 'Stark Mono', colors: ['#ffffff', '#f3f4f6', '#000000', '#000000'] }, // Light mode default
-  { id: 'swiss', label: 'Swiss Style', colors: ['#f5f5f5', '#e5e5e5', '#dc2626', '#171717'] }, // Red accent
-  { id: 'ink', label: 'E-Ink', colors: ['#ffffff', '#f4f4f5', '#18181b', '#18181b'] }, // High contrast
-  { id: 'ceramic', label: 'Ceramic', colors: ['#fafaf9', '#e7e5e4', '#57534e', '#292524'] }, // Warm Stone
+  // === CREATIVE BOLD ===
+  { 
+    id: 'sunset', 
+    label: 'Sunset Glow', 
+    colors: ['#1a0f0a', '#2d1f16', '#fff7ed', '#fdba74', '#f97316', '#fbbf24', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'berry', 
+    label: 'Berry Punch', 
+    colors: ['#2a0a12', '#4a1924', '#fff1f2', '#fb7185', '#e11d48', '#f43f5e', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'ocean', 
+    label: 'Deep Ocean', 
+    colors: ['#020617', '#0f172a', '#e0f2fe', '#38bdf8', '#0ea5e9', '#22d3ee', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'forest', 
+    label: 'Deep Forest', 
+    colors: ['#052e16', '#14532d', '#f0fdf4', '#86efac', '#22c55e', '#84cc16', '#22c55e', '#eab308', '#ef4444'] 
+  },
+  { 
+    id: 'royal', 
+    label: 'Royal Purple', 
+    colors: ['#1e1b4b', '#312e81', '#faf5ff', '#c084fc', '#8b5cf6', '#a855f7', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'cherry', 
+    label: 'Cherry Blossom', 
+    colors: ['#331015', '#4c1d25', '#fff1f2', '#fda4af', '#e11d48', '#fb7185', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
 
-  // --- CREATIVE ---
-  { id: 'neon', label: 'Cyber Punk', colors: ['#09090b', '#18181b', '#d946ef', '#ffffff'] },
-  { id: 'matrix', label: 'Hacker', colors: ['#000000', '#111111', '#22c55e', '#e4e4e7'] },
-  { id: 'sunset', label: 'Sunset', colors: ['#4a044e', '#701a75', '#f472b6', '#fff1f2'] },
-  { id: 'galaxy', label: 'Galaxy', colors: ['#2e1065', '#4c1d95', '#a855f7', '#ffffff'] },
+  // === MINIMALIST CLEAN ===
+  { 
+    id: 'ink', 
+    label: 'True Ink', 
+    colors: ['#0a0a0a', '#171717', '#fafafa', '#737373', '#ffffff', '#a3a3a3', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'obsidian', 
+    label: 'Obsidian', 
+    colors: ['#000000', '#1c1c1e', '#ffffff', '#8e8e93', '#007aff', '#5ac8fa', '#34c759', '#ff9500', '#ff3b30'] 
+  },
+  { 
+    id: 'carbon', 
+    label: 'Carbon Fiber', 
+    colors: ['#0c0c0c', '#1f1f1f', '#fafafa', '#6b7280', '#3b82f6', '#60a5fa', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+
+  // === DATA VIZ OPTIMIZED ===
+  { 
+    id: 'analyst', 
+    label: 'Data Analyst', 
+    colors: ['#0f172a', '#1e293b', '#f8fafc', '#94a3b8', '#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'fintech', 
+    label: 'FinTech Pro', 
+    colors: ['#022c22', '#064e3b', '#ecfdf5', '#6ee7b7', '#10b981', '#34d399', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'healthcare', 
+    label: 'Healthcare', 
+    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#0ea5e9', '#38bdf8', '#22c55e', '#fbbf24', '#f87171'] 
+  },
+
+  // === TECH GIANTS ===
+  { 
+    id: 'google', 
+    label: 'Google', 
+    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#4285f4', '#34a853', '#34a853', '#fbbc04', '#ea4335'] 
+  },
+  { 
+    id: 'amazon', 
+    label: 'Amazon', 
+    colors: ['#0f1419', '#1a2332', '#ffffff', '#94a3b8', '#ff9900', '#00a8e1', '#34d399', '#ffc107', '#ef4444'] 
+  },
+  { 
+    id: 'alibaba', 
+    label: 'Alibaba', 
+    colors: ['#1a1a1a', '#2d2d2d', '#ffffff', '#a3a3a3', '#ff6a00', '#ff8f00', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'huawei', 
+    label: 'Huawei', 
+    colors: ['#0a0a0a', '#1f1f1f', '#ffffff', '#a1a1aa', '#cf0a2c', '#ff4d6d', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'meta', 
+    label: 'Meta', 
+    colors: ['#0f1115', '#1c1e21', '#ffffff', '#8b949e', '#0668e1', '#0081fb', '#42b72a', '#f7b928', '#fa383e'] 
+  },
+  { 
+    id: 'netflix', 
+    label: 'Netflix', 
+    colors: ['#000000', '#141414', '#ffffff', '#b3b3b3', '#e50914', '#ff4d4d', '#46d369', '#e87c03', '#e50914'] 
+  },
+  { 
+    id: 'tesla', 
+    label: 'Tesla', 
+    colors: ['#0a0a0a', '#171717', '#ffffff', '#888888', '#cc0000', '#e82127', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'apple', 
+    label: 'Apple', 
+    colors: ['#000000', '#1d1d1f', '#f5f5f7', '#86868b', '#0071e3', '#2997ff', '#34c759', '#ff9500', '#ff3b30'] 
+  },
+  { 
+    id: 'microsoft', 
+    label: 'Microsoft', 
+    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#0078d4', '#106ebe', '#107c10', '#ffc107', '#d83b01'] 
+  },
+  { 
+    id: 'tencent', 
+    label: 'Tencent', 
+    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#38bdf8', '#7dd3fc', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+  { 
+    id: 'bytedance', 
+    label: 'ByteDance', 
+    colors: ['#0a0a0a', '#1a1a1a', '#ffffff', '#a1a1aa', '#00f2ea', '#ff0050', '#22c55e', '#f59e0b', '#ef4444'] 
+  },
+
+  // === TECH GIANTS LIGHT ===
+  { 
+    id: 'google-light', 
+    label: 'Google Light', 
+    colors: ['#ffffff', '#f8f9fa', '#202124', '#5f6368', '#1557b0', '#0d5c26', '#0d5c26', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'amazon-light', 
+    label: 'Amazon Light', 
+    colors: ['#ffffff', '#f3f3f3', '#0f1111', '#565959', '#92400e', '#1557b0', '#0d5c26', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'alibaba-light', 
+    label: 'Alibaba Light', 
+    colors: ['#ffffff', '#f5f5f5', '#333333', '#666666', '#9a3412', '#92400e', '#166534', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'huawei-light', 
+    label: 'Huawei Light', 
+    colors: ['#ffffff', '#f2f2f2', '#000000', '#666666', '#b91c1c', '#dc2626', '#166534', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'meta-light', 
+    label: 'Meta Light', 
+    colors: ['#ffffff', '#f5f6f7', '#1c1e21', '#606770', '#1557b0', '#0066a1', '#166534', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'netflix-light', 
+    label: 'Netflix Light', 
+    colors: ['#ffffff', '#f5f5f5', '#000000', '#757575', '#b91c1c', '#dc2626', '#166534', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'tesla-light', 
+    label: 'Tesla Light', 
+    colors: ['#ffffff', '#f4f4f4', '#171a20', '#5c5e62', '#7f1d1d', '#b91c1c', '#0d5c26', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'apple-light', 
+    label: 'Apple Light', 
+    colors: ['#ffffff', '#f5f5f7', '#1d1d1f', '#6e6e73', '#0066a1', '#1557b0', '#166534', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'microsoft-light', 
+    label: 'Microsoft Light', 
+    colors: ['#ffffff', '#f8f9fa', '#323130', '#605e5c', '#1557b0', '#1557b0', '#166534', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'tencent-light', 
+    label: 'Tencent Light', 
+    colors: ['#ffffff', '#f0f9ff', '#0c4a6e', '#075985', '#1557b0', '#0e7490', '#0f766e', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'bytedance-light', 
+    label: 'ByteDance Light', 
+    colors: ['#ffffff', '#f9fafb', '#111827', '#374151', '#0f766e', '#991b1b', '#0f766e', '#92400e', '#b91c1c'] 
+  },
+
+  // === LIGHT THEMES ===
+  { 
+    id: 'pure-white', 
+    label: 'Pure White', 
+    colors: ['#ffffff', '#f1f5f9', '#0f172a', '#475569', '#1e40af', '#581c87', '#166534', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'soft-gray', 
+    label: 'Soft Gray', 
+    colors: ['#f8fafc', '#e2e8f0', '#1e293b', '#475569', '#1e40af', '#581c87', '#166534', '#92400e', '#b91c1c'] 
+  },
+  { 
+    id: 'warm-paper', 
+    label: 'Warm Paper', 
+    colors: ['#fafaf9', '#e7e5e4', '#292524', '#57534e', '#9a3412', '#78350f', '#3f6212', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'cream', 
+    label: 'Cream', 
+    colors: ['#fefce8', '#fef9c3', '#422006', '#713f12', '#854d0e', '#a16207', '#3f6212', '#9a3412', '#991b1b'] 
+  },
+  { 
+    id: 'mint-light', 
+    label: 'Mint Light', 
+    colors: ['#f0fdf4', '#dcfce7', '#14532d', '#166534', '#15803d', '#166534', '#14532d', '#713f12', '#991b1b'] 
+  },
+  { 
+    id: 'sky-light', 
+    label: 'Sky Light', 
+    colors: ['#f0f9ff', '#e0f2fe', '#0c4a6e', '#075985', '#075985', '#0369a1', '#166534', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'rose-light', 
+    label: 'Rose Light', 
+    colors: ['#fff1f2', '#ffe4e6', '#881337', '#9f1239', '#be123c', '#9f1239', '#166534', '#9a3412', '#991b1b'] 
+  },
+  { 
+    id: 'lavender-light', 
+    label: 'Lavender Light', 
+    colors: ['#faf5ff', '#f3e8ff', '#581c87', '#6b21a8', '#6d28d9', '#7c3aed', '#166534', '#92400e', '#991b1b'] 
+  },
 ];
 
 export const AUDIENCE_PRESETS = {
@@ -249,6 +477,9 @@ export const TRANSLATIONS = {
     audienceLabel: "Target Audience",
     audiencePlaceholder: "Or type custom audience...",
     purposeLabel: "Presentation Goal",
+    purposePlaceholder: "Or type custom goal...",
+    extraPromptLabel: "Extra Prompt",
+    extraPromptPlaceholder: "Additional instructions for the AI (optional)...",
     sourceLabel: "Source Document",
     sourcePlaceholder: "Paste text or upload .txt/.md",
     pastePlaceholder: "Paste your document content here...",
@@ -258,6 +489,15 @@ export const TRANSLATIONS = {
     googleApiKeyNote: "Managed via system environment",
     cancel: "Cancel",
 
+    // Feeling Lucky Feature
+    feelingLuckyTitle: "AI Auto Analysis",
+    feelingLuckyDesc: "Let AI analyze your content and suggest the best audience & purpose",
+    feelingLuckyBtn: "I'm Feeling Lucky",
+    analyzing: "Analyzing...",
+    analysisResult: "AI Analysis Result:",
+    emptyContentError: "Please enter some content to analyze",
+    analysisError: "Failed to analyze content. Please try again.",
+
     // OutlineEditor
     reviewStyle: "Review & Style",
     refineStructure: "Refine your structure, choose layouts, and pick a theme.",
@@ -265,6 +505,11 @@ export const TRANSLATIONS = {
     generateSlidesBtn: "Generate Slides",
     selectPalette: "Select Color Palette",
     customPalette: "Custom Palette:",
+    colorPreview: "Preview",
+    colorBg: "BG" ,
+    colorSurface: "Surface",
+    colorAccent: "Accent",
+    colorText: "Text",
     coverPage: "Cover Page",
     endingPage: "Ending / Summary",
     slideTitlePlaceholder: "Slide Title",
@@ -281,6 +526,19 @@ export const TRANSLATIONS = {
     onePointPerLine: "One point per line",
     pointsPlaceholder: "• Point 1\n• Point 2\n• Point 3",
     layoutPreset: "Layout Preset",
+    themeSelectionHint: "Theme Selection",
+    themeSelectionHintDesc: "You can change the color theme in Deck Preview after generating slides",
+    paletteHint: "Click any theme to instantly preview on your slide",
+    livePreview: "Preview",
+    bg: "BG",
+    surface: "SUR",
+    text: "TXT",
+    muted: "MUT",
+    accent: "ACC",
+    accent2: "ALT",
+    success: "OK",
+    warning: "WARN",
+    error: "ERR",
 
     // Sidebar
     slidesHeader: "Slides",
@@ -296,6 +554,8 @@ export const TRANSLATIONS = {
     regenerate: "Regenerate",
     code: "Code",
     previewView: "Preview",
+    theme: "Theme",
+    close: "Close",
     instructions: "Instructions for regeneration",
     instructionPlaceholder: "e.g., Change layout to compare two items...",
     apply: "Apply",
@@ -343,6 +603,9 @@ export const TRANSLATIONS = {
     audienceLabel: "目标受众",
     audiencePlaceholder: "或输入自定义受众...",
     purposeLabel: "演示目标",
+    purposePlaceholder: "或输入自定义目标...",
+    extraPromptLabel: "额外提示",
+    extraPromptPlaceholder: "给AI的额外指令（可选）...",
     sourceLabel: "源文档",
     sourcePlaceholder: "粘贴文本或上传 .txt/.md",
     pastePlaceholder: "在此粘贴文档内容...",
@@ -352,6 +615,15 @@ export const TRANSLATIONS = {
     googleApiKeyNote: "通过系统环境变量管理",
     cancel: "取消",
 
+    // Feeling Lucky Feature
+    feelingLuckyTitle: "AI 智能分析",
+    feelingLuckyDesc: "让AI分析您的内容，自动推荐最佳受众和目标",
+    feelingLuckyBtn: "试试手气",
+    analyzing: "分析中...",
+    analysisResult: "AI 分析结果：",
+    emptyContentError: "请输入内容以进行分析",
+    analysisError: "分析失败，请重试",
+
     // OutlineEditor
     reviewStyle: "审查与样式",
     refineStructure: "优化结构，选择布局，挑选主题。",
@@ -359,6 +631,11 @@ export const TRANSLATIONS = {
     generateSlidesBtn: "生成幻灯片",
     selectPalette: "选择配色方案",
     customPalette: "自定义配色:",
+    colorPreview: "预览",
+    colorBg: "背景",
+    colorSurface: "表面",
+    colorAccent: "强调",
+    colorText: "文本",
     coverPage: "封面页",
     endingPage: "结束页 / 总结",
     slideTitlePlaceholder: "幻灯片标题",
@@ -375,6 +652,19 @@ export const TRANSLATIONS = {
     onePointPerLine: "每行一个要点",
     pointsPlaceholder: "• 要点 1\n• 要点 2\n• 要点 3",
     layoutPreset: "布局预设",
+    themeSelectionHint: "主题选择",
+    themeSelectionHintDesc: "生成幻灯片后，您可以在预览页面更改颜色主题",
+    paletteHint: "点击任意主题即可在幻灯片上实时预览",
+    livePreview: "预览",
+    bg: "BG",
+    surface: "SUR",
+    text: "TXT",
+    muted: "MUT",
+    accent: "ACC",
+    accent2: "ALT",
+    success: "OK",
+    warning: "WARN",
+    error: "ERR",
 
     // Sidebar
     slidesHeader: "幻灯片",
@@ -390,6 +680,8 @@ export const TRANSLATIONS = {
     regenerate: "重新生成",
     code: "代码",
     previewView: "预览",
+    theme: "主题",
+    close: "关闭",
     instructions: "重新生成指令",
     instructionPlaceholder: "例如：更改布局以对比两个项目...",
     apply: "应用",

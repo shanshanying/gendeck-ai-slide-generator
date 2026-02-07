@@ -1,7 +1,8 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp } from 'lucide-react';
+import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp, MessageSquare, Wand2 } from 'lucide-react';
 import { parseExportedHtml, ImportResult } from '../services/importService';
+import { analyzeContent, ContentAnalysis } from '../services/geminiService';
 import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { PROVIDERS, AUDIENCE_PRESETS, PRESENTATION_PURPOSES, SAMPLE_CONTENT, TRANSLATIONS } from '../constants';
@@ -39,6 +40,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [purpose, setPurpose] = useState(() => loadStr('gendeck_purpose', PRESENTATION_PURPOSES[lang][0]));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
+  const [extraPrompt, setExtraPrompt] = useState(() => loadStr('gendeck_extra_prompt', ''));
   const [showSettings, setShowSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -58,6 +60,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
   // Simulated Progress State
   const [progressMessage, setProgressMessage] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisReasoning, setAnalysisReasoning] = useState<string | null>(null);
   
   // Theme classes
   const th = getThemeClasses(theme);
@@ -112,6 +116,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_purpose', purpose), [purpose]);
   useEffect(() => localStorage.setItem('gendeck_count', slideCount.toString()), [slideCount]);
   useEffect(() => localStorage.setItem('gendeck_content', content), [content]);
+  useEffect(() => localStorage.setItem('gendeck_extra_prompt', extraPrompt), [extraPrompt]);
   useEffect(() => localStorage.setItem('gendeck_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
 
   useEffect(() => {
@@ -219,7 +224,55 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       }
     };
 
-    onGenerate({ topic, audience, purpose, slideCount, apiSettings, documentContent: content });
+    onGenerate({ topic, audience, purpose, slideCount, apiSettings, documentContent: content, extraPrompt });
+  };
+
+  const handleFeelingLucky = async () => {
+    if (!content.trim()) {
+      setErrorMsg(t('emptyContentError'));
+      return;
+    }
+
+    // Validate API Key
+    if (!apiKeys[provider] || apiKeys[provider]!.trim() === '') {
+      setShowSettings(true);
+      setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setErrorMsg(null);
+    setAnalysisReasoning(null);
+
+    try {
+      const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
+      const apiSettings: ApiSettings = {
+        apiKeys: apiKeys,
+        model: {
+          provider: provider,
+          modelId: model,
+          baseUrl: getBaseUrl(provider)
+        }
+      };
+
+      const result = await analyzeContent(content, lang, apiSettings);
+      const { audience: suggestedAudience, purpose: suggestedPurpose, reasoning } = result.data;
+      
+      // Update the form with suggested values (user can review before generating)
+      setAudience(suggestedAudience);
+      setPurpose(suggestedPurpose);
+      setAnalysisReasoning(reasoning);
+      
+      // Don't auto-generate - let user review and click Generate Outline themselves
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        // User cancelled, do nothing
+      } else {
+        setErrorMsg(error?.message || t('analysisError'));
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -372,7 +425,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             <input
               type="range"
               min="3"
-              max="20"
+              max="30"
               value={slideCount}
               onChange={(e) => setSlideCount(parseInt(e.target.value))}
               className={cx(
@@ -382,7 +435,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             />
             <div className={cx('flex justify-between text-[10px] mt-1', th.text.muted)}>
               <span>3</span>
-              <span>20</span>
+              <span>30</span>
             </div>
           </div>
 
@@ -425,16 +478,16 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
              <label className={cx('block text-sm font-medium mb-2 flex items-center gap-2', th.text.secondary)}>
                <Target className="w-4 h-4 text-blue-500"/> {t('purposeLabel')}
              </label>
-             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+             <div className="flex flex-wrap gap-2 mb-2">
                {PRESENTATION_PURPOSES[lang].map((p) => (
                  <button
                   key={p}
                   type="button"
                   onClick={() => setPurpose(p)}
                   className={cx(
-                    'px-3 py-2 text-xs rounded-md border text-left transition-all',
+                    'px-3 py-1.5 text-xs rounded-full border transition-all',
                     purpose === p
-                      ? 'bg-blue-600/20 border-blue-500 text-blue-700'
+                      ? 'bg-blue-600/20 border-blue-500 text-blue-500'
                       : cx(th.selection.inactive, 'hover:border-white/20')
                   )}
                  >
@@ -442,9 +495,98 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                  </button>
                ))}
              </div>
+             <input
+                type="text"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                className={cx(
+                  'w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none',
+                  isDark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                )}
+                placeholder={t('purposePlaceholder')}
+              />
           </div>
 
-          {/* 5. Source Document */}
+          {/* 5. Extra Prompt */}
+          <div>
+             <label className={cx('block text-sm font-medium mb-2 flex items-center gap-2', th.text.secondary)}>
+               <MessageSquare className="w-4 h-4 text-purple-500"/> {t('extraPromptLabel')}
+             </label>
+             <textarea
+                value={extraPrompt}
+                onChange={(e) => setExtraPrompt(e.target.value)}
+                rows={3}
+                className={cx(
+                  'w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y',
+                  isDark ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                )}
+                placeholder={t('extraPromptPlaceholder')}
+              />
+          </div>
+
+          {/* 6. Auto Analysis Button */}
+          <div className={cx(
+            'p-4 rounded-lg border flex items-center justify-between',
+            isDark ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'
+          )}>
+            <div className="flex items-center gap-3">
+              <div className={cx(
+                'w-10 h-10 rounded-full flex items-center justify-center',
+                isDark ? 'bg-purple-500/20' : 'bg-purple-100'
+              )}>
+                <Wand2 className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <div className={cx('text-sm font-medium', th.text.primary)}>{t('feelingLuckyTitle')}</div>
+                <div className={cx('text-xs', th.text.muted)}>{t('feelingLuckyDesc')}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleFeelingLucky}
+              disabled={isAnalyzing || isGenerating || !content.trim()}
+              className={cx(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                isAnalyzing || isGenerating
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:shadow-lg hover:scale-105',
+                'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/25'
+              )}
+            >
+              {isAnalyzing ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {t('analyzing')}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  {t('feelingLuckyBtn')}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Analysis Result */}
+          {analysisReasoning && (
+            <div className={cx(
+              'p-3 rounded-lg border text-sm animate-in fade-in slide-in-from-top-2',
+              isDark ? 'bg-green-900/20 border-green-500/30 text-green-200' : 'bg-green-50 border-green-200 text-green-800'
+            )}>
+              <div className="flex items-center gap-2 font-medium mb-1">
+                <Sparkles className="w-4 h-4" />
+                {t('analysisResult')}
+              </div>
+              <div className={cx('text-xs opacity-80', isDark ? 'text-green-300' : 'text-green-700')}>
+                {analysisReasoning}
+              </div>
+            </div>
+          )}
+
+          {/* 7. Source Document */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={cx('block text-sm font-medium', th.text.secondary)}>
