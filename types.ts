@@ -42,7 +42,7 @@ export interface PresentationConfig {
   slideCount: number;
   apiSettings: ApiSettings;
   documentContent: string;
-  extraPrompt?: string;
+  strictMode?: boolean;
 }
 
 export interface OutlineItem {

@@ -250,9 +250,29 @@ export const generateOutline = async (
   purpose: string,
   slideCount: number,
   apiSettings: ApiSettings,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  strictMode: boolean = false
 ): Promise<ServiceResponse<OutlineItem[]>> => {
   try {
+    const strictModeInstruction = strictMode ? `
+      ⚠️ STRICT MODE ENABLED:
+      - You MUST generate the outline STRICTLY based on the user's provided input.
+      - DO NOT add new content, examples, or information that is not explicitly in the user's input.
+      - DO NOT expand on ideas beyond what the user provided.
+      - Your task is to REORGANIZE and STRUCTURE the existing content, not to create new content.
+      - Only use facts, data, and statements that appear in the user's input.
+      - You may rephrase for clarity and structure, but the meaning and information must remain exactly as provided.
+      
+      INPUT STRUCTURE RECOGNITION:
+      - The user's input may already be structured with slide markers like "## Slide 1", "## Slide 2", etc.
+      - If such markers exist, you MUST preserve the original slide structure and count.
+      - Map each "## Slide N" section to a corresponding slide in the output.
+      - Use the content under each "## Slide N" section as the contentPoints for that slide.
+      - Derive the slide title from the first line after "## Slide N" or from the main heading within that section.
+      - DO NOT merge or split slides that are already defined by "## Slide N" markers.
+      - Maintain the exact order of slides as they appear in the input.
+    ` : '';
+
     const prompt = `
       Role Definition:
       You are a Presentation Outline Copilot. You excel at:
@@ -264,6 +284,8 @@ export const generateOutline = async (
 
       Goal:
       Convert the user's unstructured input into a structured outline suitable for a PPT, tailored to the target audience and logic.
+
+      ${strictModeInstruction}
 
       Input Context:
       - User Input: ${content.substring(0, 30000)}

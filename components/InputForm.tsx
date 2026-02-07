@@ -1,6 +1,6 @@
 
 import React, { useState, ChangeEvent, useEffect } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp, MessageSquare, Wand2 } from 'lucide-react';
+import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp, Wand2, CheckSquare, Square } from 'lucide-react';
 import { parseExportedHtml, ImportResult } from '../services/importService';
 import { analyzeContent, ContentAnalysis } from '../services/geminiService';
 import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
@@ -40,10 +40,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [purpose, setPurpose] = useState(() => loadStr('gendeck_purpose', PRESENTATION_PURPOSES[lang][0]));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
-  const [extraPrompt, setExtraPrompt] = useState(() => loadStr('gendeck_extra_prompt', ''));
   const [showSettings, setShowSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [strictMode, setStrictMode] = useState(() => loadJson('gendeck_strict_mode', false));
 
   // Settings State with Persistence
   const [apiKeys, setApiKeys] = useState<Partial<Record<ApiProvider, string>>>(() =>
@@ -116,7 +116,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_purpose', purpose), [purpose]);
   useEffect(() => localStorage.setItem('gendeck_count', slideCount.toString()), [slideCount]);
   useEffect(() => localStorage.setItem('gendeck_content', content), [content]);
-  useEffect(() => localStorage.setItem('gendeck_extra_prompt', extraPrompt), [extraPrompt]);
+  useEffect(() => localStorage.setItem('gendeck_strict_mode', JSON.stringify(strictMode)), [strictMode]);
   useEffect(() => localStorage.setItem('gendeck_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
 
   useEffect(() => {
@@ -224,7 +224,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       }
     };
 
-    onGenerate({ topic, audience, purpose, slideCount, apiSettings, documentContent: content, extraPrompt });
+    onGenerate({ topic, audience, purpose, slideCount, apiSettings, documentContent: content, strictMode });
   };
 
   const handleFeelingLucky = async () => {
@@ -507,24 +507,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               />
           </div>
 
-          {/* 5. Extra Prompt */}
-          <div>
-             <label className={cx('block text-sm font-medium mb-2 flex items-center gap-2', th.text.secondary)}>
-               <MessageSquare className="w-4 h-4 text-purple-500"/> {t('extraPromptLabel')}
-             </label>
-             <textarea
-                value={extraPrompt}
-                onChange={(e) => setExtraPrompt(e.target.value)}
-                rows={3}
-                className={cx(
-                  'w-full border rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y',
-                  isDark ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                )}
-                placeholder={t('extraPromptPlaceholder')}
-              />
-          </div>
-
-          {/* 6. Auto Analysis Button */}
+          {/* 5. Auto Analysis Button */}
           <div className={cx(
             'p-4 rounded-lg border flex items-center justify-between',
             isDark ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'
@@ -593,6 +576,21 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 {t('sourceLabel')}
                 <span className={cx('text-xs ml-2', th.text.muted)}>({t('sourcePlaceholder')})</span>
               </label>
+              {/* Strict Mode Toggle */}
+              <button
+                type="button"
+                onClick={() => setStrictMode(!strictMode)}
+                className={cx(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border',
+                  strictMode
+                    ? cx(isDark ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-green-50 border-green-300 text-green-700')
+                    : cx(th.text.muted, th.border.secondary, 'hover:border-white/20')
+                )}
+                title={lang === 'zh' ? '启用严格模式：AI将严格根据您的输入生成大纲，不会添加新内容' : 'Strict Mode: AI will generate outline strictly based on your input without adding new content'}
+              >
+                {strictMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                {lang === 'zh' ? '严格模式' : 'Strict Mode'}
+              </button>
               {/* Edit/Preview Toggle */}
               <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
                 <button

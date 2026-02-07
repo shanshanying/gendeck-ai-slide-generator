@@ -565,7 +565,8 @@ const App: React.FC = () => {
         newConfig.purpose, // Pass the purpose here
         newConfig.slideCount,
         newConfig.apiSettings,
-        controller.signal // Pass signal
+        controller.signal, // Pass signal
+        newConfig.strictMode // Pass strict mode flag
       );
 
       setTotalCost(prev => prev + result.cost);

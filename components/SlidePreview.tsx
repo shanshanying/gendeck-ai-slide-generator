@@ -8,11 +8,10 @@ import { getThemeClasses, cx } from '../styles/theme';
 
 // Group themes by category
 const THEME_CATEGORIES = [
-  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['navy', 'slate', 'charcoal'] },
-  { id: 'tech', label: 'Tech', labelZh: '科技', themeIds: ['cyber', 'matrix', 'azure'] },
-  { id: 'creative', label: 'Creative', labelZh: '创意', themeIds: ['sunset', 'berry', 'ocean', 'forest', 'royal', 'cherry'] },
-  { id: 'minimal', label: 'Minimal', labelZh: '极简', themeIds: ['ink', 'obsidian', 'carbon'] },
-  { id: 'data', label: 'Data', labelZh: '数据', themeIds: ['analyst', 'fintech', 'healthcare'] },
+  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['executive', 'midnight', 'corporate-navy', 'platinum', 'deep-slate', 'business-green'] },
+  { id: 'minimal-dark', label: 'Minimal Dark', labelZh: '极简暗色', themeIds: ['minimal-dark', 'space-gray', 'graphite', 'ink', 'obsidian', 'carbon', 'prism', 'mono-blue', 'mono-amber'] },
+  { id: 'minimal-light', label: 'Minimal Light', labelZh: '极简浅色', themeIds: ['titanium', 'arctic', 'silicon', 'zenith'] },
+  { id: 'minimal-accent', label: 'Minimal Accent', labelZh: '极简强调', themeIds: ['neon-edge', 'quantum'] },
   { id: 'giants', label: 'Tech Giants', labelZh: '科技大厂', themeIds: ['google', 'amazon', 'alibaba', 'huawei', 'meta', 'netflix', 'tesla', 'apple', 'microsoft', 'tencent', 'bytedance'] },
   { id: 'giants-light', label: 'Tech Giants Light', labelZh: '大厂浅色', themeIds: ['google-light', 'amazon-light', 'alibaba-light', 'huawei-light', 'meta-light', 'netflix-light', 'tesla-light', 'apple-light', 'microsoft-light', 'tencent-light', 'bytedance-light'] },
   { id: 'light', label: 'Light', labelZh: '浅色', themeIds: ['pure-white', 'soft-gray', 'warm-paper', 'cream', 'mint-light', 'sky-light', 'rose-light', 'lavender-light'] },

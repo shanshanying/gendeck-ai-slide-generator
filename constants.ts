@@ -95,258 +95,269 @@ export const PROVIDERS: {
 export const COLOR_THEMES = [
   // === CORPORATE CLASSICS ===
   { 
-    id: 'navy', 
-    label: 'Navy Corporate', 
-    colors: ['#0a1628', '#1e293b', '#f8fafc', '#94a3b8', '#3b82f6', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'executive', 
+    label: 'Executive', 
+    colors: ['#0a0a0a', '#141414', '#ffffff', '#888888', '#ffffff', '#a3a3a3', '#525252', '#a16207', '#7f1d1d'] 
   },
   { 
-    id: 'slate', 
-    label: 'Slate Modern', 
-    colors: ['#0f172a', '#1e293b', '#f1f5f9', '#64748b', '#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'] 
+    id: 'midnight', 
+    label: 'Midnight', 
+    colors: ['#020617', '#0f172a', '#f8fafc', '#64748b', '#60a5fa', '#93c5fd', '#0369a1', '#854d0e', '#991b1b'] 
   },
   { 
-    id: 'charcoal', 
-    label: 'Charcoal Pro', 
-    colors: ['#18181b', '#27272a', '#fafafa', '#a1a1aa', '#e4e4e7', '#a1a1aa', '#22c55e', '#eab308', '#ef4444'] 
-  },
-
-  // === TECH INNOVATION ===
-  { 
-    id: 'cyber', 
-    label: 'Cyberpunk', 
-    colors: ['#0a0a0f', '#1a1a2e', '#ffffff', '#64748b', '#d946ef', '#00d4ff', '#22c55e', '#fbbf24', '#f43f5e'] 
+    id: 'corporate-navy', 
+    label: 'Corporate Navy', 
+    colors: ['#0f172a', '#1e3a5f', '#f8fafc', '#94a3b8', '#3b82f6', '#60a5fa', '#166534', '#92400e', '#9f1239'] 
   },
   { 
-    id: 'matrix', 
-    label: 'Matrix Code', 
-    colors: ['#000000', '#052e16', '#86efac', '#86efac', '#4ade80', '#bbf7d0', '#4ade80', '#eab308', '#f87171'] 
+    id: 'platinum', 
+    label: 'Platinum', 
+    colors: ['#fafafa', '#f3f4f6', '#111827', '#6b7280', '#374151', '#9ca3af', '#14532d', '#78350f', '#7f1d1d'] 
   },
   { 
-    id: 'azure', 
-    label: 'Azure Cloud', 
-    colors: ['#0c1220', '#162544', '#e0f2fe', '#60a5fa', '#0ea5e9', '#22d3ee', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'deep-slate', 
+    label: 'Deep Slate', 
+    colors: ['#0f172a', '#1e293b', '#f1f5f9', '#475569', '#64748b', '#94a3b8', '#065f46', '#78350f', '#7f1d1d'] 
+  },
+  { 
+    id: 'business-green', 
+    label: 'Business Green', 
+    colors: ['#022c22', '#064e3b', '#ecfdf5', '#6ee7b7', '#10b981', '#34d399', '#047857', '#a16207', '#991b1b'] 
   },
 
-  // === CREATIVE BOLD ===
+  // === MINIMALIST TECH ===
   { 
-    id: 'sunset', 
-    label: 'Sunset Glow', 
-    colors: ['#1a0f0a', '#2d1f16', '#fff7ed', '#fdba74', '#f97316', '#fbbf24', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'minimal-dark', 
+    label: 'Minimal Dark', 
+    colors: ['#0a0a0a', '#141414', '#fafafa', '#737373', '#3b82f6', '#60a5fa', '#1e3a5f', '#854d0e', '#7f1d1d'] 
   },
   { 
-    id: 'berry', 
-    label: 'Berry Punch', 
-    colors: ['#2a0a12', '#4a1924', '#fff1f2', '#fb7185', '#e11d48', '#f43f5e', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'space-gray', 
+    label: 'Space Gray', 
+    colors: ['#1c1c1e', '#2c2c2e', '#f5f5f7', '#8e8e93', '#0a84ff', '#5ac8fa', '#065f46', '#92400e', '#9f1239'] 
   },
   { 
-    id: 'ocean', 
-    label: 'Deep Ocean', 
-    colors: ['#020617', '#0f172a', '#e0f2fe', '#38bdf8', '#0ea5e9', '#22d3ee', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'titanium', 
+    label: 'Titanium', 
+    colors: ['#f5f5f7', '#e8e8ed', '#1d1d1f', '#6e6e73', '#0071e3', '#5e5ce6', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
-    id: 'forest', 
-    label: 'Deep Forest', 
-    colors: ['#052e16', '#14532d', '#f0fdf4', '#86efac', '#22c55e', '#84cc16', '#22c55e', '#eab308', '#ef4444'] 
+    id: 'neon-edge', 
+    label: 'Neon Edge', 
+    colors: ['#09090b', '#18181b', '#fafafa', '#a1a1aa', '#06b6d4', '#22d3ee', '#0e7490', '#a16207', '#991b1b'] 
   },
   { 
-    id: 'royal', 
-    label: 'Royal Purple', 
-    colors: ['#1e1b4b', '#312e81', '#faf5ff', '#c084fc', '#8b5cf6', '#a855f7', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'arctic', 
+    label: 'Arctic', 
+    colors: ['#f8fafc', '#f1f5f9', '#0f172a', '#475569', '#0ea5e9', '#38bdf8', '#0369a1', '#92400e', '#9f1239'] 
   },
   { 
-    id: 'cherry', 
-    label: 'Cherry Blossom', 
-    colors: ['#331015', '#4c1d25', '#fff1f2', '#fda4af', '#e11d48', '#fb7185', '#22c55e', '#f59e0b', '#ef4444'] 
+    id: 'graphite', 
+    label: 'Graphite', 
+    colors: ['#18181b', '#27272a', '#fafafa', '#a1a1aa', '#a1a1aa', '#d4d4d8', '#3f6212', '#92400e', '#7f1d1d'] 
+  },
+  { 
+    id: 'silicon', 
+    label: 'Silicon', 
+    colors: ['#fafaf9', '#f5f5f4', '#292524', '#78716c', '#78716c', '#a8a29e', '#3f6212', '#92400e', '#991b1b'] 
+  },
+  { 
+    id: 'quantum', 
+    label: 'Quantum', 
+    colors: ['#0f0518', '#1a0b2e', '#faf5ff', '#a855f7', '#a855f7', '#c084fc', '#6b21a8', '#be1850', '#9f1239'] 
+  },
+  { 
+    id: 'zenith', 
+    label: 'Zenith', 
+    colors: ['#ffffff', '#f0fdfa', '#134e4a', '#0d9488', '#14b8a6', '#2dd4bf', '#0f766e', '#a16207', '#9f1239'] 
+  },
+  { 
+    id: 'prism', 
+    label: 'Prism', 
+    colors: ['#0f0f0f', '#1a1a1a', '#ffffff', '#a3a3a3', '#ec4899', '#8b5cf6', '#581c87', '#be1850', '#9f1239'] 
+  },
+  { 
+    id: 'mono-blue', 
+    label: 'Mono Blue', 
+    colors: ['#0a0f1c', '#111827', '#f8fafc', '#6b7280', '#3b82f6', '#60a5fa', '#1e40af', '#92400e', '#9f1239'] 
+  },
+  { 
+    id: 'mono-amber', 
+    label: 'Mono Amber', 
+    colors: ['#1c1917', '#292524', '#fafaf9', '#a8a29e', '#f59e0b', '#fbbf24', '#3f6212', '#92400e', '#991b1b'] 
   },
 
   // === MINIMALIST CLEAN ===
   { 
     id: 'ink', 
     label: 'True Ink', 
-    colors: ['#0a0a0a', '#171717', '#fafafa', '#737373', '#ffffff', '#a3a3a3', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#0a0a0a', '#171717', '#fafafa', '#737373', '#ffffff', '#a3a3a3', '#3f6212', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'obsidian', 
     label: 'Obsidian', 
-    colors: ['#000000', '#1c1c1e', '#ffffff', '#8e8e93', '#007aff', '#5ac8fa', '#34c759', '#ff9500', '#ff3b30'] 
+    colors: ['#000000', '#1c1c1e', '#ffffff', '#8e8e93', '#007aff', '#5ac8fa', '#065f46', '#92400e', '#9f1239'] 
   },
   { 
     id: 'carbon', 
     label: 'Carbon Fiber', 
-    colors: ['#0c0c0c', '#1f1f1f', '#fafafa', '#6b7280', '#3b82f6', '#60a5fa', '#22c55e', '#f59e0b', '#ef4444'] 
-  },
-
-  // === DATA VIZ OPTIMIZED ===
-  { 
-    id: 'analyst', 
-    label: 'Data Analyst', 
-    colors: ['#0f172a', '#1e293b', '#f8fafc', '#94a3b8', '#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'] 
-  },
-  { 
-    id: 'fintech', 
-    label: 'FinTech Pro', 
-    colors: ['#022c22', '#064e3b', '#ecfdf5', '#6ee7b7', '#10b981', '#34d399', '#22c55e', '#f59e0b', '#ef4444'] 
-  },
-  { 
-    id: 'healthcare', 
-    label: 'Healthcare', 
-    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#0ea5e9', '#38bdf8', '#22c55e', '#fbbf24', '#f87171'] 
+    colors: ['#0c0c0c', '#1f1f1f', '#fafafa', '#6b7280', '#3b82f6', '#60a5fa', '#1e3a5f', '#92400e', '#7f1d1d'] 
   },
 
   // === TECH GIANTS ===
   { 
     id: 'google', 
     label: 'Google', 
-    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#4285f4', '#34a853', '#34a853', '#fbbc04', '#ea4335'] 
+    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#4285f4', '#34a853', '#166534', '#92400e', '#b91c1c'] 
   },
   { 
     id: 'amazon', 
     label: 'Amazon', 
-    colors: ['#0f1419', '#1a2332', '#ffffff', '#94a3b8', '#ff9900', '#00a8e1', '#34d399', '#ffc107', '#ef4444'] 
+    colors: ['#0f1419', '#1a2332', '#ffffff', '#94a3b8', '#ff9900', '#00a8e1', '#065f46', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'alibaba', 
     label: 'Alibaba', 
-    colors: ['#1a1a1a', '#2d2d2d', '#ffffff', '#a3a3a3', '#ff6a00', '#ff8f00', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#1a1a1a', '#2d2d2d', '#ffffff', '#a3a3a3', '#ff6a00', '#ff8f00', '#166534', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'huawei', 
     label: 'Huawei', 
-    colors: ['#0a0a0a', '#1f1f1f', '#ffffff', '#a1a1aa', '#cf0a2c', '#ff4d6d', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#0a0a0a', '#1f1f1f', '#ffffff', '#a1a1aa', '#cf0a2c', '#ff4d6d', '#065f46', '#92400e', '#991b1b'] 
   },
   { 
     id: 'meta', 
     label: 'Meta', 
-    colors: ['#0f1115', '#1c1e21', '#ffffff', '#8b949e', '#0668e1', '#0081fb', '#42b72a', '#f7b928', '#fa383e'] 
+    colors: ['#0f1115', '#1c1e21', '#ffffff', '#8b949e', '#0668e1', '#0081fb', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
     id: 'netflix', 
     label: 'Netflix', 
-    colors: ['#000000', '#141414', '#ffffff', '#b3b3b3', '#e50914', '#ff4d4d', '#46d369', '#e87c03', '#e50914'] 
+    colors: ['#000000', '#141414', '#ffffff', '#b3b3b3', '#e50914', '#ff4d4d', '#14532d', '#92400e', '#b91c1c'] 
   },
   { 
     id: 'tesla', 
     label: 'Tesla', 
-    colors: ['#0a0a0a', '#171717', '#ffffff', '#888888', '#cc0000', '#e82127', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#0a0a0a', '#171717', '#ffffff', '#888888', '#cc0000', '#e82127', '#14532d', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'apple', 
     label: 'Apple', 
-    colors: ['#000000', '#1d1d1f', '#f5f5f7', '#86868b', '#0071e3', '#2997ff', '#34c759', '#ff9500', '#ff3b30'] 
+    colors: ['#000000', '#1d1d1f', '#f5f5f7', '#86868b', '#0071e3', '#2997ff', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
     id: 'microsoft', 
     label: 'Microsoft', 
-    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#0078d4', '#106ebe', '#107c10', '#ffc107', '#d83b01'] 
+    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#0078d4', '#106ebe', '#14532d', '#92400e', '#991b1b'] 
   },
   { 
     id: 'tencent', 
     label: 'Tencent', 
-    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#38bdf8', '#7dd3fc', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#38bdf8', '#7dd3fc', '#065f46', '#92400e', '#991b1b'] 
   },
   { 
     id: 'bytedance', 
     label: 'ByteDance', 
-    colors: ['#0a0a0a', '#1a1a1a', '#ffffff', '#a1a1aa', '#00f2ea', '#ff0050', '#22c55e', '#f59e0b', '#ef4444'] 
+    colors: ['#0a0a0a', '#1a1a1a', '#ffffff', '#a1a1aa', '#00f2ea', '#ff0050', '#14532d', '#92400e', '#991b1b'] 
   },
 
   // === TECH GIANTS LIGHT ===
   { 
     id: 'google-light', 
     label: 'Google Light', 
-    colors: ['#ffffff', '#f8f9fa', '#202124', '#5f6368', '#1557b0', '#0d5c26', '#0d5c26', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f8f9fa', '#202124', '#5f6368', '#1557b0', '#0d5c26', '#14532d', '#92400e', '#991b1b'] 
   },
   { 
     id: 'amazon-light', 
     label: 'Amazon Light', 
-    colors: ['#ffffff', '#f3f3f3', '#0f1111', '#565959', '#92400e', '#1557b0', '#0d5c26', '#92400e', '#991b1b'] 
+    colors: ['#ffffff', '#f3f3f3', '#0f1111', '#565959', '#92400e', '#1557b0', '#14532d', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'alibaba-light', 
     label: 'Alibaba Light', 
-    colors: ['#ffffff', '#f5f5f5', '#333333', '#666666', '#9a3412', '#92400e', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#ffffff', '#f5f5f5', '#333333', '#666666', '#9a3412', '#92400e', '#14532d', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'huawei-light', 
     label: 'Huawei Light', 
-    colors: ['#ffffff', '#f2f2f2', '#000000', '#666666', '#b91c1c', '#dc2626', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#ffffff', '#f2f2f2', '#000000', '#666666', '#b91c1c', '#dc2626', '#14532d', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'meta-light', 
     label: 'Meta Light', 
-    colors: ['#ffffff', '#f5f6f7', '#1c1e21', '#606770', '#1557b0', '#0066a1', '#166534', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f5f6f7', '#1c1e21', '#606770', '#1557b0', '#0066a1', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
     id: 'netflix-light', 
     label: 'Netflix Light', 
-    colors: ['#ffffff', '#f5f5f5', '#000000', '#757575', '#b91c1c', '#dc2626', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#ffffff', '#f5f5f5', '#000000', '#757575', '#b91c1c', '#dc2626', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
     id: 'tesla-light', 
     label: 'Tesla Light', 
-    colors: ['#ffffff', '#f4f4f4', '#171a20', '#5c5e62', '#7f1d1d', '#b91c1c', '#0d5c26', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f4f4f4', '#171a20', '#5c5e62', '#7f1d1d', '#b91c1c', '#14532d', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'apple-light', 
     label: 'Apple Light', 
-    colors: ['#ffffff', '#f5f5f7', '#1d1d1f', '#6e6e73', '#0066a1', '#1557b0', '#166534', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f5f5f7', '#1d1d1f', '#6e6e73', '#0066a1', '#1557b0', '#14532d', '#92400e', '#9f1239'] 
   },
   { 
     id: 'microsoft-light', 
     label: 'Microsoft Light', 
-    colors: ['#ffffff', '#f8f9fa', '#323130', '#605e5c', '#1557b0', '#1557b0', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#ffffff', '#f8f9fa', '#323130', '#605e5c', '#1557b0', '#1557b0', '#14532d', '#92400e', '#991b1b'] 
   },
   { 
     id: 'tencent-light', 
     label: 'Tencent Light', 
-    colors: ['#ffffff', '#f0f9ff', '#0c4a6e', '#075985', '#1557b0', '#0e7490', '#0f766e', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f0f9ff', '#0c4a6e', '#075985', '#1557b0', '#0e7490', '#065f46', '#92400e', '#991b1b'] 
   },
   { 
     id: 'bytedance-light', 
     label: 'ByteDance Light', 
-    colors: ['#ffffff', '#f9fafb', '#111827', '#374151', '#0f766e', '#991b1b', '#0f766e', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f9fafb', '#111827', '#374151', '#0f766e', '#991b1b', '#14532d', '#92400e', '#991b1b'] 
   },
 
   // === LIGHT THEMES ===
   { 
     id: 'pure-white', 
     label: 'Pure White', 
-    colors: ['#ffffff', '#f1f5f9', '#0f172a', '#475569', '#1e40af', '#581c87', '#166534', '#92400e', '#b91c1c'] 
+    colors: ['#ffffff', '#f1f5f9', '#0f172a', '#475569', '#1e40af', '#581c87', '#14532d', '#92400e', '#991b1b'] 
   },
   { 
     id: 'soft-gray', 
     label: 'Soft Gray', 
-    colors: ['#f8fafc', '#e2e8f0', '#1e293b', '#475569', '#1e40af', '#581c87', '#166534', '#92400e', '#b91c1c'] 
+    colors: ['#f8fafc', '#e2e8f0', '#1e293b', '#475569', '#1e40af', '#581c87', '#14532d', '#92400e', '#991b1b'] 
   },
   { 
     id: 'warm-paper', 
     label: 'Warm Paper', 
-    colors: ['#fafaf9', '#e7e5e4', '#292524', '#57534e', '#9a3412', '#78350f', '#3f6212', '#92400e', '#991b1b'] 
+    colors: ['#fafaf9', '#e7e5e4', '#292524', '#57534e', '#9a3412', '#78350f', '#3f6212', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'cream', 
     label: 'Cream', 
-    colors: ['#fefce8', '#fef9c3', '#422006', '#713f12', '#854d0e', '#a16207', '#3f6212', '#9a3412', '#991b1b'] 
+    colors: ['#fefce8', '#fef9c3', '#422006', '#713f12', '#854d0e', '#a16207', '#3f6212', '#92400e', '#7f1d1d'] 
   },
   { 
     id: 'mint-light', 
     label: 'Mint Light', 
-    colors: ['#f0fdf4', '#dcfce7', '#14532d', '#166534', '#15803d', '#166534', '#14532d', '#713f12', '#991b1b'] 
+    colors: ['#f0fdf4', '#dcfce7', '#14532d', '#166534', '#15803d', '#166534', '#064e3b', '#92400e', '#991b1b'] 
   },
   { 
     id: 'sky-light', 
     label: 'Sky Light', 
-    colors: ['#f0f9ff', '#e0f2fe', '#0c4a6e', '#075985', '#075985', '#0369a1', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#f0f9ff', '#e0f2fe', '#0c4a6e', '#075985', '#075985', '#0369a1', '#065f46', '#92400e', '#991b1b'] 
   },
   { 
     id: 'rose-light', 
     label: 'Rose Light', 
-    colors: ['#fff1f2', '#ffe4e6', '#881337', '#9f1239', '#be123c', '#9f1239', '#166534', '#9a3412', '#991b1b'] 
+    colors: ['#fff1f2', '#ffe4e6', '#881337', '#9f1239', '#be123c', '#9f1239', '#14532d', '#9a3412', '#991b1b'] 
   },
   { 
     id: 'lavender-light', 
     label: 'Lavender Light', 
-    colors: ['#faf5ff', '#f3e8ff', '#581c87', '#6b21a8', '#6d28d9', '#7c3aed', '#166534', '#92400e', '#991b1b'] 
+    colors: ['#faf5ff', '#f3e8ff', '#581c87', '#6b21a8', '#6d28d9', '#7c3aed', '#14532d', '#92400e', '#991b1b'] 
   },
 ];
 
@@ -478,8 +489,6 @@ export const TRANSLATIONS = {
     audiencePlaceholder: "Or type custom audience...",
     purposeLabel: "Presentation Goal",
     purposePlaceholder: "Or type custom goal...",
-    extraPromptLabel: "Extra Prompt",
-    extraPromptPlaceholder: "Additional instructions for the AI (optional)...",
     sourceLabel: "Source Document",
     sourcePlaceholder: "Paste text or upload .txt/.md",
     pastePlaceholder: "Paste your document content here...",
@@ -604,8 +613,6 @@ export const TRANSLATIONS = {
     audiencePlaceholder: "或输入自定义受众...",
     purposeLabel: "演示目标",
     purposePlaceholder: "或输入自定义目标...",
-    extraPromptLabel: "额外提示",
-    extraPromptPlaceholder: "给AI的额外指令（可选）...",
     sourceLabel: "源文档",
     sourcePlaceholder: "粘贴文本或上传 .txt/.md",
     pastePlaceholder: "在此粘贴文档内容...",
