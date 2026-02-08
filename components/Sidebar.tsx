@@ -18,8 +18,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide, isGeneratingAll, t, theme }) => {
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-
+  
   return (
     <div className={cx('w-64 backdrop-blur flex flex-col h-full border-r', th.bg.sidebar, th.border.primary)}>
       <div className={cx('p-4 backdrop-blur z-10 border-b', th.bg.glassHeader, th.border.primary)}>
@@ -49,9 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide
                   'text-xs font-mono px-1.5 py-0.5 rounded',
                   isActive 
                     ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/25' 
-                    : isDark 
-                      ? 'bg-slate-800 text-slate-400 ring-1 ring-white/5' 
-                      : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200'
+                    : 'bg-slate-800 text-slate-400 ring-1 ring-white/5'
                 )}>
                   #{index + 1}
                 </span>

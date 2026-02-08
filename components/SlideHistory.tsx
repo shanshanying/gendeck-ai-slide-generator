@@ -40,8 +40,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
   const [restoring, setRestoring] = useState(false);
 
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-  const t = TRANSLATIONS[lang];
+    const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (isOpen && deckId) {
@@ -122,21 +121,21 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className={isDark ? 'text-slate-200' : 'text-gray-900'}>
+    <div className={'text-slate-200'}>
       <div
-        className={isDark ? 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[400]' : 'fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[400]'}
+        className={'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[400]'}
         onClick={onClose}
       />
 
       <div className={cx(
         'fixed inset-4 md:inset-10 lg:inset-20 z-[401] rounded-2xl shadow-2xl border flex flex-col overflow-hidden',
-        isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
+        'bg-slate-900 border-white/10'
       )}>
         {/* Header */}
-        <div className={cx('flex items-center justify-between p-4 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+        <div className={cx('flex items-center justify-between p-4 border-b', 'border-white/5')}>
           <div className="flex items-center gap-3">
-            <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', isDark ? 'bg-purple-500/10' : 'bg-purple-100')}>
-              <History className={cx('w-5 h-5', isDark ? 'text-purple-400' : 'text-purple-600')} />
+            <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', 'bg-purple-500/10')}>
+              <History className={cx('w-5 h-5', 'text-purple-400')} />
             </div>
             <div>
               <h3 className={cx('text-lg font-semibold', th.text.primary)}>
@@ -148,7 +147,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
             </div>
           </div>
 
-          <button onClick={onClose} className={cx('p-2 rounded-lg transition-colors hover:bg-white/5', isDark ? 'text-slate-400' : 'text-gray-600')}>
+          <button onClick={onClose} className={cx('p-2 rounded-lg transition-colors hover:bg-white/5', 'text-slate-400')}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -156,14 +155,14 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Version List */}
-          <div className={cx('w-72 border-r overflow-y-auto', isDark ? 'border-white/5 bg-slate-900/30' : 'border-gray-100 bg-gray-50/50')}>
+          <div className={cx('w-72 border-r overflow-y-auto', 'border-white/5 bg-slate-900/30')}>
             {loading ? (
               <div className="p-4 text-center">
                 <div className={cx('w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto', th.text.muted)} />
               </div>
             ) : error ? (
               <div className="p-4 text-center">
-                <p className={cx('text-xs', isDark ? 'text-red-400' : 'text-red-600')}>{error}</p>
+                <p className={cx('text-xs', 'text-red-400')}>{error}</p>
               </div>
             ) : history.length === 0 ? (
               <div className="p-4 text-center">
@@ -180,16 +179,16 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                     className={cx(
                       'w-full text-left p-3 rounded-lg border transition-all',
                       selectedVersion?.id === item.id
-                        ? (isDark ? 'bg-purple-500/20 border-purple-500/50' : 'bg-purple-50 border-purple-300')
-                        : (isDark ? 'border-transparent hover:bg-slate-800' : 'border-transparent hover:bg-gray-100')
+                        ? ('bg-purple-500/20 border-purple-500/50')
+                        : ('border-transparent hover:bg-slate-800')
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={cx('text-xs font-mono font-bold', isDark ? 'text-purple-400' : 'text-purple-600')}>
+                      <span className={cx('text-xs font-mono font-bold', 'text-purple-400')}>
                         v{item.version}
                       </span>
                       {idx === 0 && (
-                        <span className={cx('text-[10px] px-1.5 py-0.5 rounded', isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600')}>
+                        <span className={cx('text-[10px] px-1.5 py-0.5 rounded', 'bg-emerald-500/20 text-emerald-400')}>
                           {lang === 'zh' ? '最新' : 'Latest'}
                         </span>
                       )}
@@ -208,7 +207,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
             {selectedVersion ? (
               <>
                 {/* Toolbar */}
-                <div className={cx('flex items-center justify-between p-3 border-b', isDark ? 'bg-slate-900/50 border-white/5' : 'bg-white/50 border-gray-200')}>
+                <div className={cx('flex items-center justify-between p-3 border-b', 'bg-slate-900/50 border-white/5')}>
                   <div className={cx('text-sm font-medium', th.text.secondary)}>
                     {lang === 'zh' ? '版本' : 'Version'} {selectedVersion.version}
                   </div>
@@ -242,7 +241,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                   <div
                     className={cx(
                       'mx-auto rounded-lg overflow-hidden shadow-2xl',
-                      isDark ? 'bg-[#111]' : 'bg-white'
+                      'bg-[#111]'
                     )}
                     style={{
                       width: '100%',
@@ -276,7 +275,7 @@ const SlideHistory: React.FC<SlideHistoryProps> = ({
                 </div>
 
                 {/* Details */}
-                <div className={cx('p-4 border-t', isDark ? 'bg-slate-900/50 border-white/5' : 'bg-white/50 border-gray-200')}>
+                <div className={cx('p-4 border-t', 'bg-slate-900/50 border-white/5')}>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className={cx('text-xs block mb-1 opacity-60')}>{lang === 'zh' ? '标题' : 'Title'}</span>

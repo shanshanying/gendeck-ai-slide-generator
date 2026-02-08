@@ -24,8 +24,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const [selectedModel, setSelectedModel] = useState('');
 
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-
+  
   // Get default model when provider changes
   React.useEffect(() => {
     const provider = PROVIDERS.find(p => p.id === selectedProvider);
@@ -46,19 +45,19 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')}
+        className={cx('absolute inset-0 backdrop-blur-sm', 'bg-slate-950/80')}
         onClick={onClose}
       />
       
       {/* Modal */}
       <div className={cx(
         'relative w-full max-w-md rounded-2xl shadow-2xl border',
-        isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
+        'bg-slate-900 border-white/10'
       )}>
         {/* Header */}
-        <div className={cx('flex items-center gap-3 p-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
-          <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', isDark ? 'bg-amber-500/10' : 'bg-amber-100')}>
-            <AlertTriangle className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
+        <div className={cx('flex items-center gap-3 p-5 border-b', 'border-white/5')}>
+          <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', 'bg-amber-500/10')}>
+            <AlertTriangle className={cx('w-5 h-5', 'text-amber-400')} />
           </div>
           <div>
             <h3 className={cx('text-lg font-semibold', th.text.primary)}>
@@ -87,8 +86,8 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                   className={cx(
                     'px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left',
                     selectedProvider === provider.id
-                      ? (isDark ? 'bg-purple-500/20 border-purple-500/50 text-purple-200' : 'bg-purple-50 border-purple-300 text-purple-700')
-                      : (isDark ? 'bg-slate-800 border-white/10 text-slate-300 hover:border-white/20' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300')
+                      ? ('bg-purple-500/20 border-purple-500/50 text-purple-200')
+                      : ('bg-slate-800 border-white/10 text-slate-300 hover:border-white/20')
                   )}
                 >
                   {provider.name}
@@ -120,7 +119,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
         </div>
 
         {/* Footer */}
-        <div className={cx('flex items-center justify-end gap-3 p-5 border-t', isDark ? 'border-white/5' : 'border-gray-100')}>
+        <div className={cx('flex items-center justify-end gap-3 p-5 border-t', 'border-white/5')}>
           <button
             onClick={onClose}
             className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}

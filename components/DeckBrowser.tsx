@@ -27,8 +27,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
   const [deckToDelete, setDeckToDelete] = useState<DatabaseDeck | null>(null);
 
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-
+  
   useEffect(() => {
     if (isOpen) {
       loadDecks();
@@ -150,7 +149,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')}
+        className={cx('absolute inset-0 backdrop-blur-sm', 'bg-slate-950/80')}
         onClick={onClose}
       />
       
@@ -160,11 +159,11 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
           className="absolute inset-0 z-[310] flex items-center justify-center p-4"
           onClick={(e) => e.target === e.currentTarget && setDeckToDelete(null)}
         >
-          <div className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
-          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
-              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-red-500/10 ring-red-500/20' : 'bg-red-100 ring-red-200')}>
-                <Trash2 className={cx('w-5 h-5', isDark ? 'text-red-400' : 'text-red-600')} />
+          <div className={cx('absolute inset-0 backdrop-blur-sm', 'bg-slate-950/80')} />
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', 'bg-slate-900 border-white/10')}>
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', 'border-white/5')}>
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', 'bg-red-500/10 ring-red-500/20')}>
+                <Trash2 className={cx('w-5 h-5', 'text-red-400')} />
               </div>
               <div>
                 <h3 className={cx('text-lg font-semibold', th.text.primary)}>{lang === 'zh' ? '删除演示文稿' : 'Delete deck'}</h3>
@@ -176,7 +175,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                 {lang === 'zh' ? `「${deckToDelete.topic}」将被永久删除，此操作无法撤销。` : `"${deckToDelete.topic}" will be permanently deleted. This cannot be undone.`}
               </p>
             </div>
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', 'border-white/5 bg-slate-900/50')}>
               <button
                 onClick={() => setDeckToDelete(null)}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
@@ -197,13 +196,13 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
       {/* Modal */}
       <div className={cx(
         'relative w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl border flex flex-col',
-        isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200'
+        'bg-slate-900 border-white/10'
       )}>
         {/* Header */}
-        <div className={cx('flex items-center justify-between p-4 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+        <div className={cx('flex items-center justify-between p-4 border-b', 'border-white/5')}>
           <div className="flex items-center gap-3">
-            <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', isDark ? 'bg-purple-500/10' : 'bg-purple-100')}>
-              <FolderOpen className={cx('w-5 h-5', isDark ? 'text-purple-400' : 'text-purple-600')} />
+            <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center', 'bg-purple-500/10')}>
+              <FolderOpen className={cx('w-5 h-5', 'text-purple-400')} />
             </div>
             <div>
               <h3 className={cx('text-lg font-semibold', th.text.primary)}>
@@ -221,7 +220,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
         </div>
 
         {/* Search */}
-        <div className={cx('p-4 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
+        <div className={cx('p-4 border-b', 'border-white/5')}>
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Search className={cx('absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4', th.text.muted)} />
@@ -250,12 +249,12 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
         <div className="flex-1 overflow-y-auto p-4">
           {loading && decks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className={cx('w-8 h-8 animate-spin mb-3', isDark ? 'text-purple-400' : 'text-purple-600')} />
+              <Loader2 className={cx('w-8 h-8 animate-spin mb-3', 'text-purple-400')} />
               <span className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '加载中...' : 'Loading...'}</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className={cx('text-sm', isDark ? 'text-red-400' : 'text-red-600')}>{error}</p>
+              <p className={cx('text-sm', 'text-red-400')}>{error}</p>
               <button
                 onClick={loadDecks}
                 className={cx('mt-3 text-sm px-4 py-2 rounded-lg', th.button.primary)}
@@ -282,15 +281,15 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                   className={cx(
                     'group p-4 rounded-xl border cursor-pointer transition-all',
                     selectedDeck?.id === deck.id
-                      ? (isDark ? 'bg-purple-500/10 border-purple-500/50' : 'bg-purple-50 border-purple-300')
-                      : (isDark ? 'bg-slate-800/50 border-white/5 hover:bg-slate-800 hover:border-white/10' : 'bg-gray-50 border-gray-200 hover:bg-white hover:border-gray-300')
+                      ? ('bg-purple-500/10 border-purple-500/50')
+                      : ('bg-slate-800/50 border-white/5 hover:bg-slate-800 hover:border-white/10')
                   )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className={cx(
                         'w-14 h-14 rounded-lg flex items-center justify-center text-lg font-bold',
-                        isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'
+                        'bg-slate-700 text-slate-300'
                       )}>
                         {deck.slide_count}
                       </div>
@@ -317,7 +316,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                               disabled={loading}
                               className={cx(
                                 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
-                                isDark ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                                'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300'
                               )}
                               title={lang === 'zh' ? '加载源文本、目标受众等' : 'Load source text, target audience, etc.'}
                             >
@@ -330,7 +329,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                               disabled={loading}
                               className={cx(
                                 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
-                                isDark ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+                                'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300'
                               )}
                               title={lang === 'zh' ? '加载大纲和主题' : 'Load outline and themes'}
                             >
@@ -343,7 +342,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                               disabled={loading}
                               className={cx(
                                 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
-                                isDark ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
+                                'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300'
                               )}
                               title={lang === 'zh' ? '加载完整演示文稿' : 'Load full deck'}
                             >
@@ -361,7 +360,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                         disabled={downloadingId === deck.id}
                         className={cx(
                           'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
-                          isDark ? 'hover:bg-blue-500/10 hover:text-blue-400' : 'hover:bg-blue-50 hover:text-blue-600'
+                          'hover:bg-blue-500/10 hover:text-blue-400'
                         )}
                         title={lang === 'zh' ? '下载HTML' : 'Download HTML'}
                       >
@@ -377,7 +376,7 @@ const DeckBrowser: React.FC<DeckBrowserProps> = ({ isOpen, onClose, onLoadDeck, 
                         disabled={deletingId === deck.id}
                         className={cx(
                           'p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all',
-                          isDark ? 'hover:bg-red-500/10 hover:text-red-400' : 'hover:bg-red-50 hover:text-red-600'
+                          'hover:bg-red-500/10 hover:text-red-400'
                         )}
                         title={lang === 'zh' ? '删除' : 'Delete'}
                       >

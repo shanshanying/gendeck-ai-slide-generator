@@ -51,8 +51,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   }, [colorPalette]);
 
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-
+  
   // Parse palette to CSS variables
   // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
   //          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
@@ -164,10 +163,10 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   if (!slide) {
     return (
       <div className={cx('flex-1 flex flex-col items-center justify-center h-full p-8 text-center border-l', th.bg.primary, th.text.muted, th.border.primary)}>
-        <div className={cx('w-16 h-16 mb-4 rounded-2xl flex items-center justify-center ring-1', isDark ? 'bg-slate-900/50 ring-white/10' : 'bg-gray-100 ring-gray-200')}>
-          <Monitor className={cx('w-8 h-8', isDark ? 'text-slate-600' : 'text-gray-400')} />
+        <div className={cx('w-16 h-16 mb-4 rounded-2xl flex items-center justify-center ring-1', 'bg-slate-900/50 ring-white/10')}>
+          <Monitor className={cx('w-8 h-8', 'text-slate-600')} />
         </div>
-        <p className={cx('text-xl font-medium', isDark ? '' : 'text-gray-600')}>{t('noSlideSelected')}</p>
+        <p className='text-xl font-medium'>{t('noSlideSelected')}</p>
         <p className={cx('text-sm mt-2 max-w-md', th.text.tertiary)}>{t('selectSlidePrompt')}</p>
       </div>
     );
@@ -199,7 +198,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
         {/* Center: Zoom */}
         {!showCode && (
-          <div className={cx('hidden md:flex items-center rounded-lg border p-1 mx-2', isDark ? 'bg-slate-950 border-white/10' : 'bg-white border-gray-200')}>
+          <div className={cx('hidden md:flex items-center rounded-lg border p-1 mx-2', 'bg-slate-950 border-white/10')}>
             <button onClick={handleZoomOut} className={cx('p-1.5 rounded-lg transition-colors', th.button.ghost)} title={t('zoomOut')}><ZoomOut className="w-3.5 h-3.5" /></button>
             <span className={cx('text-[10px] w-10 text-center font-mono', th.text.tertiary)}>{Math.round(scale * 100)}%</span>
             <button onClick={handleZoomIn} className={cx('p-1.5 rounded-lg transition-colors', th.button.ghost)} title={t('zoomIn')}><ZoomIn className="w-3.5 h-3.5" /></button>
@@ -217,9 +216,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                'text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border',
                showThemePanel
                  ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/25'
-                 : isDark
-                   ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10'
-                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10'
              )}
            >
              <PaintBucket className="w-3.5 h-3.5" />
@@ -235,9 +232,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                'text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border',
                isEditing
                  ? 'bg-slate-600 text-white'
-                 : isDark
-                   ? 'bg-slate-800 text-white hover:bg-slate-700 border-white/10'
-                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+                 : 'bg-slate-800 text-white hover:bg-slate-700 border-white/10'
              )}
            >
              <RefreshCw className={`w-3.5 h-3.5 ${slide.isRegenerating ? 'animate-spin' : ''}`} />
@@ -249,9 +244,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                'text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border',
                showCode
                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                 : isDark
-                   ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10'
-                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10'
              )}
            >
              <Code className="w-3.5 h-3.5" />
@@ -262,7 +255,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
       {/* Theme Selection Panel */}
       {showThemePanel && (
-        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur-xl border-b p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 max-h-[28rem] overflow-y-auto', isDark ? 'bg-slate-950/98 border-white/10' : 'bg-white/98 border-gray-200 shadow-gray-200/50')}>
+        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur-xl border-b p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 max-h-[28rem] overflow-y-auto', 'bg-slate-950/98 border-white/10')}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className={cx('text-sm font-semibold', th.text.primary)}>{t('selectPalette')}</h4>
@@ -295,7 +288,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
               const hasActiveTheme = categoryThemes.some(t => localPalette === t.colors.join(', '));
               
               return (
-                <div key={category.id} className={cx('rounded-lg border overflow-hidden', isDark ? 'bg-slate-900/40 border-white/5' : 'bg-gray-50/50 border-gray-200')}>
+                <div key={category.id} className={cx('rounded-lg border overflow-hidden', 'bg-slate-900/40 border-white/5')}>
                   {/* Category Header */}
                   <button
                     onClick={() => {
@@ -305,15 +298,15 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                     }}
                     className={cx(
                       'w-full px-3 py-2 flex items-center justify-between transition-colors',
-                      isDark ? 'hover:bg-slate-800/60' : 'hover:bg-white',
+                      'hover:bg-slate-800/60',
                       hasActiveTheme && 'bg-indigo-500/10'
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={cx('text-xs font-semibold', hasActiveTheme ? (isDark ? 'text-indigo-300' : 'text-indigo-600') : th.text.secondary)}>
+                      <span className={cx('text-xs font-semibold', hasActiveTheme ? ('text-indigo-300') : th.text.secondary)}>
                         {lang === 'zh' ? category.labelZh : category.label}
                       </span>
-                      <span className={cx('text-[10px] px-1.5 py-0.5 rounded-full', isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-200 text-gray-500')}>
+                      <span className={cx('text-[10px] px-1.5 py-0.5 rounded-full', 'bg-slate-800 text-slate-400')}>
                         {categoryThemes.length}
                       </span>
                     </div>
@@ -336,12 +329,8 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                             className={cx(
                               'group relative p-1.5 rounded-lg border transition-all duration-150',
                               isActive 
-                                ? isDark 
-                                  ? 'bg-slate-700 border-indigo-500 ring-1 ring-indigo-500/50' 
-                                  : 'bg-white border-indigo-500 ring-1 ring-indigo-500/30'
-                                : isDark 
-                                  ? 'bg-slate-800 border-white/10 hover:border-white/20' 
-                                  : 'bg-white border-gray-200 hover:border-gray-300'
+                                ? 'bg-slate-700 border-indigo-500 ring-1 ring-indigo-500/50'
+                                : 'bg-slate-800 border-white/10 hover:border-white/20'
                             )}
                             title={colorTheme.label}
                           >
@@ -359,7 +348,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                             </div>
                             <span className={cx(
                               'text-[9px] block truncate text-center',
-                              isActive ? (isDark ? 'text-indigo-300' : 'text-indigo-600') : th.text.secondary
+                              isActive ? ('text-indigo-300') : th.text.secondary
                             )}>{colorTheme.label}</span>
                           </button>
                         );
@@ -372,7 +361,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
           </div>
           
           {/* Custom Color Input */}
-          <div className={cx('p-3 rounded-xl border', isDark ? 'bg-slate-900/60 border-white/5' : 'bg-gray-50/80 border-gray-200')}>
+          <div className={cx('p-3 rounded-xl border', 'bg-slate-900/60 border-white/5')}>
             <div className="flex items-center gap-3">
                 <label className={cx('text-xs font-medium whitespace-nowrap', th.text.secondary)}>{t('customPalette')}</label>
                 <input 
@@ -532,7 +521,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
       {/* Regeneration Input Panel */}
       {isEditing && (
-        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur border-b p-4 shadow-xl animate-in fade-in slide-in-from-top-2', isDark ? 'bg-slate-900/95 border-white/5 shadow-black/20' : 'bg-gray-50/95 border-gray-200 shadow-gray-200/20')}>
+        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur border-b p-4 shadow-xl animate-in fade-in slide-in-from-top-2', 'bg-slate-900/95 border-white/5 shadow-black/20')}>
           <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('instructions')}</label>
           <div className="flex gap-2 mb-4">
             <input
@@ -559,7 +548,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
           </div>
 
           {/* Design Checklist */}
-          <div className={cx('p-3 rounded-lg border', isDark ? 'bg-slate-950/50 border-white/5' : 'bg-gray-100/80 border-gray-200')}>
+          <div className={cx('p-3 rounded-lg border', 'bg-slate-950/50 border-white/5')}>
                <div className="flex items-center gap-2 mb-2">
                  <span className={cx('text-[10px] font-bold uppercase tracking-wider', th.text.muted)}>{t('constraints')}</span>
                  <div className="h-px bg-white/5 flex-1"></div>
@@ -582,18 +571,18 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
           onClick={(e) => e.target === e.currentTarget && setShowConfirmation(false)}
         >
-          <div className={cx('absolute inset-0 backdrop-blur-sm', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
-          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}> 
-              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-100 ring-amber-200')}>
-                <AlertTriangle className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
+          <div className={cx('absolute inset-0 backdrop-blur-sm', 'bg-slate-950/80')} />
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', 'bg-slate-900 border-white/10')}>
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', 'border-white/5')}> 
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', 'bg-amber-500/10 ring-amber-500/20')}>
+                <AlertTriangle className={cx('w-5 h-5', 'text-amber-400')} />
               </div>
               <div>
                 <h3 className={cx('text-lg font-semibold', th.text.primary)}>{t('overwriteConfirm')}</h3>
                 <p className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '将使用新指令重新生成此幻灯片，当前内容将被替换。' : 'This slide will be regenerated with your instruction. Current content will be replaced.'}</p>
               </div>
             </div>
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}> 
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', 'border-white/5 bg-slate-900/50')}> 
               <button
                 onClick={() => setShowConfirmation(false)}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
@@ -615,8 +604,8 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/10 w-full h-full">
         {slide.htmlContent ? (
            showCode ? (
-             <div className={cx('w-full h-full p-4 overflow-auto', isDark ? 'bg-slate-950' : 'bg-gray-50')}>
-               <pre className={cx('text-xs font-mono whitespace-pre-wrap font-medium', isDark ? 'text-emerald-400' : 'text-emerald-600')}>
+             <div className={cx('w-full h-full p-4 overflow-auto', 'bg-slate-950')}>
+               <pre className={cx('text-xs font-mono whitespace-pre-wrap font-medium', 'text-emerald-400')}>
                  {slide.htmlContent}
                </pre>
              </div>

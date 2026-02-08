@@ -1,7 +1,7 @@
 // Centralized theme configuration for GenDeck
-// This file contains all theme-related styles for easy maintenance
+// Dark theme only - no light/dark mode toggle
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark';
 
 // Theme configuration object containing all theme values
 export const themes = {
@@ -77,84 +77,11 @@ export const themes = {
       inactive: 'bg-slate-950 border-white/10 text-slate-400 hover:border-white/20',
     },
   },
-  
-  light: {
-    // Background colors
-    bg: {
-      primary: 'bg-gray-50',
-      secondary: 'bg-white',
-      tertiary: 'bg-gray-100',
-      glass: 'bg-white/70',
-      glassHeader: 'bg-white/70',
-      input: 'bg-white',
-      card: 'bg-white/70',
-      hover: 'hover:bg-gray-100',
-      sidebar: 'bg-gray-50/50',
-    },
-    // Text colors
-    text: {
-      primary: 'text-gray-900',
-      secondary: 'text-gray-700',
-      tertiary: 'text-gray-600',
-      muted: 'text-gray-500',
-      inverse: 'text-white',
-    },
-    // Border colors
-    border: {
-      primary: 'border-gray-200',
-      secondary: 'border-gray-100',
-      hover: 'hover:border-gray-300',
-      focus: 'focus:border-purple-500',
-      divider: 'bg-gray-200',
-    },
-    // Input specific
-    input: {
-      bg: 'bg-white',
-      border: 'border-gray-300',
-      text: 'text-gray-900',
-      placeholder: 'placeholder:text-gray-400',
-      focusBorder: 'focus:border-purple-500',
-    },
-    // Button styles
-    button: {
-      primary: 'bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 text-gray-900',
-      secondary: 'bg-gray-100 hover:bg-gray-200 border-gray-200 hover:border-gray-300 text-gray-900',
-      ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
-      danger: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700',
-    },
-    // Accent colors
-    accent: {
-      purple: 'text-purple-600',
-      blue: 'text-blue-600',
-      green: 'text-emerald-600',
-      amber: 'text-amber-600',
-      red: 'text-red-600',
-    },
-    // Status/State backgrounds
-    state: {
-      active: 'bg-purple-100 border-purple-200',
-      success: 'bg-emerald-100 border-emerald-200',
-      warning: 'bg-amber-100 border-amber-200',
-      error: 'bg-red-100 border-red-200',
-      info: 'bg-blue-100 border-blue-200',
-    },
-    // Shadow
-    shadow: {
-      card: 'shadow-gray-200/50',
-      button: 'shadow-purple-500/25',
-      dropdown: 'shadow-gray-200/50',
-    },
-    // Selection
-    selection: {
-      active: 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/25',
-      inactive: 'bg-white border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50',
-    },
-  },
 };
 
-// Helper function to get theme classes
-export function getThemeClasses(theme: Theme) {
-  return themes[theme];
+// Helper function to get theme classes - always returns dark theme
+export function getThemeClasses(theme?: Theme) {
+  return themes.dark;
 }
 
 // Helper to combine multiple theme classes

@@ -35,8 +35,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   
   // Use centralized theme classes
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-  
+    
   // Update if prop changes
   useEffect(() => {
     if (initialPalette) {
@@ -205,36 +204,28 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
           // Get slide-specific background styles
           const getSlideBg = () => {
-            if (isDark) {
-              if (isCover) return 'bg-purple-500/5 border-purple-500/20';
-              if (isEnding) return 'bg-blue-500/5 border-blue-500/20';
-              return cx('bg-slate-900/50 border-white/5 shadow-black/10', 'group hover:border-white/10');
-            } else {
-              if (isCover) return 'bg-purple-50/70 border-purple-200';
-              if (isEnding) return 'bg-sky-50 border-sky-200';
-              return cx('bg-white border-gray-200 shadow-gray-200/50', 'group hover:border-gray-300');
-            }
+            if (isCover) return 'bg-purple-500/5 border-purple-500/20';
+            if (isEnding) return 'bg-blue-500/5 border-blue-500/20';
+            return cx('bg-slate-900/50 border-white/5 shadow-black/10', 'group hover:border-white/10');
           };
 
           // Get slide number badge styles
           const getBadgeStyles = () => {
             if (isCover) return 'bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/25';
             if (isEnding) return 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/25';
-            return isDark 
-              ? 'bg-slate-800 text-slate-300 ring-1 ring-white/10' 
-              : 'bg-gray-100 text-gray-600 ring-1 ring-gray-200';
+            return 'bg-slate-800 text-slate-300 ring-1 ring-white/10';
           };
 
           // Get label color (Cover/Ending)
           const getLabelColor = () => {
-            if (isCover) return isDark ? 'text-purple-400' : 'text-purple-600';
-            if (isEnding) return isDark ? 'text-blue-400' : 'text-blue-600';
+            if (isCover) return 'text-purple-400';
+            if (isEnding) return 'text-blue-400';
             return '';
           };
 
           return (
             <div key={slide.id} className={cx('backdrop-blur rounded-xl p-6 shadow-lg transition-all', getSlideBg())}>
-              <div className={cx('flex items-center justify-between mb-6 pb-4 border-b', isDark ? 'border-gray-700/50' : 'border-gray-200')}>
+              <div className={cx('flex items-center justify-between mb-6 pb-4 border-b', 'border-gray-700/50')}>
                  <div className="flex items-center gap-4 w-full">
                    <span className={cx('text-sm font-mono w-8 h-8 flex items-center justify-center rounded-lg shrink-0', getBadgeStyles())}>
                      {index + 1}
@@ -249,7 +240,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                         className={cx(
                           'bg-transparent border-none font-bold focus:ring-0 w-full rounded px-2',
                           th.input.text, th.input.placeholder,
-                          isDark ? 'focus:bg-slate-950/50' : 'focus:bg-gray-50',
+                          'focus:bg-slate-950/50',
                           isCover ? 'text-2xl' : 'text-xl'
                         )}
                         placeholder={t('slideTitlePlaceholder')}
@@ -284,7 +275,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
                                 className={cx(
                                   'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
-                                  isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'
+                                  'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20'
                                 )}
                                 placeholder={t('subtitlePlaceholder')}
                                 />
@@ -326,7 +317,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                                className={cx(
                                  'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
-                                 isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+                                 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20'
                                )}
                                placeholder={t('visualNotesPlaceholder')}
                              />
@@ -345,7 +336,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                 onChange={(e) => handleUpdateSubtitle(slide.id, e.target.value)}
                                 className={cx(
                                   'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
-                                  isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-blue-500 focus:ring-blue-500/20'
+                                  'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-blue-500 focus:ring-blue-500/20'
                                 )}
                                 placeholder={t('closingPlaceholder')}
                                 />
@@ -387,7 +378,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                                className={cx(
                                  'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
-                                 isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-blue-500 focus:ring-blue-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+                                 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-blue-500 focus:ring-blue-500/20'
                                )}
                                placeholder={t('visualNotesPlaceholder')}
                              />
@@ -399,14 +390,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                         <div className="flex flex-col">
                             <label className={cx('block text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between', th.text.tertiary)}>
                             {t('contentPoints')}
-                            <span className={cx('text-[10px] normal-case opacity-50 px-2 py-0.5 rounded', isDark ? 'bg-gray-700' : 'bg-gray-200')}>{t('onePointPerLine')}</span>
+                            <span className={cx('text-[10px] normal-case opacity-50 px-2 py-0.5 rounded', 'bg-gray-700')}>{t('onePointPerLine')}</span>
                             </label>
                             <textarea 
                             value={slide.contentPoints.join('\n')}
                             onChange={(e) => handleUpdatePoints(slide.id, e.target.value)}
                             className={cx(
                               'w-full flex-1 rounded-lg p-4 text-base focus:ring-1 focus:outline-none min-h-[250px] resize-y leading-relaxed shadow-inner border',
-                              isDark ? 'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-purple-500 focus:ring-purple-500/20'
+                              'bg-gray-900/30 border-gray-700 text-gray-200 focus:border-purple-500 focus:ring-purple-500/20'
                             )}
                             placeholder={t('pointsPlaceholder')}
                             />
@@ -444,7 +435,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             onChange={(e) => handleUpdateSlide(slide.id, 'layoutSuggestion', e.target.value)}
                             className={cx(
                               'w-full flex-1 rounded-lg p-4 text-sm focus:ring-1 focus:outline-none min-h-[120px] resize-y leading-relaxed shadow-inner border',
-                              isDark ? 'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20' : 'bg-gray-50 border-gray-200 text-gray-600 focus:border-purple-500 focus:ring-purple-500/20'
+                              'bg-gray-900/30 border-gray-700 text-gray-300 focus:border-purple-500 focus:ring-purple-500/20'
                             )}
                             placeholder={t('visualNotesPlaceholder')}
                             />
@@ -460,18 +451,16 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           onClick={handleAddSlide}
           className={cx(
             'w-full py-6 border-2 border-dashed rounded-xl transition-all flex items-center justify-center gap-3 font-semibold text-lg',
-            isDark 
-              ? 'border-gray-700 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-gray-800/50' 
-              : 'border-gray-300 text-gray-400 hover:text-purple-500 hover:border-purple-500/50 hover:bg-purple-50/50'
+            'border-gray-700 text-gray-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-gray-800/50'
           )}
         >
           <Plus className="w-6 h-6" /> {t('addNewSlide')}
         </button>
         
         {/* Theme Hint - Selection moved to Deck Preview */}
-        <div className={cx('mt-8 p-4 rounded-lg border text-center', isDark ? 'bg-slate-900/50 border-white/10' : 'bg-gray-50 border-gray-200')}>
+        <div className={cx('mt-8 p-4 rounded-lg border text-center', 'bg-slate-900/50 border-white/10')}>
           <div className="flex items-center justify-center gap-2 mb-2">
-            <PaintBucket className={cx('w-4 h-4', isDark ? 'text-yellow-400' : 'text-yellow-600')} />
+            <PaintBucket className={cx('w-4 h-4', 'text-yellow-400')} />
             <span className={cx('text-sm font-medium', th.text.secondary)}>{t('themeSelectionHint')}</span>
           </div>
           <p className={cx('text-xs', th.text.muted)}>{t('themeSelectionHintDesc')}</p>

@@ -14,7 +14,7 @@ import { ImportResult, parseExportedHtml } from './services/importService';
 import { deckApi, checkBackendAvailable, DatabaseDeckWithSlides, dbSlideToSlideData } from './services/databaseService';
 import DeckBrowser from './components/DeckBrowser';
 import SlideHistory from './components/SlideHistory';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES, PROVIDERS, findAudienceProfile, getStylePreset, resolveStyleRecommendation } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -69,8 +69,8 @@ const App: React.FC = () => {
 
   const initialState = getInitialState();
 
-  const { theme, toggleTheme, isDark } = useThemeContext();
-  const th = getThemeClasses(theme as Theme);
+  const { theme } = useThemeContext();
+  const th = getThemeClasses();
 
   const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
   const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
@@ -811,25 +811,6 @@ const App: React.FC = () => {
       display: block;
     }
 
-    /* Top Right Theme Toggle */
-    .theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1100;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 14px;
-      font-family: monospace;
-      transition: all 0.2s;
-    }
-    .theme-toggle:hover { background: rgba(0,0,0,0.9); }
-
     /* Bottom Center Navigation Bar */
     .nav-controls {
       position: fixed;
@@ -931,14 +912,12 @@ const App: React.FC = () => {
          print-color-adjust: exact !important;
       }
 
-      .nav-controls, .theme-toggle, .progress-bar, .no-print { display: none !important; }
+      .nav-controls, .progress-bar, .no-print { display: none !important; }
     }
   </style>
 </head>
 <body class="theme-root">
   <div class="progress-bar" id="progressBar" style="width: 0%"></div>
-
-  <button class="theme-toggle no-print" id="themeBtn">☀ Light Mode</button>
 
   <div id="deck-container">
     ${slides.map((s, i) => s.htmlContent).join('\n')}
@@ -957,9 +936,6 @@ const App: React.FC = () => {
     const totalSlides = slides.length;
     const indicator = document.getElementById('pageIndicator');
     const progressBar = document.getElementById('progressBar');
-    const themeBtn = document.getElementById('themeBtn');
-    let isLight = false;
-
     function updateSlide() {
       slides.forEach((s, i) => {
         s.classList.toggle('active', i === currentSlide);
@@ -992,21 +968,6 @@ const App: React.FC = () => {
       }
     }
 
-    function toggleTheme() {
-      isLight = !isLight;
-      const container = document.getElementById('deck-container');
-
-      slides.forEach(slide => {
-        if (isLight) {
-          slide.classList.add('theme-light');
-        } else {
-          slide.classList.remove('theme-light');
-        }
-      });
-
-      themeBtn.innerText = isLight ? "☾ Dark Mode" : "☀ Light Mode";
-    }
-
     // Auto-Scale Logic
     function fitSlides() {
       const container = document.getElementById('deck-container');
@@ -1020,7 +981,6 @@ const App: React.FC = () => {
     }
 
     // Attach event listeners to buttons
-    document.getElementById('themeBtn').addEventListener('click', toggleTheme);
     document.getElementById('prevBtn').addEventListener('click', prevSlide);
     document.getElementById('nextBtn').addEventListener('click', nextSlide);
     document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreen);
@@ -1119,13 +1079,9 @@ const App: React.FC = () => {
   const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
 
   // Use centralized theme classes
-  const themeClasses = isDark
-    ? 'bg-slate-950 text-slate-100 selection:bg-purple-500/30 selection:text-purple-100'
-    : 'bg-gray-50 text-gray-900 selection:bg-purple-200 selection:text-purple-900';
+  const themeClasses = 'bg-slate-950 text-slate-100 selection:bg-purple-500/30 selection:text-purple-100';
 
-  const bgGradient = isDark
-    ? 'from-purple-900/20 via-slate-950 to-slate-950'
-    : 'from-purple-100/50 via-gray-50 to-gray-50';
+  const bgGradient = 'from-purple-900/20 via-slate-950 to-slate-950';
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden font-sans relative ${themeClasses}`}>
@@ -1145,32 +1101,18 @@ const App: React.FC = () => {
       {/* Glass Header */}
       <header className={cls(
         'h-16 border-b backdrop-blur-xl flex items-center justify-between px-6 z-50 relative',
-        isDark ? 'border-white/5 bg-slate-950/80' : 'border-gray-200/50 bg-white/70'
+        'border-white/5 bg-slate-950/80'
       )}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/25 ring-1 ring-white/20">G</div>
           <h1 className={cls(
             'text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r',
-            isDark ? 'from-white via-slate-200 to-slate-400' : 'from-gray-900 via-gray-700 to-gray-600'
+            'from-white via-slate-200 to-slate-400'
           )}>GenDeck</h1>
         </div>
 
         <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={cx(
-                'flex items-center justify-center w-8 h-8 rounded-lg border transition-all',
-                isDark
-                  ? 'bg-slate-900/80 hover:bg-slate-800 border-white/10 hover:border-white/20 text-slate-400 hover:text-yellow-400'
-                  : 'bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:text-orange-500'
-              )}
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            {/* Language Switcher */}
+            {/* Language Switcher -->
             <button
                 onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
                 className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
@@ -1182,7 +1124,7 @@ const App: React.FC = () => {
 
             {/* Cost Display */}
             {totalCost > 0 && (
-            <div className={cx('hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm', isDark ? 'bg-slate-900/80 border-emerald-500/20' : 'bg-white/80 border-emerald-500/30')}>
+            <div className={cx('hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm', 'bg-slate-900/80 border-emerald-500/20')}>
                 <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
                 <span className={cx('text-xs font-mono', th.text.secondary)}>
                 {t('estCost')}: ${totalCost.toFixed(4)}
@@ -1192,7 +1134,7 @@ const App: React.FC = () => {
 
             {/* Auto-save indicator */}
             {slides.length > 0 && (
-              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', isDark ? 'bg-slate-800/50 border-white/5' : 'bg-gray-100/80 border-gray-200')} title={language === 'zh' ? '已自动保存' : 'Auto-saved'}>
+              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={language === 'zh' ? '已自动保存' : 'Auto-saved'}>
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className={cx('text-[10px] font-medium', th.text.muted)}>{language === 'zh' ? '已保存' : 'Saved'}</span>
               </div>
@@ -1304,7 +1246,7 @@ const App: React.FC = () => {
             )}
 
             {status === GenerationStatus.REVIEWING_OUTLINE && (
-            <div className={cx('px-3 py-1.5 rounded-full text-xs font-medium animate-pulse border', isDark ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' : 'bg-blue-100 text-blue-700 border-blue-200')}>
+            <div className={cx('px-3 py-1.5 rounded-full text-xs font-medium animate-pulse border', 'bg-blue-500/10 text-blue-300 border-blue-500/20')}>
                 {t('outlineEditor')}
             </div>
             )}
@@ -1312,10 +1254,10 @@ const App: React.FC = () => {
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
-                   <div className={cx('flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm', isDark ? 'bg-purple-500/10 text-purple-200 border-purple-500/20' : 'bg-purple-100 text-purple-700 border-purple-200')}>
+                   <div className={cx('flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-sm', 'bg-purple-500/10 text-purple-200 border-purple-500/20')}>
                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                      <span className="text-xs font-medium">{t('generating')} {Math.round(progressPercent)}%</span>
-                     <div className={cx('h-3 w-px mx-1', isDark ? 'bg-purple-500/20' : 'bg-purple-300')} />
+                     <div className={cx('h-3 w-px mx-1', 'bg-purple-500/20')} />
                      {isPaused ? (
                         <button onClick={handleResumeGeneration} className="hover:opacity-70 transition-colors" title={t('resume')}>
                             <Play className="w-3.5 h-3.5 fill-current" />
@@ -1345,7 +1287,7 @@ const App: React.FC = () => {
                     {showExportMenu && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
-                        <div className={cx('absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border', isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-gray-200')}>
+                        <div className={cx('absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border', 'bg-slate-900/95 border-white/10')}>
                           <div className="p-1">
                              <button
                                onClick={handleExportHtml}
@@ -1406,7 +1348,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className={cx('flex-1 overflow-hidden relative', !isDark && 'bg-gray-50/50')}>
+      <main className={cx('flex-1 overflow-hidden relative', )}>
         {(status === GenerationStatus.IDLE || status === GenerationStatus.GENERATING_OUTLINE) && (
           <div className="h-full w-full overflow-y-auto">
             <InputForm
@@ -1461,9 +1403,9 @@ const App: React.FC = () => {
                    <div className="absolute bottom-6 right-6 z-40">
                       <button
                         onClick={handleGenerateNotes}
-                        className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border', isDark ? 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20' : 'bg-white/90 hover:bg-white text-gray-900 border-gray-200 hover:border-gray-300 shadow-gray-200/50')}
+                        className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-bottom-4 transition-all border', 'bg-slate-900/90 hover:bg-slate-800 text-white border-white/10 hover:border-white/20 shadow-black/20')}
                       >
-                         <MessageSquareText className={cx('w-4 h-4', isDark ? 'text-green-400' : 'text-green-600')} />
+                         <MessageSquareText className={cx('w-4 h-4', 'text-green-400')} />
                          {t('generateNotes')}
                       </button>
                    </div>
@@ -1471,8 +1413,8 @@ const App: React.FC = () => {
 
                {isGeneratingNotes && (
                    <div className="absolute bottom-6 right-6 z-40">
-                      <div className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border', isDark ? 'bg-slate-900/90 text-white border-white/10 shadow-black/20' : 'bg-white/90 text-gray-900 border-gray-200 shadow-gray-200/50')}>
-                         <Loader2 className={cx('w-4 h-4 animate-spin', isDark ? 'text-green-400' : 'text-green-600')} />
+                      <div className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border', 'bg-slate-900/90 text-white border-white/10 shadow-black/20')}>
+                         <Loader2 className={cx('w-4 h-4 animate-spin', 'text-green-400')} />
                          Generating speaker notes...
                       </div>
                    </div>
@@ -1491,14 +1433,14 @@ const App: React.FC = () => {
           }}
         >
           {/* Backdrop */}
-          <div className={cx('absolute inset-0 backdrop-blur-sm transition-opacity', isDark ? 'bg-slate-950/80' : 'bg-gray-900/40')} />
+          <div className={cx('absolute inset-0 backdrop-blur-sm transition-opacity', 'bg-slate-950/80')} />
 
           {/* Modal Content */}
-          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-gray-200')}>
+          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', 'bg-slate-900 border-white/10')}>
             {/* Header */}
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', isDark ? 'border-white/5' : 'border-gray-100')}>
-              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', isDark ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-100 ring-amber-200')}>
-                <Plus className={cx('w-5 h-5', isDark ? 'text-amber-400' : 'text-amber-600')} />
+            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', 'border-white/5')}>
+              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', 'bg-amber-500/10 ring-amber-500/20')}>
+                <Plus className={cx('w-5 h-5', 'text-amber-400')} />
               </div>
               <div>
                 <h3 className={cx('text-lg font-semibold', th.text.primary)}>{t('new')}</h3>
@@ -1509,15 +1451,15 @@ const App: React.FC = () => {
             {/* Body */}
             <div className="px-6 py-4">
               <div className={cx('flex items-start gap-3 text-sm', th.text.secondary)}>
-                <div className={cx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1', isDark ? 'bg-red-500/10 ring-red-500/20' : 'bg-red-100 ring-red-200')}>
-                  <span className={cx('font-bold text-xs', isDark ? 'text-red-400' : 'text-red-600')}>!</span>
+                <div className={cx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1', 'bg-red-500/10 ring-red-500/20')}>
+                  <span className={cx('font-bold text-xs', 'text-red-400')}>!</span>
                 </div>
                 <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', isDark ? 'border-white/5 bg-slate-900/50' : 'border-gray-100 bg-gray-50/50')}>
+            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', 'border-white/5 bg-slate-900/50')}>
               <button
                 onClick={cancelNewDeck}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}

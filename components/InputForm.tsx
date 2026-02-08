@@ -151,8 +151,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   } | null>(null);
 
   const th = getThemeClasses(theme);
-  const isDark = theme === 'dark';
-
+  
   // Update progress message when generating state changes
   useEffect(() => {
     if (!isGenerating) {
@@ -365,7 +364,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   return (
     <div className={cx(
       'w-full min-h-full max-w-6xl xl:max-w-7xl 2xl:max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12 py-8 lg:py-10 backdrop-blur rounded-2xl shadow-2xl border',
-      isDark ? 'bg-slate-900/50 shadow-black/20 border-white/10' : 'bg-white/70 shadow-gray-200/50 border-gray-200'
+      'bg-slate-900/50 shadow-black/20 border-white/10'
     )}>
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
@@ -392,15 +391,15 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         {showSettings && (
           <div className={cx(
             'p-5 backdrop-blur rounded-xl border mb-6 animate-in fade-in slide-in-from-top-2 space-y-6',
-            isDark ? 'bg-slate-950/80 border-purple-500/20' : 'bg-gray-50/80 border-purple-200'
+            'bg-slate-950/80 border-purple-500/20'
           )}>
             {errorMsg && (
               <div className={cx(
                 'border rounded-lg p-3 flex items-start gap-3',
-                isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'
+                'bg-red-500/10 border-red-500/20'
               )}>
-                <AlertTriangle className={cx('w-5 h-5 shrink-0', isDark ? 'text-red-400' : 'text-red-600')} />
-                <p className={cx('text-sm', isDark ? 'text-red-200' : 'text-red-700')}>{errorMsg}</p>
+                <AlertTriangle className={cx('w-5 h-5 shrink-0', 'text-red-400')} />
+                <p className={cx('text-sm', 'text-red-200')}>{errorMsg}</p>
               </div>
             )}
 
@@ -438,7 +437,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             {/* Model Selection */}
             <div className={cx(
               'p-4 rounded-lg border max-w-md mx-auto',
-              isDark ? 'bg-slate-900/50 border-white/5' : 'bg-gray-100/50 border-gray-200'
+              'bg-slate-900/50 border-white/5'
             )}>
               <label className="block text-xs font-bold text-purple-400 mb-3 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> {t('aiModel')}
@@ -505,7 +504,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <label className={cx('block text-sm font-medium', th.text.secondary)}>{t('slideCountLabel')}</label>
               <span className={cx(
                 'text-sm font-bold text-purple-500 px-2 py-0.5 rounded',
-                isDark ? 'bg-purple-900/30' : 'bg-purple-100'
+                'bg-purple-900/30'
               )}>{slideCount}</span>
             </div>
             <input
@@ -516,7 +515,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               onChange={(e) => setSlideCount(parseInt(e.target.value))}
               className={cx(
                 'w-full h-2 rounded-lg appearance-none cursor-pointer accent-purple-500',
-                isDark ? 'bg-gray-700' : 'bg-gray-300'
+                'bg-gray-700'
               )}
             />
             <div className={cx('flex justify-between text-[10px] mt-1', th.text.muted)}>
@@ -528,12 +527,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           {/* AI Auto Analysis Button */}
           <div className={cx(
             'p-4 rounded-lg border flex items-center justify-between',
-            isDark ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'
+            'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30'
           )}>
             <div className="flex items-center gap-3">
               <div className={cx(
                 'w-10 h-10 rounded-full flex items-center justify-center',
-                isDark ? 'bg-purple-500/20' : 'bg-purple-100'
+                'bg-purple-500/20'
               )}>
                 <Wand2 className="w-5 h-5 text-purple-500" />
               </div>
@@ -579,13 +578,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           {analysisResult && (
             <div className={cx(
               'p-3 rounded-lg border text-sm animate-in fade-in slide-in-from-top-2',
-              isDark ? 'bg-green-900/20 border-green-500/30 text-green-200' : 'bg-green-50 border-green-200 text-green-800'
+              'bg-green-900/20 border-green-500/30 text-green-200'
             )}>
               <div className="flex items-center gap-2 font-medium mb-1">
                 <Sparkles className="w-4 h-4" />
                 {lang === 'zh' ? 'AI 分析结果：' : 'AI Analysis Result:'}
               </div>
-              <div className={cx('text-xs opacity-80', isDark ? 'text-green-300' : 'text-green-700')}>
+              <div className={cx('text-xs opacity-80', 'text-green-300')}>
                 {analysisResult.reasoning}
               </div>
             </div>
@@ -596,7 +595,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             {/* AUDIENCE SELECTION */}
             <div className={cx(
               'p-5 rounded-xl border space-y-4',
-              isDark ? 'bg-slate-900/50 border-white/10' : 'bg-white/50 border-gray-200'
+              'bg-slate-900/50 border-white/10'
             )}>
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-purple-500" />
@@ -684,7 +683,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {/* Selected Audience Display */}
               <div className={cx(
                 'p-2 rounded-lg text-xs',
-                isDark ? 'bg-purple-500/10 text-purple-300' : 'bg-purple-50 text-purple-700'
+                'bg-purple-500/10 text-purple-300'
               )}>
                 <span className="opacity-70">{lang === 'zh' ? '当前:' : 'Current:'}</span>{' '}
                 <span className="font-medium">{finalAudience}</span>
@@ -694,7 +693,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             {/* PURPOSE SELECTION */}
             <div className={cx(
               'p-5 rounded-xl border space-y-4',
-              isDark ? 'bg-slate-900/50 border-white/10' : 'bg-white/50 border-gray-200'
+              'bg-slate-900/50 border-white/10'
             )}>
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-5 h-5 text-blue-500" />
@@ -782,7 +781,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {/* Selected Purpose Display */}
               <div className={cx(
                 'p-2 rounded-lg text-xs',
-                isDark ? 'bg-blue-500/10 text-blue-300' : 'bg-blue-50 text-blue-700'
+                'bg-blue-500/10 text-blue-300'
               )}>
                 <span className="opacity-70">{lang === 'zh' ? '当前:' : 'Current:'}</span>{' '}
                 <span className="font-medium">{finalPurpose}</span>
@@ -793,7 +792,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           {/* STYLE CONFIGURATION (Derived from Audience + Purpose) */}
           <div className={cx(
             'p-5 rounded-xl border',
-            isDark ? 'bg-gradient-to-r from-amber-900/20 to-orange-900/20 border-amber-500/30' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'
+            'bg-gradient-to-r from-amber-900/20 to-orange-900/20 border-amber-500/30'
           )}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -801,7 +800,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
                   {lang === 'zh' ? '风格配置' : 'Style Configuration'}
                 </h3>
-                <span className={cx('text-xs px-2 py-0.5 rounded-full', isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')}>
+                <span className={cx('text-xs px-2 py-0.5 rounded-full', 'bg-amber-500/20 text-amber-400')}>
                   {lang === 'zh' ? '自动推荐' : 'Auto-recommended'}
                 </span>
               </div>
@@ -844,7 +843,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {/* Style Name */}
               <div className={cx(
                 'p-3 rounded-lg border col-span-2',
-                isDark ? 'bg-black/20 border-white/10' : 'bg-white/50 border-gray-200'
+                'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1', th.text.muted)}>
                   {lang === 'zh' ? '推荐风格' : 'Recommended Style'}
@@ -861,7 +860,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {recommendedTheme && (
                 <div className={cx(
                   'p-3 rounded-lg border',
-                  isDark ? 'bg-black/20 border-white/10' : 'bg-white/50 border-gray-200'
+                  'bg-black/20 border-white/10'
                 )}>
                   <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
                     {lang === 'zh' ? '主题' : 'Theme'}
@@ -881,7 +880,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {/* Typography */}
               <div className={cx(
                 'p-3 rounded-lg border',
-                isDark ? 'bg-black/20 border-white/10' : 'bg-white/50 border-gray-200'
+                'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
                   {lang === 'zh' ? '字体' : 'Typography'}
@@ -895,7 +894,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {/* Density */}
               <div className={cx(
                 'p-3 rounded-lg border',
-                isDark ? 'bg-black/20 border-white/10' : 'bg-white/50 border-gray-200'
+                'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
                   {lang === 'zh' ? '密度' : 'Density'}
@@ -922,7 +921,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className={cx(
                     'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border',
                     strictMode
-                      ? cx(isDark ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'bg-green-50 border-green-300 text-green-700')
+                      ? cx('bg-green-500/20 border-green-500/50 text-green-400')
                       : cx(th.text.muted, th.border.secondary, 'hover:border-white/20')
                   )}
                 >
@@ -964,7 +963,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 <div
                   className={cx(
                     'w-full border rounded-lg px-4 py-3 text-sm overflow-y-auto resize-y min-h-[300px] max-h-[500px]',
-                    th.input.bg, th.input.border, isDark ? 'text-slate-300' : 'text-gray-700'
+                    th.input.bg, th.input.border, 'text-slate-300'
                   )}
                   dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br/>') }}
                 />
@@ -975,7 +974,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   rows={12}
                   className={cx(
                     'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y',
-                    th.input.bg, th.input.border, isDark ? 'text-slate-300' : 'text-gray-700', th.input.placeholder, th.input.focusBorder
+                    th.input.bg, th.input.border, 'text-slate-300', th.input.placeholder, th.input.focusBorder
                   )}
                   placeholder={t('pastePlaceholder')}
                 />
