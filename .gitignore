@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build artifacts
+*.tgz
+
+# Helm chart local values
+gendeck-chart/my-values.yaml
