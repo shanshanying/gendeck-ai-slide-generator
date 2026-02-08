@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
-import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote } from 'lucide-react';
-import { TRANSLATIONS } from '../constants';
+import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote, Check } from 'lucide-react';
+import { TRANSLATIONS, COLOR_THEMES } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
 interface OutlineEditorProps {
@@ -14,6 +14,7 @@ interface OutlineEditorProps {
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
+  colorPalette?: string;
 }
 
 const OutlineEditor: React.FC<OutlineEditorProps> = ({ 
@@ -23,13 +24,25 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   onCancel,
   lang,
   t,
-  theme
+  theme,
+  colorPalette: initialPalette
 }) => {
-  const [colorPalette] = useState('');
+  // Initialize with provided palette or default to first theme
+  const [selectedPalette, setSelectedPalette] = useState(() => {
+    if (initialPalette) return initialPalette;
+    return COLOR_THEMES[0].colors.join(',');
+  });
   
   // Use centralized theme classes
   const th = getThemeClasses(theme);
   const isDark = theme === 'dark';
+  
+  // Update if prop changes
+  useEffect(() => {
+    if (initialPalette) {
+      setSelectedPalette(initialPalette);
+    }
+  }, [initialPalette]);
   
   const handleUpdateSlide = (id: string, field: keyof SlideData, value: any) => {
     onUpdateSlides(slides.map(slide => 
@@ -177,7 +190,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
              <ArrowLeft className="w-4 h-4" /> {t('back')}
            </button>
            <button 
-             onClick={() => onConfirm(colorPalette)}
+             onClick={() => onConfirm(selectedPalette)}
              className="px-6 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 flex items-center gap-2"
            >
              {t('generateSlidesBtn')} <ArrowRight className="w-4 h-4" />

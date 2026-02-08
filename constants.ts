@@ -218,12 +218,17 @@ export const COLOR_THEMES = [
   { 
     id: 'alibaba', 
     label: 'Alibaba', 
-    colors: ['#1a1a1a', '#2d2d2d', '#ffffff', '#a3a3a3', '#ff6a00', '#ff8f00', '#166534', '#92400e', '#7f1d1d'] 
+    colors: ['#0D1117', '#161B22', '#FFFFFF', '#8B949E', '#FF7A1A', '#40A9FF', '#10B981', '#F59E0B', '#EF4444'] 
   },
   { 
     id: 'huawei', 
     label: 'Huawei', 
-    colors: ['#0a0a0a', '#1f1f1f', '#ffffff', '#a1a1aa', '#cf0a2c', '#ff4d6d', '#065f46', '#92400e', '#991b1b'] 
+    colors: ['#FFFFFF', '#F5F7FA', '#000000', '#666666', '#FA6400', '#E60012', '#10B981', '#F59E0B', '#EF4444'] 
+  },
+  { 
+    id: 'huawei-dark', 
+    label: 'Huawei Dark', 
+    colors: ['#0D1117', '#161B22', '#FFFFFF', '#8B949E', '#FF7A1A', '#FF4D4F', '#34D399', '#FBBF24', '#F87171'] 
   },
   { 
     id: 'meta', 
@@ -275,12 +280,12 @@ export const COLOR_THEMES = [
   { 
     id: 'alibaba-light', 
     label: 'Alibaba Light', 
-    colors: ['#ffffff', '#f5f5f5', '#333333', '#666666', '#9a3412', '#92400e', '#14532d', '#92400e', '#7f1d1d'] 
+    colors: ['#FFFFFF', '#F5F7FA', '#1A1A1A', '#666666', '#FF6701', '#007ACC', '#10B981', '#F59E0B', '#EF4444'] 
   },
   { 
     id: 'huawei-light', 
     label: 'Huawei Light', 
-    colors: ['#ffffff', '#f2f2f2', '#000000', '#666666', '#b91c1c', '#dc2626', '#14532d', '#92400e', '#7f1d1d'] 
+    colors: ['#FFFFFF', '#F5F7FA', '#000000', '#666666', '#FA6400', '#E60012', '#10B981', '#F59E0B', '#EF4444'] 
   },
   { 
     id: 'meta-light', 
@@ -445,6 +450,771 @@ export const PRESENTATION_PURPOSES = {
     "教育 / 培训",
     "主题演讲 / 愿景"
   ]
+};
+
+// ============================================
+// STYLE PRESETS - Reusable style configurations
+// Users can manually select/override these
+// ============================================
+
+export interface StylePreset {
+  id: string;
+  label: { en: string; zh: string };
+  description: { en: string; zh: string };
+  // Recommended color theme IDs (in order of preference)
+  recommendedThemes: string[];
+  // Typography style guidance
+  typography: {
+    fontFamily: string;
+    fontCharacteristics: string;
+    titleCase: 'sentence' | 'title' | 'uppercase' | 'lowercase';
+  };
+  // Layout preferences
+  layoutPreferences: {
+    primary: string[];
+    avoid: string[];
+  };
+  // Content style guidance
+  contentStyle: {
+    tone: string;
+    formality: 'formal' | 'semi-formal' | 'casual';
+    bulletStyle: 'fragments' | 'sentences' | 'mixed';
+    emphasis: string[];
+  };
+  // Visual density
+  visualDensity: 'minimal' | 'balanced' | 'dense';
+  // Use of data/charts
+  dataVisualization: 'heavy' | 'moderate' | 'minimal';
+}
+
+export const STYLE_PRESETS: StylePreset[] = [
+  // === CORPORATE FORMAL ===
+  {
+    id: 'corporate-formal',
+    label: { en: 'Corporate Formal', zh: '企业正式' },
+    description: { 
+      en: 'Authoritative, data-driven, minimalist. Best for executives and board presentations.',
+      zh: '权威、数据驱动、极简。适合高管和董事会演示。'
+    },
+    recommendedThemes: ['executive', 'midnight', 'corporate-navy', 'platinum', 'obsidian', 'carbon'],
+    typography: {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontCharacteristics: 'Clean, bold, confident. Large impactful titles (56-72px). Generous letter-spacing on headers.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Data', 'Center', 'Standard', 'Compare'],
+      avoid: ['Grid', 'Timeline'],
+    },
+    contentStyle: {
+      tone: 'Authoritative, decisive, outcome-focused',
+      formality: 'formal',
+      bulletStyle: 'fragments',
+      emphasis: ['ROI', 'business impact', 'strategic value', 'risk mitigation'],
+    },
+    visualDensity: 'minimal',
+    dataVisualization: 'heavy',
+  },
+  // === CORPORATE TRUST ===
+  {
+    id: 'corporate-trust',
+    label: { en: 'Corporate Trust', zh: '企业稳健' },
+    description: { 
+      en: 'Professional, trustworthy, conservative. Ideal for investors and financial presentations.',
+      zh: '专业、可信赖、保守。适合投资者和金融演示。'
+    },
+    recommendedThemes: ['executive', 'platinum', 'titanium', 'midnight', 'silicon', 'warm-paper'],
+    typography: {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontCharacteristics: 'Professional, trustworthy. Mix of serif for gravitas and sans-serif for clarity. Conservative sizing.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Data', 'Compare', 'Standard', 'Grid'],
+      avoid: ['Cover', 'Quote'],
+    },
+    contentStyle: {
+      tone: 'Evidence-based, conservative, growth-oriented',
+      formality: 'formal',
+      bulletStyle: 'fragments',
+      emphasis: ['market size', 'traction', 'team strength', 'unit economics', 'exit strategy'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'heavy',
+  },
+  // === GOVERNMENT / OFFICIAL ===
+  {
+    id: 'government-official',
+    label: { en: 'Government / Official', zh: '政府/官方' },
+    description: { 
+      en: 'Traditional, authoritative, policy-focused. Suitable for government and SOE presentations.',
+      zh: '传统、权威、政策导向。适合政府和国企演示。'
+    },
+    recommendedThemes: ['corporate-navy', 'deep-slate', 'warm-paper', 'pure-white', 'soft-gray', 'business-green'],
+    typography: {
+      fontFamily: '"Noto Serif", "Noto Serif SC", Georgia, serif',
+      fontCharacteristics: 'Traditional, authoritative serif fonts. Conservative, understated elegance. Stable and trustworthy appearance.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Timeline', 'Grid'],
+      avoid: ['Neon', 'Comic', 'Pop'],
+    },
+    contentStyle: {
+      tone: 'Formal, policy-oriented, consensus-building, respectful',
+      formality: 'formal',
+      bulletStyle: 'sentences',
+      emphasis: ['compliance', 'public interest', 'sustainability', 'stakeholder alignment', 'stability', 'social responsibility'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'moderate',
+  },
+  // === TECHNICAL / ENGINEERING ===
+  {
+    id: 'technical',
+    label: { en: 'Technical / Engineering', zh: '技术/工程' },
+    description: { 
+      en: 'Precise, detailed, architecture-focused. Perfect for engineering and technical teams.',
+      zh: '精确、详细、架构导向。适合工程和技术团队。'
+    },
+    recommendedThemes: ['minimal-dark', 'space-gray', 'neon-edge', 'arctic', 'graphite', 'quantum'],
+    typography: {
+      fontFamily: '"SF Mono", Monaco, "Cascadia Code", monospace',
+      fontCharacteristics: 'Monospace or technical sans-serif. Precise, clean. Code snippets use monospace.',
+      titleCase: 'sentence',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Compare', 'Grid', 'Timeline', 'Image-Heavy'],
+      avoid: ['Center'],
+    },
+    contentStyle: {
+      tone: 'Precise, detailed, architecture-focused',
+      formality: 'semi-formal',
+      bulletStyle: 'mixed',
+      emphasis: ['architecture', 'implementation', 'performance', 'scalability', 'technical details'],
+    },
+    visualDensity: 'dense',
+    dataVisualization: 'moderate',
+  },
+  // === ENTREPRENEUR / STARTUP ===
+  {
+    id: 'entrepreneur',
+    label: { en: 'Entrepreneur / Startup', zh: '创业者/初创' },
+    description: { 
+      en: 'Bold, energetic, opportunity-focused. Great for entrepreneurs and growth-stage companies.',
+      zh: '大胆、活力、机会导向。适合创业者和成长期公司。'
+    },
+    recommendedThemes: ['alibaba', 'bytedance', 'huawei', 'tesla', 'meta', 'amazon', 'netflix'],
+    typography: {
+      fontFamily: 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
+      fontCharacteristics: 'Bold, energetic, modern. Strong contrasts. Business-impact focused.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Data', 'Compare', 'Grid', 'Timeline'],
+      avoid: ['Quote'],
+    },
+    contentStyle: {
+      tone: 'Action-oriented, opportunity-focused, pragmatic',
+      formality: 'semi-formal',
+      bulletStyle: 'fragments',
+      emphasis: ['growth opportunity', 'competitive advantage', 'speed to market', 'ROI'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'heavy',
+  },
+  // === PRODUCT / UX ===
+  {
+    id: 'product-ux',
+    label: { en: 'Product / UX', zh: '产品/UX' },
+    description: { 
+      en: 'Clean, modern, user-centric. Ideal for product managers and UX presentations.',
+      zh: '简洁、现代、用户导向。适合产品经理和UX演示。'
+    },
+    recommendedThemes: ['apple', 'meta', 'google', 'minimal-dark', 'zenith', 'prism', 'arctic'],
+    typography: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontCharacteristics: 'Clean, modern, user-friendly. Balanced hierarchy.',
+      titleCase: 'sentence',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Compare', 'Grid', 'Timeline', 'Image-Heavy'],
+      avoid: ['Center'],
+    },
+    contentStyle: {
+      tone: 'User-centric, data-informed, iterative',
+      formality: 'semi-formal',
+      bulletStyle: 'fragments',
+      emphasis: ['user value', 'metrics', 'iteration', 'market fit', 'feature impact'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'moderate',
+  },
+  // === MARKETING / SALES ===
+  {
+    id: 'marketing-sales',
+    label: { en: 'Marketing / Sales', zh: '营销/销售' },
+    description: { 
+      en: 'Persuasive, benefit-driven, attention-grabbing. Best for marketing and sales teams.',
+      zh: '有说服力、利益导向、吸引眼球。适合营销和销售团队。'
+    },
+    recommendedThemes: ['bytedance', 'netflix', 'prism', 'neon-edge', 'alibaba', 'tencent'],
+    typography: {
+      fontFamily: '"Impact", "Arial Black", sans-serif',
+      fontCharacteristics: 'Bold, attention-grabbing, high energy. Strong contrasts and vibrant accents.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Grid', 'Data', 'Compare', 'Standard'],
+      avoid: ['Timeline'],
+    },
+    contentStyle: {
+      tone: 'Persuasive, benefit-driven, energetic',
+      formality: 'casual',
+      bulletStyle: 'fragments',
+      emphasis: ['benefits', 'differentiation', 'customer success', 'market opportunity'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'heavy',
+  },
+  // === CONSUMER / B2C ===
+  {
+    id: 'consumer',
+    label: { en: 'Consumer / B2C', zh: '消费者/B2C' },
+    description: { 
+      en: 'Friendly, approachable, benefit-focused. Perfect for consumer-facing presentations.',
+      zh: '友好、亲和、利益导向。适合面向消费者的演示。'
+    },
+    recommendedThemes: ['apple-light', 'google-light', 'cream', 'mint-light', 'rose-light', 'sky-light'],
+    typography: {
+      fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
+      fontCharacteristics: 'Friendly, approachable, warm. Generous spacing. Easy to read.',
+      titleCase: 'sentence',
+    },
+    layoutPreferences: {
+      primary: ['Grid', 'Image-Heavy', 'Standard', 'Center'],
+      avoid: ['Data', 'Timeline'],
+    },
+    contentStyle: {
+      tone: 'Simple, benefit-focused, emotional',
+      formality: 'casual',
+      bulletStyle: 'fragments',
+      emphasis: ['benefits', 'ease of use', 'emotional appeal', 'value proposition'],
+    },
+    visualDensity: 'minimal',
+    dataVisualization: 'minimal',
+  },
+  // === EDUCATION / ACADEMIC ===
+  {
+    id: 'education',
+    label: { en: 'Education / Academic', zh: '教育/学术' },
+    description: { 
+      en: 'Scholarly, clear, foundational. Suitable for educational and academic presentations.',
+      zh: '学术、清晰、基础导向。适合教育和学术演示。'
+    },
+    recommendedThemes: ['arctic', 'lavender-light', 'pure-white', 'soft-gray', 'warm-paper'],
+    typography: {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontCharacteristics: 'Scholarly, readable serif. Clear hierarchy for learning.',
+      titleCase: 'title',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Timeline', 'Grid', 'Quote'],
+      avoid: ['Data'],
+    },
+    contentStyle: {
+      tone: 'Educational, clear, foundational',
+      formality: 'semi-formal',
+      bulletStyle: 'sentences',
+      emphasis: ['key concepts', 'examples', 'foundations', 'applications'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'moderate',
+  },
+  // === GENERAL / UNIVERSAL ===
+  {
+    id: 'general',
+    label: { en: 'General / Universal', zh: '通用/普适' },
+    description: { 
+      en: 'Balanced, accessible, versatile. Works for broad audiences and general purposes.',
+      zh: '平衡、易懂、通用。适合广泛受众和一般目的。'
+    },
+    recommendedThemes: ['pure-white', 'soft-gray', 'cream', 'mint-light', 'sky-light', 'titanium'],
+    typography: {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontCharacteristics: 'Clear, accessible, highly readable. Avoid jargon.',
+      titleCase: 'sentence',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Grid', 'Center', 'Image-Heavy'],
+      avoid: ['Data', 'Compare'],
+    },
+    contentStyle: {
+      tone: 'Accessible, engaging, jargon-free',
+      formality: 'casual',
+      bulletStyle: 'fragments',
+      emphasis: ['clarity', 'relatability', 'practical value'],
+    },
+    visualDensity: 'minimal',
+    dataVisualization: 'minimal',
+  },
+];
+
+// ============================================
+// AUDIENCE CATEGORIES & PROFILES
+// Organizes audiences by category with default style presets
+// ============================================
+
+export interface AudienceCategory {
+  id: string;
+  label: { en: string; zh: string };
+  description: { en: string; zh: string };
+  defaultStylePreset: string; // References STYLE_PRESETS id
+  audiences: {
+    id: string;
+    label: { en: string; zh: string };
+  }[];
+}
+
+export const AUDIENCE_CATEGORIES: AudienceCategory[] = [
+  {
+    id: 'corporate',
+    label: { en: 'Corporate Leadership', zh: '企业管理层' },
+    description: { 
+      en: 'Executives, board members, and senior leadership',
+      zh: '高管、董事会成员和高级领导层'
+    },
+    defaultStylePreset: 'corporate-formal',
+    audiences: [
+      { id: 'c-level', label: { en: 'C-Level / Executives', zh: 'C级高管 / 决策层' } },
+      { id: 'board', label: { en: 'Board of Directors', zh: '董事会' } },
+      { id: 'middle-mgmt', label: { en: 'Middle Management', zh: '中层管理' } },
+      { id: 'cross-functional', label: { en: 'Cross-functional Teams', zh: '跨部门团队' } },
+    ],
+  },
+  {
+    id: 'investors',
+    label: { en: 'Investors & Finance', zh: '投资者与金融' },
+    description: { 
+      en: 'Investors, VCs, PE firms, and financial stakeholders',
+      zh: '投资者、风投、私募基金和金融利益相关者'
+    },
+    defaultStylePreset: 'corporate-trust',
+    audiences: [
+      { id: 'vc-pe', label: { en: 'VC / PE Investors', zh: '风投 / 私募基金' } },
+      { id: 'angel', label: { en: 'Angel Investors', zh: '天使投资人' } },
+      { id: 'institutional', label: { en: 'Institutional Investors', zh: '机构投资者' } },
+      { id: 'ipo-analysts', label: { en: 'IPO Analysts', zh: 'IPO分析师' } },
+    ],
+  },
+  {
+    id: 'government',
+    label: { en: 'Government & Public Sector', zh: '政府与公共部门' },
+    description: { 
+      en: 'Government officials, SOE leaders, and public sector',
+      zh: '政府官员、国企领导和公共部门'
+    },
+    defaultStylePreset: 'government-official',
+    audiences: [
+      { id: 'officials', label: { en: 'Government Officials', zh: '政府官员' } },
+      { id: 'soe-leaders', label: { en: 'SOE Leaders', zh: '国企领导' } },
+      { id: 'policy-makers', label: { en: 'Policy Makers', zh: '政策制定者' } },
+      { id: 'regulators', label: { en: 'Regulators', zh: '监管机构' } },
+    ],
+  },
+  {
+    id: 'technical',
+    label: { en: 'Technical & Engineering', zh: '技术与工程' },
+    description: { 
+      en: 'Engineers, developers, architects, and technical teams',
+      zh: '工程师、开发者、架构师和技术团队'
+    },
+    defaultStylePreset: 'technical',
+    audiences: [
+      { id: 'engineers', label: { en: 'Engineers / Developers', zh: '工程师 / 开发者' } },
+      { id: 'architects', label: { en: 'System Architects', zh: '系统架构师' } },
+      { id: 'rd-team', label: { en: 'R&D Team', zh: '研发团队' } },
+      { id: 'devops', label: { en: 'DevOps / SRE', zh: '运维 / SRE' } },
+    ],
+  },
+  {
+    id: 'business',
+    label: { en: 'Business & Entrepreneurship', zh: '商业与创业' },
+    description: { 
+      en: 'Entrepreneurs, business owners, and commercial teams',
+      zh: '企业家、企业主和商业团队'
+    },
+    defaultStylePreset: 'entrepreneur',
+    audiences: [
+      { id: 'founders', label: { en: 'Founders / Entrepreneurs', zh: '创始人 / 企业家' } },
+      { id: 'sme-owners', label: { en: 'SME Owners', zh: '中小企业主' } },
+      { id: 'b2b-clients', label: { en: 'B2B Clients / Partners', zh: 'B2B客户 / 合作伙伴' } },
+      { id: 'franchise', label: { en: 'Franchise Partners', zh: '加盟商' } },
+    ],
+  },
+  {
+    id: 'product',
+    label: { en: 'Product & Design', zh: '产品与设计' },
+    description: { 
+      en: 'Product managers, designers, and UX professionals',
+      zh: '产品经理、设计师和UX专业人士'
+    },
+    defaultStylePreset: 'product-ux',
+    audiences: [
+      { id: 'product-managers', label: { en: 'Product Managers', zh: '产品经理' } },
+      { id: 'ux-designers', label: { en: 'UX / UI Designers', zh: 'UX / UI设计师' } },
+      { id: 'design-team', label: { en: 'Design Team', zh: '设计团队' } },
+    ],
+  },
+  {
+    id: 'marketing',
+    label: { en: 'Marketing & Sales', zh: '市场与销售' },
+    description: { 
+      en: 'Marketing, sales, and growth teams',
+      zh: '市场、销售和增长团队'
+    },
+    defaultStylePreset: 'marketing-sales',
+    audiences: [
+      { id: 'marketing-team', label: { en: 'Marketing Team', zh: '市场团队' } },
+      { id: 'sales-team', label: { en: 'Sales Team', zh: '销售团队' } },
+      { id: 'growth-team', label: { en: 'Growth Team', zh: '增长团队' } },
+      { id: 'brand-team', label: { en: 'Brand Team', zh: '品牌团队' } },
+    ],
+  },
+  {
+    id: 'operations',
+    label: { en: 'Operations & Support', zh: '运营与支持' },
+    description: { 
+      en: 'Operations, HR, and support functions',
+      zh: '运营、人力资源和支持职能'
+    },
+    defaultStylePreset: 'general',
+    audiences: [
+      { id: 'operations', label: { en: 'Operations Team', zh: '运营团队' } },
+      { id: 'hr', label: { en: 'HR / Talent', zh: '人力资源' } },
+      { id: 'customer-success', label: { en: 'Customer Success', zh: '客户成功' } },
+      { id: 'support', label: { en: 'Support Team', zh: '支持团队' } },
+    ],
+  },
+  {
+    id: 'consumer',
+    label: { en: 'Consumer & Public', zh: '消费者与公众' },
+    description: { 
+      en: 'End consumers and general public audiences',
+      zh: '终端消费者和大众受众'
+    },
+    defaultStylePreset: 'consumer',
+    audiences: [
+      { id: 'end-consumers', label: { en: 'End Consumers', zh: '终端消费者' } },
+      { id: 'general-public', label: { en: 'General Public', zh: '普通大众' } },
+      { id: 'community', label: { en: 'Community / Users', zh: '社区 / 用户' } },
+    ],
+  },
+  {
+    id: 'education',
+    label: { en: 'Education & Research', zh: '教育与研究' },
+    description: { 
+      en: 'Students, educators, researchers, and academics',
+      zh: '学生、教育工作者、研究人员和学者'
+    },
+    defaultStylePreset: 'education',
+    audiences: [
+      { id: 'students', label: { en: 'Students', zh: '学生' } },
+      { id: 'academics', label: { en: 'Academics / Researchers', zh: '学者 / 研究员' } },
+      { id: 'educators', label: { en: 'Educators / Trainers', zh: '教育工作者 / 培训师' } },
+    ],
+  },
+];
+
+// ============================================
+// LEGACY SUPPORT - Keep for backward compatibility
+// ============================================
+
+// Legacy interface - now uses StylePreset internally
+export interface AudienceStyleProfile extends StylePreset {
+  // Extended from StylePreset for backward compatibility
+}
+
+// Legacy function - maps audience string to appropriate style preset
+export const findAudienceProfile = (audience: string): StylePreset | undefined => {
+  const normalized = audience.toLowerCase();
+  
+  // Find matching category and audience
+  for (const category of AUDIENCE_CATEGORIES) {
+    for (const aud of category.audiences) {
+      const audLabelEn = aud.label.en.toLowerCase();
+      const audLabelZh = aud.label.zh.toLowerCase();
+      
+      if (normalized.includes(aud.id.toLowerCase()) ||
+          normalized.includes(audLabelEn) ||
+          normalized.includes(audLabelZh) ||
+          audLabelEn.includes(normalized) ||
+          audLabelZh.includes(normalized)) {
+        return STYLE_PRESETS.find(p => p.id === category.defaultStylePreset);
+      }
+    }
+    
+    // Check category label match
+    if (normalized.includes(category.label.en.toLowerCase()) ||
+        normalized.includes(category.label.zh.toLowerCase())) {
+      return STYLE_PRESETS.find(p => p.id === category.defaultStylePreset);
+    }
+  }
+  
+  // Fallback to keyword matching
+  if (normalized.includes('executive') || normalized.includes('c-level') || normalized.includes('ceo') || normalized.includes('cto') || normalized.includes('cfo') || normalized.includes('board')) 
+    return STYLE_PRESETS.find(p => p.id === 'corporate-formal');
+  if (normalized.includes('investor') || normalized.includes('vc') || normalized.includes('pe'))
+    return STYLE_PRESETS.find(p => p.id === 'corporate-trust');
+  if (normalized.includes('engineer') || normalized.includes('technical') || normalized.includes('developer') || normalized.includes('tech') || normalized.includes('架构'))
+    return STYLE_PRESETS.find(p => p.id === 'technical');
+  if (normalized.includes('government') || normalized.includes('official') || normalized.includes('政府') || normalized.includes('官员'))
+    return STYLE_PRESETS.find(p => p.id === 'government-official');
+  if (normalized.includes('soe') || normalized.includes('国企') || normalized.includes('state-owned'))
+    return STYLE_PRESETS.find(p => p.id === 'government-official');
+  if (normalized.includes('entrepreneur') || normalized.includes('founder') || normalized.includes('business owner') || normalized.includes('企业家') || normalized.includes('创业'))
+    return STYLE_PRESETS.find(p => p.id === 'entrepreneur');
+  if (normalized.includes('product') || normalized.includes('pm ') || normalized.includes('产品'))
+    return STYLE_PRESETS.find(p => p.id === 'product-ux');
+  if (normalized.includes('market') || normalized.includes('sales') || normalized.includes('营销') || normalized.includes('销售'))
+    return STYLE_PRESETS.find(p => p.id === 'marketing-sales');
+  if (normalized.includes('consumer') || normalized.includes('customer') || normalized.includes('用户') || normalized.includes('消费者'))
+    return STYLE_PRESETS.find(p => p.id === 'consumer');
+  if (normalized.includes('student') || normalized.includes('academic') || normalized.includes('education') || normalized.includes('学生') || normalized.includes('学术'))
+    return STYLE_PRESETS.find(p => p.id === 'education');
+  
+  return STYLE_PRESETS.find(p => p.id === 'general');
+};
+
+// Helper to get style preset by ID
+export const getStylePreset = (presetId: string): StylePreset | undefined => {
+  return STYLE_PRESETS.find(p => p.id === presetId);
+};
+
+// Legacy export for backward compatibility - maps to STYLE_PRESETS
+export const AUDIENCE_PROFILES = STYLE_PRESETS;
+
+// ============================================
+// PURPOSE CATEGORIES - Hierarchical purpose selection
+// ============================================
+
+export interface PurposeCategory {
+  id: string;
+  label: { en: string; zh: string };
+  description: { en: string; zh: string };
+  purposes: {
+    id: string;
+    label: { en: string; zh: string };
+    styleAdjustment?: Partial<StylePreset>; // Override certain style aspects
+  }[];
+}
+
+export const PURPOSE_CATEGORIES: PurposeCategory[] = [
+  {
+    id: 'business-growth',
+    label: { en: 'Business Growth', zh: '业务增长' },
+    description: { en: 'Presentations focused on business development and growth', zh: '专注于业务发展和增长的演示' },
+    purposes: [
+      { id: 'investment-pitch', label: { en: 'Investment Pitch', zh: '融资路演' } },
+      { id: 'sales-pitch', label: { en: 'Sales / Client Pitch', zh: '销售/客户推介' } },
+      { id: 'partnership', label: { en: 'Partnership Proposal', zh: '合作提案' } },
+      { id: 'market-expansion', label: { en: 'Market Expansion', zh: '市场拓展' } },
+    ],
+  },
+  {
+    id: 'product-innovation',
+    label: { en: 'Product & Innovation', zh: '产品与创新' },
+    description: { en: 'Product launches, updates, and innovation showcases', zh: '产品发布、更新和创新展示' },
+    purposes: [
+      { id: 'product-launch', label: { en: 'Product Launch', zh: '产品发布' } },
+      { id: 'product-update', label: { en: 'Product Update / Iteration', zh: '产品更新/迭代' } },
+      { id: 'tech-demo', label: { en: 'Technical Demonstration', zh: '技术演示' } },
+      { id: 'innovation-showcase', label: { en: 'Innovation Showcase', zh: '创新展示' } },
+    ],
+  },
+  {
+    id: 'reporting-review',
+    label: { en: 'Reporting & Review', zh: '汇报与审查' },
+    description: { en: 'Status updates, reviews, and performance reports', zh: '状态更新、审查和绩效报告' },
+    purposes: [
+      { id: 'status-report', label: { en: 'Status / Progress Report', zh: '进度汇报' } },
+      { id: 'performance-review', label: { en: 'Performance Review', zh: '绩效审查' } },
+      { id: 'year-end-summary', label: { en: 'Year-end Summary', zh: '年终总结' } },
+      { id: 'audit-report', label: { en: 'Audit / Compliance Report', zh: '审计/合规报告' } },
+    ],
+  },
+  {
+    id: 'strategy-planning',
+    label: { en: 'Strategy & Planning', zh: '战略与规划' },
+    description: { en: 'Strategic planning, roadmaps, and vision presentations', zh: '战略规划、路线图和愿景演示' },
+    purposes: [
+      { id: 'strategic-planning', label: { en: 'Strategic Planning', zh: '战略规划' } },
+      { id: 'roadmap', label: { en: 'Roadmap Presentation', zh: '路线图演示' } },
+      { id: 'vision-keynote', label: { en: 'Vision / Keynote', zh: '愿景/主题演讲' } },
+      { id: 'transformation', label: { en: 'Transformation Initiative', zh: '转型倡议' } },
+    ],
+  },
+  {
+    id: 'education-training',
+    label: { en: 'Education & Training', zh: '教育与培训' },
+    description: { en: 'Training sessions, workshops, and educational content', zh: '培训课程、研讨会和教育内容' },
+    purposes: [
+      { id: 'training', label: { en: 'Training Session', zh: '培训课程' } },
+      { id: 'workshop', label: { en: 'Workshop / Seminar', zh: '工作坊/研讨会' } },
+      { id: 'knowledge-sharing', label: { en: 'Knowledge Sharing', zh: '知识分享' } },
+      { id: 'onboarding', label: { en: 'Onboarding / Orientation', zh: '入职/导向培训' } },
+    ],
+  },
+  {
+    id: 'communication',
+    label: { en: 'Communication & Engagement', zh: '沟通与互动' },
+    description: { en: 'Internal communications, announcements, and team building', zh: '内部沟通、公告和团队建设' },
+    purposes: [
+      { id: 'announcement', label: { en: 'Announcement / News', zh: '公告/新闻' } },
+      { id: 'team-building', label: { en: 'Team Building / Motivation', zh: '团队建设/激励' } },
+      { id: 'change-management', label: { en: 'Change Management', zh: '变革管理' } },
+      { id: 'crisis-communication', label: { en: 'Crisis Communication', zh: '危机沟通' } },
+    ],
+  },
+];
+
+// Purpose-driven layout recommendations
+export interface PurposeLayoutGuide {
+  purpose: string;
+  layouts: string[];
+  contentFocus: string;
+}
+
+export const PURPOSE_LAYOUT_GUIDES: PurposeLayoutGuide[] = [
+  { purpose: 'pitch', layouts: ['Data', 'Compare', 'Grid', 'Standard'], contentFocus: 'Value proposition, differentiation, traction' },
+  { purpose: 'report', layouts: ['Data', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Key metrics, status, trends' },
+  { purpose: 'proposal', layouts: ['Compare', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Problem, solution, plan, ROI' },
+  { purpose: 'review', layouts: ['Timeline', 'Data', 'Standard'], contentFocus: 'Achievements, metrics, learnings' },
+  { purpose: 'training', layouts: ['Grid', 'Standard', 'Image-Heavy', 'Quote'], contentFocus: 'Concepts, examples, exercises' },
+  { purpose: 'roadshow', layouts: ['Data', 'Compare', 'Center', 'Standard'], contentFocus: 'Vision, opportunity, team, traction' },
+  { purpose: 'launch', layouts: ['Grid', 'Image-Heavy', 'Data', 'Standard'], contentFocus: 'Features, benefits, demo, availability' },
+];
+
+// ============================================
+// STYLE RESOLUTION - Audience + Purpose determine style
+// ============================================
+
+export interface StyleRecommendation {
+  presetId: string;
+  reason: { en: string; zh: string };
+}
+
+// Matrix: Audience Category + Purpose Category -> Style Preset
+const AUDIENCE_PURPOSE_STYLE_MATRIX: Record<string, Record<string, StyleRecommendation>> = {
+  // Corporate Leadership
+  'corporate': {
+    'business-growth': { presetId: 'corporate-formal', reason: { en: 'Executive authority for growth initiatives', zh: '高管权威风格，适合增长倡议' } },
+    'product-innovation': { presetId: 'product-ux', reason: { en: 'Product-focused executive presentation', zh: '产品导向的高管演示' } },
+    'reporting-review': { presetId: 'corporate-formal', reason: { en: 'Formal reporting to leadership', zh: '向领导层的正式汇报' } },
+    'strategy-planning': { presetId: 'corporate-formal', reason: { en: 'Strategic vision with authority', zh: '权威性的战略愿景' } },
+    'education-training': { presetId: 'education', reason: { en: 'Leadership development content', zh: '领导力发展内容' } },
+    'communication': { presetId: 'corporate-trust', reason: { en: 'Trust-building internal communication', zh: '建立信任的内部沟通' } },
+  },
+  // Investors & Finance
+  'investors': {
+    'business-growth': { presetId: 'corporate-trust', reason: { en: 'Trust-focused investor presentation', zh: '以信任为核心的投资者演示' } },
+    'product-innovation': { presetId: 'corporate-trust', reason: { en: 'Product potential with financial rigor', zh: '产品潜力与财务严谨性' } },
+    'reporting-review': { presetId: 'corporate-trust', reason: { en: 'Financial reporting with credibility', zh: '具有可信度的财务报告' } },
+    'strategy-planning': { presetId: 'corporate-trust', reason: { en: 'Long-term value proposition', zh: '长期价值主张' } },
+    'education-training': { presetId: 'education', reason: { en: 'Investor education materials', zh: '投资者教育材料' } },
+    'communication': { presetId: 'corporate-trust', reason: { en: 'Transparent stakeholder communication', zh: '透明的利益相关者沟通' } },
+  },
+  // Government & Public Sector
+  'government': {
+    'business-growth': { presetId: 'government-official', reason: { en: 'Official procurement or partnership', zh: '官方采购或合作' } },
+    'product-innovation': { presetId: 'government-official', reason: { en: 'Public sector innovation showcase', zh: '公共部门创新展示' } },
+    'reporting-review': { presetId: 'government-official', reason: { en: 'Official reporting to authorities', zh: '向当局的官方报告' } },
+    'strategy-planning': { presetId: 'government-official', reason: { en: 'Policy-aligned strategic planning', zh: '政策对齐的战略规划' } },
+    'education-training': { presetId: 'education', reason: { en: 'Government training programs', zh: '政府培训项目' } },
+    'communication': { presetId: 'government-official', reason: { en: 'Official announcements and updates', zh: '官方公告和更新' } },
+  },
+  // Technical & Engineering
+  'technical': {
+    'business-growth': { presetId: 'technical', reason: { en: 'Technical solution for business growth', zh: '业务增长的技术解决方案' } },
+    'product-innovation': { presetId: 'technical', reason: { en: 'Technical innovation deep-dive', zh: '技术创新深度解析' } },
+    'reporting-review': { presetId: 'technical', reason: { en: 'Technical status and metrics review', zh: '技术状态和指标审查' } },
+    'strategy-planning': { presetId: 'technical', reason: { en: 'Technical architecture and roadmap', zh: '技术架构和路线图' } },
+    'education-training': { presetId: 'technical', reason: { en: 'Technical skills training', zh: '技术技能培训' } },
+    'communication': { presetId: 'technical', reason: { en: 'Technical team updates', zh: '技术团队更新' } },
+  },
+  // Business & Entrepreneurship
+  'business': {
+    'business-growth': { presetId: 'entrepreneur', reason: { en: 'Entrepreneurial growth mindset', zh: '创业增长思维' } },
+    'product-innovation': { presetId: 'entrepreneur', reason: { en: 'Innovation with business agility', zh: '具有商业敏捷性的创新' } },
+    'reporting-review': { presetId: 'corporate-trust', reason: { en: 'Business performance review', zh: '业务绩效审查' } },
+    'strategy-planning': { presetId: 'entrepreneur', reason: { en: 'Agile strategic planning', zh: '敏捷战略规划' } },
+    'education-training': { presetId: 'education', reason: { en: 'Entrepreneurship training', zh: '创业培训' } },
+    'communication': { presetId: 'entrepreneur', reason: { en: 'Dynamic team communication', zh: '充满活力的团队沟通' } },
+  },
+  // Product & Design
+  'product': {
+    'business-growth': { presetId: 'product-ux', reason: { en: 'Product-led growth presentation', zh: '产品主导的增长演示' } },
+    'product-innovation': { presetId: 'product-ux', reason: { en: 'Product innovation showcase', zh: '产品创新展示' } },
+    'reporting-review': { presetId: 'product-ux', reason: { en: 'Product metrics and user insights', zh: '产品指标和用户洞察' } },
+    'strategy-planning': { presetId: 'product-ux', reason: { en: 'Product strategy and vision', zh: '产品战略和愿景' } },
+    'education-training': { presetId: 'product-ux', reason: { en: 'Product management training', zh: '产品管理培训' } },
+    'communication': { presetId: 'product-ux', reason: { en: 'Product team alignment', zh: '产品团队对齐' } },
+  },
+  // Marketing & Sales
+  'marketing': {
+    'business-growth': { presetId: 'marketing-sales', reason: { en: 'High-energy growth presentation', zh: '高能增长演示' } },
+    'product-innovation': { presetId: 'marketing-sales', reason: { en: 'Product marketing launch', zh: '产品营销发布' } },
+    'reporting-review': { presetId: 'marketing-sales', reason: { en: 'Marketing performance metrics', zh: '营销绩效指标' } },
+    'strategy-planning': { presetId: 'marketing-sales', reason: { en: 'Marketing strategy vision', zh: '营销战略愿景' } },
+    'education-training': { presetId: 'marketing-sales', reason: { en: 'Sales training and enablement', zh: '销售培训和赋能' } },
+    'communication': { presetId: 'marketing-sales', reason: { en: 'Brand and campaign updates', zh: '品牌和活动更新' } },
+  },
+  // Operations & Support
+  'operations': {
+    'business-growth': { presetId: 'general', reason: { en: 'Operational efficiency for growth', zh: '运营效率支持增长' } },
+    'product-innovation': { presetId: 'general', reason: { en: 'Process innovation showcase', zh: '流程创新展示' } },
+    'reporting-review': { presetId: 'general', reason: { en: 'Operations metrics review', zh: '运营指标审查' } },
+    'strategy-planning': { presetId: 'general', reason: { en: 'Operations strategic planning', zh: '运营战略规划' } },
+    'education-training': { presetId: 'education', reason: { en: 'Operations training programs', zh: '运营培训项目' } },
+    'communication': { presetId: 'general', reason: { en: 'Operational updates and alerts', zh: '运营更新和提醒' } },
+  },
+  // Consumer & Public
+  'consumer': {
+    'business-growth': { presetId: 'consumer', reason: { en: 'Consumer-friendly growth story', zh: '消费者友好的增长故事' } },
+    'product-innovation': { presetId: 'consumer', reason: { en: 'Consumer product showcase', zh: '消费产品展示' } },
+    'reporting-review': { presetId: 'education', reason: { en: 'Transparent public reporting', zh: '透明的公众报告' } },
+    'strategy-planning': { presetId: 'consumer', reason: { en: 'Consumer vision and values', zh: '消费者愿景和价值观' } },
+    'education-training': { presetId: 'education', reason: { en: 'Consumer education content', zh: '消费者教育内容' } },
+    'communication': { presetId: 'consumer', reason: { en: 'Brand-consumer communication', zh: '品牌-消费者沟通' } },
+  },
+  // Education & Research
+  'education': {
+    'business-growth': { presetId: 'education', reason: { en: 'Educational business development', zh: '教育业务发展' } },
+    'product-innovation': { presetId: 'education', reason: { en: 'EdTech innovation showcase', zh: '教育科技展示' } },
+    'reporting-review': { presetId: 'education', reason: { en: 'Research findings and reports', zh: '研究发现和报告' } },
+    'strategy-planning': { presetId: 'education', reason: { en: 'Educational strategy planning', zh: '教育战略规划' } },
+    'education-training': { presetId: 'education', reason: { en: 'Academic course content', zh: '学术课程内容' } },
+    'communication': { presetId: 'education', reason: { en: 'Academic community updates', zh: '学术界更新' } },
+  },
+};
+
+// Helper function to resolve style based on audience and purpose categories
+export const resolveStyleRecommendation = (
+  audienceCategoryId: string,
+  purposeCategoryId: string,
+  lang: 'en' | 'zh' = 'en'
+): StyleRecommendation => {
+  const matrix = AUDIENCE_PURPOSE_STYLE_MATRIX[audienceCategoryId];
+  if (matrix && matrix[purposeCategoryId]) {
+    return matrix[purposeCategoryId];
+  }
+  
+  // Fallback to audience default
+  const category = AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId);
+  return {
+    presetId: category?.defaultStylePreset || 'general',
+    reason: { en: 'Based on audience type', zh: '基于受众类型' }
+  };
 };
 
 export const SAMPLE_CONTENT = `

@@ -15,7 +15,7 @@ import { deckApi, checkBackendAvailable, DatabaseDeckWithSlides, dbSlideToSlideD
 import DeckBrowser from './components/DeckBrowser';
 import SlideHistory from './components/SlideHistory';
 import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Printer, Plus, Sun, Moon, Database, Save, History, CheckCircle, AlertCircle } from 'lucide-react';
-import { TRANSLATIONS, COLOR_THEMES, PROVIDERS } from './constants';
+import { TRANSLATIONS, COLOR_THEMES, PROVIDERS, findAudienceProfile, getStylePreset, resolveStyleRecommendation } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -194,7 +194,9 @@ const App: React.FC = () => {
         currentConfig.apiSettings,
         currentConfig.topic,
         pendingSlideIndex + 1,
-        currentSlides.length
+        currentSlides.length,
+        undefined,
+        currentConfig.stylePresetId
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -566,7 +568,8 @@ const App: React.FC = () => {
         newConfig.slideCount,
         newConfig.apiSettings,
         controller.signal, // Pass signal
-        newConfig.strictMode // Pass strict mode flag
+        newConfig.strictMode, // Pass strict mode flag
+        newConfig.stylePresetId // Pass user-selected style preset
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -582,6 +585,37 @@ const App: React.FC = () => {
       }));
 
       setSlides(initialSlides);
+      
+      // Auto-select theme based on style preset or audience
+      let selectedThemeColors = '';
+      
+      if (newConfig.stylePresetId) {
+        // Use user-selected style preset
+        const preset = getStylePreset(newConfig.stylePresetId);
+        if (preset && preset.recommendedThemes.length > 0) {
+          const theme = COLOR_THEMES.find(t => t.id === preset.recommendedThemes[0]);
+          if (theme) {
+            selectedThemeColors = theme.colors.join(',');
+          }
+        }
+      } else {
+        // Fallback: auto-detect from audience
+        const profile = findAudienceProfile(newConfig.audience);
+        if (profile && profile.recommendedThemes.length > 0) {
+          const theme = COLOR_THEMES.find(t => t.id === profile.recommendedThemes[0]);
+          if (theme) {
+            selectedThemeColors = theme.colors.join(',');
+          }
+        }
+      }
+      
+      // Ensure we have a valid palette
+      if (!selectedThemeColors) {
+        selectedThemeColors = COLOR_THEMES[0].colors.join(',');
+      }
+      
+      setColorPalette(selectedThemeColors);
+      
       setStatus(GenerationStatus.REVIEWING_OUTLINE);
 
     } catch (error: any) {
@@ -690,7 +724,8 @@ const App: React.FC = () => {
         config.topic,
         slideIndex + 1,
         slides.length,
-        customInstruction
+        customInstruction,
+        config.stylePresetId
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -703,20 +738,29 @@ const App: React.FC = () => {
 
   const getFullHtml = () => {
     const colors = colorPalette.split(',').map(c => c.trim());
+    // Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
     const themeCss = `
     :root {
-      --c-bg: ${colors[0] || '#111'};
-      --c-surface: ${colors[1] || '#222'};
-      --c-accent: ${colors[2] || '#4f46e5'};
-      --c-text: ${colors[3] || '#fff'};
-      --c-text-muted: ${colors[3] ? colors[3] + 'aa' : '#ffffffaa'};
+      --c-bg: ${colors[0] || '#0a0a0a'};
+      --c-surface: ${colors[1] || '#1a1a1a'};
+      --c-text: ${colors[2] || '#ffffff'};
+      --c-text-muted: ${colors[3] || '#a1a1aa'};
+      --c-accent: ${colors[4] || '#3b82f6'};
+      --c-accent-2: ${colors[5] || '#8b5cf6'};
+      --c-success: ${colors[6] || '#22c55e'};
+      --c-warning: ${colors[7] || '#f59e0b'};
+      --c-error: ${colors[8] || '#ef4444'};
     }
     .theme-light {
-      --c-bg: ${colors[3] || '#fff'};
+      --c-bg: ${colors[2] || '#ffffff'};
       --c-surface: #f3f4f6;
-      --c-accent: ${colors[2] || '#4f46e5'}; /* Use defined accent for light mode too */
-      --c-text: ${colors[0] || '#000'};
-      --c-text-muted: ${colors[0] ? colors[0] + 'aa' : '#000000aa'};
+      --c-text: ${colors[0] || '#0a0a0a'};
+      --c-text-muted: ${colors[0] ? colors[0] + 'aa' : '#0a0a0aaa'};
+      --c-accent: ${colors[4] || '#3b82f6'};
+      --c-accent-2: ${colors[5] || '#8b5cf6'};
+      --c-success: ${colors[6] || '#22c55e'};
+      --c-warning: ${colors[7] || '#f59e0b'};
+      --c-error: ${colors[8] || '#ef4444'};
     }
     `;
 
@@ -1382,6 +1426,7 @@ const App: React.FC = () => {
             lang={language}
             t={t}
             theme={theme}
+            colorPalette={colorPalette}
           />
         )}
 

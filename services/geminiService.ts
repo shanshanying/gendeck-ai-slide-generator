@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { OutlineItem, ApiSettings, ServiceResponse, ModelSelection, ApiProvider } from "../types";
-import { PROVIDERS } from "../constants";
+import { PROVIDERS, findAudienceProfile, PURPOSE_LAYOUT_GUIDES, getStylePreset } from "../constants";
 
 // Helper to clean JSON string from Markdown
 const cleanJson = (text: string): string => {
@@ -251,9 +251,16 @@ export const generateOutline = async (
   slideCount: number,
   apiSettings: ApiSettings,
   signal?: AbortSignal,
-  strictMode: boolean = false
+  strictMode: boolean = false,
+  stylePresetId?: string
 ): Promise<ServiceResponse<OutlineItem[]>> => {
   try {
+    // Get style guidance - use user-selected preset if provided, otherwise use audience default
+    const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
+    const purposeGuide = PURPOSE_LAYOUT_GUIDES.find(g => 
+      purpose.toLowerCase().includes(g.purpose.toLowerCase())
+    );
+
     const strictModeInstruction = strictMode ? `
       ⚠️ STRICT MODE ENABLED:
       - You MUST generate the outline STRICTLY based on the user's provided input.
@@ -273,11 +280,67 @@ export const generateOutline = async (
       - Maintain the exact order of slides as they appear in the input.
     ` : '';
 
+    // Build audience-specific style guidance
+    const styleGuidance = profile ? `
+      ## 🎨 AUDIENCE-SPECIFIC STYLE GUIDANCE
+      
+      This presentation is for: **${audience}**
+      
+      **Typography Style:**
+      ${profile.typography.fontCharacteristics}
+      - Font family guidance: ${profile.typography.fontFamily}
+      - Title case style: ${profile.typography.titleCase}
+      
+      **Content Tone & Style:**
+      - Tone: ${profile.contentStyle.tone}
+      - Formality: ${profile.contentStyle.formality}
+      - Bullet point style: ${profile.contentStyle.bulletStyle}
+      - Key emphasis areas: ${profile.contentStyle.emphasis.join(', ')}
+      
+      **Visual Density:** ${profile.visualDensity}
+      **Data Visualization:** ${profile.dataVisualization}
+      
+      **Preferred Layouts (in order):** ${profile.layoutPreferences.primary.join(', ')}
+      **Layouts to Avoid:** ${profile.layoutPreferences.avoid.join(', ')}
+    ` : `
+      ## 🎨 STYLE GUIDANCE
+      
+      **Content Rules:**
+      - Titles must be "Viewpoint / Judgment / Conclusion" (No noun piling, Conclusion first). Avoid using the word "Slide" in titles.
+      - Bullet points: Concise, Executive-friendly, Value/Capability focused (not just implementation details). Use sentence fragments, not full sentences.
+      - Information Density: Max 1 core conclusion per slide, 3-5 content points maximum per slide.
+    `;
+
+    // Build purpose-specific layout guidance
+    const layoutGuidance = purposeGuide ? `
+      ## 📐 PURPOSE-SPECIFIC LAYOUT GUIDANCE
+      
+      This is a "${purpose}" presentation.
+      
+      **Recommended Layout Priority:**
+      ${purposeGuide.layouts.map((l, i) => `${i + 1}. ${l}`).join('\n      ')}
+      
+      **Content Focus:**
+      ${purposeGuide.contentFocus}
+    ` : `
+      ## 📐 LAYOUT STRATEGY
+      
+      Select layouts based on content type:
+      - 'Cover': Only for Slide 1.
+      - 'Ending': Only for the last Slide.
+      - 'Compare': Use for pros/cons, before/after, or 2-column text.
+      - 'Grid': Use for list of equal items, features, 3-4 pillars.
+      - 'Timeline': Use for roadmaps, history, steps, or evolution.
+      - 'Data': Use when a statistic, metric, or chart concept is the focus.
+      - 'Center': Use for a single powerful statement or quote.
+      - 'Standard': Use for standard title + bullet points (default).
+    `;
+
     const prompt = `
       Role Definition:
       You are a Presentation Outline Copilot. You excel at:
       - Understanding messy, unstructured user input.
-      - Identifying the target audience.
+      - Identifying the target audience and adapting style accordingly.
       - Restructuring content from an "Executive Perspective".
       - Outputting a professional, restrained, conclusion-first presentation outline.
       - Visualizing how content should be presented on a slide (Layout Strategy).
@@ -294,33 +357,18 @@ export const generateOutline = async (
       - Presentation Purpose: ${purpose}
       - Target Slide Count: ${slideCount} (Strict adherence)
 
-      Audience Identification Rules (if not specified, default to "Tech Executive/CTO"):
-      - Tech Executive / CTO: Focus on Architecture, Systemic view, Long-term evolution, Risks.
-      - Management / Decision Makers: Focus on Value, ROI, Cost, Certainty.
-      - Tech Team: Focus on Principles, Implementation, Toolchains.
+      ${styleGuidance}
 
-      Content Rules:
-      - Titles must be "Viewpoint / Judgment / Conclusion" (No noun piling, Conclusion first). Avoid using the word "Slide" in titles.
-      - Bullet points: Concise, Executive-friendly, Value/Capability focused (not just implementation details). Use sentence fragments, not full sentences.
-      - Information Density: Max 1 core conclusion per slide, 3-5 content points maximum per slide.
-      - Language: The output language MUST match the language of the 'User Input'.
+      ${layoutGuidance}
 
-      Layout Strategy (Crucial - Must map to Renderer capabilities):
-      - 'Cover': Only for Slide 1.
-      - 'Ending': Only for the last Slide.
-      - 'Compare': Use for pros/cons, before/after, or 2-column text.
-      - 'Grid': Use for list of equal items, features, 3-4 pillars.
-      - 'Timeline': Use for roadmaps, history, steps, or evolution.
-      - 'Data': Use when a statistic, metric, or chart concept is the focus.
-      - 'Center': Use for a single powerful statement or quote.
-      - 'Standard': Use for standard title + bullet points (default).
+      **Language:** The output language MUST match the language of the 'User Input'.
 
       Structure Requirements (MANDATORY):
       1. **Slide 1 (Cover Page)**:
          - Title: Generate a compelling, professional title based on the input content (do NOT just use the provided 'Topic', make it descriptive).
          - ContentPoints: Use the first point for a subtitle/summary.
          - Layout: 'Cover'
-      2. **Slides 2 to ${slideCount - 1} (Main Content)**: Logical flow. Vary layouts ('Compare', 'Grid', 'Timeline', 'Data', 'Standard').
+      2. **Slides 2 to ${slideCount - 1} (Main Content)**: Logical flow. ${profile ? `Prioritize these layouts: ${profile.layoutPreferences.primary.slice(0, 4).join(', ')}.` : "Vary layouts ('Compare', 'Grid', 'Timeline', 'Data', 'Standard')."}
       3. **Slide ${slideCount} (Ending Page)**: One powerful summary sentence, Call to Action, "Thank You", or company contact info.
          - Layout: 'Ending'
 
@@ -434,45 +482,74 @@ export const generateSlideHtml = async (
   deckTitle: string,
   pageNumber: number,
   totalPages: number,
-  customInstruction?: string
+  customInstruction?: string,
+  stylePresetId?: string
 ): Promise<ServiceResponse<string>> => {
   try {
+    // Get style guidance - use user-selected preset if provided, otherwise use audience default
+    const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
+    
+    // Build style-specific guidance for the renderer
+    const styleGuidance = profile ? `
+      ## 🎨 AUDIENCE-SPECIFIC DESIGN GUIDANCE
+      
+      This slide is for: **${audience}**
+      
+      **Typography Requirements:**
+      ${profile.typography.fontCharacteristics}
+      - Apply font classes: Use \`${profile.typography.fontFamily.split(',')[0].trim()}\` or appropriate fallbacks
+      - Title case: ${profile.typography.titleCase} (apply \`${profile.typography.titleCase === 'uppercase' ? 'uppercase' : ''}\` class if needed)
+      
+      **Visual Density:** ${profile.visualDensity}
+      - ${profile.visualDensity === 'minimal' ? 'Use generous whitespace, larger spacing between elements (64px+ gaps)' : ''}
+      - ${profile.visualDensity === 'dense' ? 'Information-rich layout, tighter spacing (24-32px gaps), maximize content' : ''}
+      - ${profile.visualDensity === 'balanced' ? 'Moderate spacing (32-48px gaps), balanced content and whitespace' : ''}
+      
+      **Data Visualization Level:** ${profile.dataVisualization}
+      - ${profile.dataVisualization === 'heavy' ? 'Incorporate charts, metrics, progress bars, data cards where applicable' : ''}
+      - ${profile.dataVisualization === 'minimal' ? 'Focus on narrative and concepts, minimize data displays' : ''}
+      
+      **Content Emphasis:** Focus on ${profile.contentStyle.emphasis.join(', ')}
+    ` : '';
+
     const prompt = `
       Role: Enterprise HTML Presentation Deck Renderer.
       Goal: Create a SINGLE, modern, print-ready HTML slide fragment using Tailwind CSS based on the provided content.
 
       ## 🔴 HARD RULES (NON-NEGOTIABLE)
-      1. **Container**: strictly \`<section class="slide bg-[var(--c-bg)] text-[var(--c-text)]">...</section>\`.
+      1. **Container**: strictly \`<section class="slide" style="background-color: var(--c-bg); color: var(--c-text);">...</section>\`.
       2. **Dimensions**: Strictly width: 1920px; height: 1080px.
       3. **Units**: Use ABSOLUTE UNITS (px) only for layout stability. NO rem, vh, vw.
       4. **Scrolling**: \`overflow: hidden\`. Content MUST fit.
       5. **Images**: NO external images (jpg/png). Use ONLY SVG icons (inline <svg>).
       6. **Backgrounds**:
-         - ALL slides (Content, Cover, Ending) MUST have a SOLID background (using \`bg-[var(--c-bg)]\`).
+         - ALL slides (Content, Cover, Ending) MUST have a SOLID background using inline style: \`style="background-color: var(--c-bg);"\`.
          - **ABSOLUTELY NO GRADIENTS** on backgrounds.
       7. **Print**: \`print-color-adjust: exact\`.
       8. **Typography**: Use clear visual hierarchy - Titles 48-72px, Body 24-32px, Captions 18-20px.
       9. **Contrast**: Ensure text has sufficient contrast against background (WCAG AA minimum).
       10. **Spacing**: Use consistent spacing based on 8px scale: 48px, 32px, 24px, 16px, 8px.
-      11. **CSS Variables**: DO NOT generate a <style> block. The following variables are injected globally:
-         - \`--c-bg\`: Main background color (dark)
-         - \`--c-surface\`: Card/Section background
-         - \`--c-text\`: Primary text color
-         - \`--c-text-muted\`: Secondary/muted text color
-         - \`--c-accent\`: Primary accent/brand color
-         - \`--c-accent-2\`: Secondary accent for highlights
-         - \`--c-success\`: Success/positive color (for good data, growth)
-         - \`--c-warning\`: Warning/attention color (for cautions, callouts)
-         - \`--c-error\`: Error/negative color (for problems, declines)
+      11. **CSS Variables**: DO NOT generate a <style> block. Use inline styles with CSS variables. Available variables:
+         - \`var(--c-bg)\`: Main background color (dark)
+         - \`var(--c-surface)\`: Card/Section background
+         - \`var(--c-text)\`: Primary text color
+         - \`var(--c-text-muted)\`: Secondary/muted text color
+         - \`var(--c-accent)\`: Primary accent/brand color
+         - \`var(--c-accent-2)\`: Secondary accent for highlights
+         - \`var(--c-success)\`: Success/positive color (for good data, growth)
+         - \`var(--c-warning)\`: Warning/attention color (for cautions, callouts)
+         - \`var(--c-error)\`: Error/negative color (for problems, declines)
+      
+      ${styleGuidance}
 
       ## 📐 DOM STRUCTURE (MANDATORY)
-      Inside the \`<section class="slide ...">\`, you must follow this structure:
+      Inside the \`<section class="slide" style="background-color: var(--c-bg); color: var(--c-text); width: 1920px; height: 1080px; position: relative; overflow: hidden;">\`, you must follow this structure:
 
       \`\`\`html
       <!-- 1. Header (Except Cover/Ending) -->
-      <header class="absolute top-0 left-0 w-full p-12 flex justify-between items-start z-10">
+      <header style="position: absolute; top: 0; left: 0; width: 100%; padding: 48px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;">
          <div>
-            <span class="inline-block py-1 px-3 rounded-full bg-[var(--c-surface)] text-[var(--c-accent)] text-xs font-bold tracking-wider mb-2 uppercase opacity-80">
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: var(--c-surface); color: var(--c-accent); font-size: 12px; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 8px; text-transform: uppercase; opacity: 0.8;">
                GenDeck AI
             </span>
             <h2 class="text-5xl font-bold leading-tight text-[var(--c-text)]">
@@ -483,15 +560,15 @@ export const generateSlideHtml = async (
       </header>
 
       <!-- 2. Main Content -->
-      <main class="absolute top-[200px] left-0 w-full h-[780px] px-12 z-0">
-         <!-- YOUR GENERATED LAYOUT CONTENT HERE -->
+      <main style="position: absolute; top: 200px; left: 0; width: 100%; height: 780px; padding: 0 48px; z-index: 0;">
+         <!-- YOUR GENERATED LAYOUT CONTENT HERE - Use CSS variables for colors: style="color: var(--c-text);" or style="background-color: var(--c-surface);" -->
       </main>
 
       <!-- 3. Footer -->
-      <footer class="absolute bottom-0 left-0 w-full p-8 flex items-end text-[var(--c-text-muted)] z-10 border-t border-[var(--c-text-muted)]/10 mx-12 w-[calc(100%-96px)]">
-         <div class="flex-1 text-left text-sm font-medium opacity-50">GenDeck</div>
-         <div class="flex-1 text-center text-sm font-semibold opacity-80 tracking-wide uppercase truncate px-4">${deckTitle}</div>
-         <div class="flex-1 text-right text-sm font-mono opacity-50">${pageNumber} / ${totalPages}</div>
+      <footer style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 32px; display: flex; align-items: flex-end; color: var(--c-text-muted); z-index: 10; border-top: 1px solid rgba(255,255,255,0.1); margin: 0 48px; width: calc(100% - 96px);">
+         <div style="flex: 1; text-align: left; font-size: 14px; font-weight: 500; opacity: 0.5;">GenDeck</div>
+         <div style="flex: 1; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.8; letter-spacing: 0.05em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 16px;">${deckTitle}</div>
+         <div style="flex: 1; text-align: right; font-size: 14px; font-family: monospace; opacity: 0.5;">${pageNumber} / ${totalPages}</div>
       </footer>
       \`\`\`
 
@@ -510,11 +587,10 @@ export const generateSlideHtml = async (
       10. **Standard**: Title on left, bullet points below, visual/icon composition on right (default).
 
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
-      If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant Tailwind classes to the structure.
-      - Serif -> \`font-serif\`
-      - All Caps -> \`uppercase\`
-      - Bold -> \`font-extrabold\`
-      - Centered -> \`text-center\` or flex centering.
+      If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant styles.
+      - Use inline styles for colors: \`style="color: var(--c-text);"\`, \`style="background-color: var(--c-surface);"\`, etc.
+      - Use Tailwind for layout: \`flex\`, \`grid\`, \`absolute\`, \`relative\`, etc.
+      - Typography: \`font-serif\`, \`uppercase\`, \`font-bold\`, \`text-center\`, etc.
 
       ## 🧿 ICONOGRAPHY
       - Use high-quality inline SVGs (Lucide/Feather style).

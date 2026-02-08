@@ -6,16 +6,7 @@ import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, CheckCircle, Alert
 import { TRANSLATIONS, COLOR_THEMES } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
-// Group themes by category
-const THEME_CATEGORIES = [
-  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['executive', 'midnight', 'corporate-navy', 'platinum', 'deep-slate', 'business-green'] },
-  { id: 'minimal-dark', label: 'Minimal Dark', labelZh: '极简暗色', themeIds: ['minimal-dark', 'space-gray', 'graphite', 'ink', 'obsidian', 'carbon', 'prism', 'mono-blue', 'mono-amber'] },
-  { id: 'minimal-light', label: 'Minimal Light', labelZh: '极简浅色', themeIds: ['titanium', 'arctic', 'silicon', 'zenith'] },
-  { id: 'minimal-accent', label: 'Minimal Accent', labelZh: '极简强调', themeIds: ['neon-edge', 'quantum'] },
-  { id: 'giants', label: 'Tech Giants', labelZh: '科技大厂', themeIds: ['google', 'amazon', 'alibaba', 'huawei', 'meta', 'netflix', 'tesla', 'apple', 'microsoft', 'tencent', 'bytedance'] },
-  { id: 'giants-light', label: 'Tech Giants Light', labelZh: '大厂浅色', themeIds: ['google-light', 'amazon-light', 'alibaba-light', 'huawei-light', 'meta-light', 'netflix-light', 'tesla-light', 'apple-light', 'microsoft-light', 'tencent-light', 'bytedance-light'] },
-  { id: 'light', label: 'Light', labelZh: '浅色', themeIds: ['pure-white', 'soft-gray', 'warm-paper', 'cream', 'mint-light', 'sky-light', 'rose-light', 'lavender-light'] },
-];
+
 
 interface SlidePreviewProps {
   slide: SlideData | undefined;
@@ -32,6 +23,17 @@ const DESIGN_CONSTRAINTS = [
   "Theme: CSS Variables for consistent branding",
   "Assets: Inline SVGs only (No bitmaps)",
   "Layout: Unique styles for Cover/Ending"
+];
+
+// Group themes by category
+const THEME_CATEGORIES = [
+  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['executive', 'midnight', 'corporate-navy', 'platinum', 'deep-slate', 'business-green'] },
+  { id: 'minimal-dark', label: 'Minimal Dark', labelZh: '极简暗色', themeIds: ['minimal-dark', 'space-gray', 'graphite', 'ink', 'obsidian', 'carbon', 'prism', 'mono-blue', 'mono-amber'] },
+  { id: 'minimal-light', label: 'Minimal Light', labelZh: '极简浅色', themeIds: ['titanium', 'arctic', 'silicon', 'zenith'] },
+  { id: 'minimal-accent', label: 'Minimal Accent', labelZh: '极简强调', themeIds: ['neon-edge', 'quantum'] },
+  { id: 'giants', label: 'Tech Giants', labelZh: '大厂深色', themeIds: ['google', 'amazon', 'alibaba', 'huawei-dark', 'meta', 'netflix', 'tesla', 'apple', 'microsoft', 'tencent', 'bytedance'] },
+  { id: 'giants-light', label: 'Tech Giants Light', labelZh: '大厂浅色', themeIds: ['google-light', 'amazon-light', 'alibaba-light', 'huawei-light', 'meta-light', 'netflix-light', 'tesla-light', 'apple-light', 'microsoft-light', 'tencent-light', 'bytedance-light'] },
+  { id: 'light', label: 'Light', labelZh: '浅色', themeIds: ['pure-white', 'soft-gray', 'warm-paper', 'cream', 'mint-light', 'sky-light', 'rose-light', 'lavender-light'] },
 ];
 
 const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
@@ -68,6 +70,45 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
     '--c-warning': colors[7] || '#f59e0b',
     '--c-error': colors[8] || '#ef4444',
   } as React.CSSProperties;
+  
+  // Helper to ensure slide HTML has proper container styling with actual color values
+  const processSlideHtml = (html: string) => {
+    if (!html) return html;
+    
+    const bgColor = colors[0] || '#0a0a0a';
+    const textColor = colors[2] || '#ffffff';
+    const surfaceColor = colors[1] || '#1a1a1a';
+    const accentColor = colors[4] || '#3b82f6';
+    const mutedColor = colors[3] || '#a1a1aa';
+    
+    // Replace CSS variables with actual color values for preview reliability
+    html = html
+      .replace(/var\(--c-bg\)/g, bgColor)
+      .replace(/var\(--c-text\)/g, textColor)
+      .replace(/var\(--c-surface\)/g, surfaceColor)
+      .replace(/var\(--c-accent\)/g, accentColor)
+      .replace(/var\(--c-text-muted\)/g, mutedColor);
+    
+    // Ensure section element has proper dimensions and background
+    if (html.includes('<section')) {
+      if (!html.includes('width: 1920px') && !html.includes('width:1920px')) {
+        // Add dimensions if missing
+        html = html.replace(
+          /<section([^>]*)style="([^"]*)"/i,
+          `<section$1style="width: 1920px; height: 1080px; $2"`
+        );
+      }
+      if (!html.includes('background-color')) {
+        // Add background color if missing
+        html = html.replace(
+          /<section([^>]*)style="([^"]*)"/i,
+          `<section$1style="background-color: ${bgColor}; $2"`
+        );
+      }
+    }
+    
+    return html;
+  };
 
   // Auto-fit logic
   const fitToScreen = () => {
@@ -466,7 +507,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                   {/* The Dangerous HTML is rendered here. */}
                   <div
                     className="w-full h-full"
-                    dangerouslySetInnerHTML={{ __html: slide.htmlContent }}
+                    dangerouslySetInnerHTML={{ __html: processSlideHtml(slide.htmlContent || '') }}
                   />
 
                   {slide.isRegenerating && (

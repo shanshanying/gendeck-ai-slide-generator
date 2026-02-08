@@ -43,6 +43,7 @@ export interface PresentationConfig {
   apiSettings: ApiSettings;
   documentContent: string;
   strictMode?: boolean;
+  stylePresetId?: string; // User-selected style preset (overrides audience default)
 }
 
 export interface OutlineItem {
@@ -58,3 +59,31 @@ export interface ServiceResponse<T> {
 }
 
 export type Language = 'en' | 'zh';
+
+// Audience-Driven Style Preferences
+export interface StylePreferences {
+  // Visual theme
+  recommendedThemeId: string;
+  // Typography guidance
+  typography: {
+    fontFamily: string;
+    fontCharacteristics: string;
+    titleCase: 'sentence' | 'title' | 'uppercase' | 'lowercase';
+  };
+  // Layout guidance
+  layoutPreferences: {
+    primary: string[];
+    avoid: string[];
+  };
+  // Content style
+  contentStyle: {
+    tone: string;
+    formality: 'formal' | 'semi-formal' | 'casual';
+    bulletStyle: 'fragments' | 'sentences' | 'mixed';
+    emphasis: string[];
+  };
+  // Visual density
+  visualDensity: 'minimal' | 'balanced' | 'dense';
+  // Data visualization preference
+  dataVisualization: 'heavy' | 'moderate' | 'minimal';
+}
