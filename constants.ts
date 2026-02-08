@@ -334,6 +334,70 @@ export const COLOR_THEMES = [
   },
 
   // ============================================================
+  // 7. 女性力量 (Feminine Power)
+  // ============================================================
+  
+  // 7.1 酒红权力 · 职场女王 (Burgundy Power)
+  { 
+    id: 'burgundy-power', 
+    label: 'Burgundy Power', 
+    colors: ['#1A1A1A', '#242424', '#242424e6', '#F5F0E8', '#F0E8E0', '#A89890', '#706860', '#1A1A1A', '#3D3535', '#A04050', '#2A2A2A', '#A04050', '#D4AF37', '#C45C6C', '#6B9B6B', '#F4D03F', '#D45460', '#8BA5B5']
+  },
+  { 
+    id: 'burgundy-power-light', 
+    label: 'Burgundy Power Light', 
+    colors: ['#FAF8F7', '#FFFFFF', '#fffffff5', '#2D2D2D', '#2D2D2D', '#6B5B5B', '#A89898', '#FFFFFF', '#E8E0D8', '#722F37', '#F0E8E0', '#722F37', '#2D2D2D', '#8B404C', '#4A6B4A', '#B8860B', '#8B2635', '#5B6B7B']
+  },
+  
+  // 7.2 珍珠老钱 · 优雅智慧 (Pearl Old Money)
+  { 
+    id: 'pearl-oldmoney', 
+    label: 'Pearl Old Money', 
+    colors: ['#1C1C1C', '#2A2A2A', '#2a2a2ae0', '#F0F0E8', '#F5F5E8', '#A0A0A0', '#707070', '#1C1C1C', '#3D3D3D', '#F4D03F', '#2A2A2A', '#F4D03F', '#C9A86C', '#E8D8A8', '#8FBC8F', '#FFD700', '#D2691E', '#90A0B0']
+  },
+  { 
+    id: 'pearl-oldmoney-light', 
+    label: 'Pearl Old Money Light', 
+    colors: ['#F8F7F2', '#FFFFFF', '#ffffffe6', '#2C2C2C', '#2C2C2C', '#7A7A7A', '#B0B0B0', '#FFFFFF', '#E5E5E0', '#D4AF37', '#F0F0E8', '#D4AF37', '#8B7355', '#C0B090', '#6B8E6B', '#C9A227', '#A0522D', '#708090']
+  },
+  
+  // 7.3 紫罗兰叛逆 · 独立酷女孩 (Violet Rebellion)
+  { 
+    id: 'violet-rebellion', 
+    label: 'Violet Rebellion', 
+    colors: ['#0F0A1A', '#1A1028', '#1a1028d9', '#E8D5F0', '#F0E0F8', '#A080B0', '#604080', '#0F0A1A', '#3D2060', '#A855F7', '#1A1028', '#A855F7', '#FF4DA6', '#40E0FF', '#00E676', '#FFEA00', '#FF4D9E', '#40E0FF']
+  },
+  { 
+    id: 'violet-rebellion-light', 
+    label: 'Violet Rebellion Light', 
+    colors: ['#F5F3F8', '#FFFFFF', '#ffffffeb', '#1A0A2E', '#1A0A2E', '#6B5B8B', '#9B8BB0', '#FFFFFF', '#E0D5F0', '#7C3AED', '#F0E8F8', '#7C3AED', '#FF006E', '#00D9FF', '#00C853', '#FFD600', '#FF006E', '#00D9FF']
+  },
+  
+  // 7.4 赤陶大地 · 母性自然 (Terracotta Earth)
+  { 
+    id: 'terracotta-earth', 
+    label: 'Terracotta Earth', 
+    colors: ['#2A2520', '#363028', '#363028e0', '#F0E5D8', '#F5E6D8', '#A89888', '#786858', '#2A2520', '#4A4035', '#F49A80', '#363028', '#F49A80', '#B8D4A8', '#E8C8A0', '#9CC48C', '#E8C070', '#D47060', '#8BBBD0']
+  },
+  { 
+    id: 'terracotta-earth-light', 
+    label: 'Terracotta Earth Light', 
+    colors: ['#F9F6F0', '#FFFFFF', '#ffffffe6', '#4A4035', '#3D3530', '#8B7D70', '#B8A898', '#F9F6F0', '#E8E0D5', '#E07A5F', '#F0EAE0', '#E07A5F', '#9CAF88', '#D4A574', '#7A9B6A', '#D4A05A', '#B85C4A', '#6B8B9B']
+  },
+  
+  // 7.5 赛博姬械 · 未来科技 (Cyber Femme)
+  { 
+    id: 'cyber-femme', 
+    label: 'Cyber Femme', 
+    colors: ['#0A0F14', '#141B24', '#141b24d9', '#E0F0FF', '#E0F0FF', '#80A0B8', '#506070', '#0A0F14', '#2A3442', '#FF69B4', '#1A2332', '#FF69B4', '#40E0D0', '#DA70FF', '#40FFB0', '#FFE55C', '#FF69B4', '#40E0D0']
+  },
+  { 
+    id: 'cyber-femme-light', 
+    label: 'Cyber Femme Light', 
+    colors: ['#F0F4F8', '#FFFFFF', '#ffffffe0', '#0A192F', '#0A192F', '#4A5B6B', '#8A9BA8', '#FFFFFF', '#E0E8F0', '#FF1493', '#E8F0F8', '#FF1493', '#00CED1', '#BF00FF', '#00FA9A', '#FFD700', '#FF1493', '#00CED1']
+  },
+
+  // ============================================================
   // 6. 科技大厂 (Tech Giants)
   // ============================================================
   

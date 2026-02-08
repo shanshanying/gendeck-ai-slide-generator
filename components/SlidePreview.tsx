@@ -32,6 +32,7 @@ const THEME_CATEGORIES = [
   { id: 'tech', label: 'Tech Internet', labelZh: '科技互联网', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
   { id: 'minimalist', label: 'Minimalist', labelZh: '极简', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
   { id: 'artistic', label: 'Artistic', labelZh: '艺术', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
+  { id: 'feminine', label: 'Feminine Power', labelZh: '女性力量', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
 const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
