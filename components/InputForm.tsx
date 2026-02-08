@@ -159,21 +159,21 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
     
-    // Cycle through progress messages for better UX
-    const messages = [
-      t('analyzingContent'),
-      t('generatingOutline'),
-      t('generating')
-    ];
-    let index = 0;
-    setProgressMessage(messages[index]);
+    // Step 1/2: Outline Generation
+    setProgressMessage(`Step 1/2: ${t('analyzingContent')}`);
     
-    const interval = setInterval(() => {
-      index = (index + 1) % messages.length;
-      setProgressMessage(messages[index]);
+    const timeout1 = setTimeout(() => {
+      setProgressMessage(`Step 1/2: ${t('generatingOutline')}`);
     }, 2000);
     
-    return () => clearInterval(interval);
+    const timeout2 = setTimeout(() => {
+      setProgressMessage(`Step 1/2: ${t('generating')}`);
+    }, 4000);
+    
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
   }, [isGenerating, t]);
 
   // ========== PERSISTENCE EFFECTS ==========
@@ -202,6 +202,24 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   // Style persistence
   useEffect(() => localStorage.setItem('gendeck_override_style', overrideStyleId), [overrideStyleId]);
   useEffect(() => localStorage.setItem('gendeck_use_style_override', JSON.stringify(useStyleOverride)), [useStyleOverride]);
+
+  // ========== HTML IMPORT ==========
+  const handleHtmlImport = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onImportHtml) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const htmlContent = event.target?.result as string;
+        const result = parseExportedHtml(htmlContent);
+        onImportHtml(result);
+      } catch (error) {
+        alert(lang === 'zh' ? '导入失败：无法解析HTML文件' : 'Import failed: Could not parse HTML file');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   // ========== HELPERS ==========
   const handleCategoryChange = useCallback((newCategoryId: string) => {
@@ -915,6 +933,17 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 {t('sourceLabel')}
               </label>
               <div className="flex items-center gap-2">
+                {/* Import HTML Button */}
+                {onImportHtml && (
+                  <label className={cx(
+                    'cursor-pointer text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all border',
+                    'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border-purple-500/30 hover:border-purple-500/50'
+                  )} title={lang === 'zh' ? '导入之前生成的HTML演示文稿' : 'Import previously generated HTML deck'}>
+                    <FileUp className="w-3 h-3" />
+                    {lang === 'zh' ? '导入HTML' : 'Import HTML'}
+                    <input type="file" accept=".html,.htm" onChange={handleHtmlImport} className="hidden" />
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={() => setStrictMode(!strictMode)}
@@ -962,10 +991,40 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               {showPreview ? (
                 <div
                   className={cx(
-                    'w-full border rounded-lg px-4 py-3 text-sm overflow-y-auto resize-y min-h-[300px] max-h-[500px]',
-                    th.input.bg, th.input.border, 'text-slate-300'
+                    'w-full border rounded-lg px-4 py-3 text-sm overflow-y-auto resize-y min-h-[300px] max-h-[500px] prose prose-invert prose-sm max-w-none',
+                    th.input.bg, th.input.border
                   )}
-                  dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br/>') }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: content
+                      // Headers
+                      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-slate-200 mt-4 mb-2">$1</h3>')
+                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-slate-200 mt-5 mb-3">$1</h2>')
+                      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-slate-100 mt-6 mb-4">$1</h1>')
+                      // Bold and Italic
+                      .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-200">$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .replace(/__(.*?)__/g, '<strong class="text-slate-200">$1</strong>')
+                      .replace(/_(.*?)_/g, '<em>$1</em>')
+                      // Code
+                      .replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-purple-300 text-xs">$1</code>')
+                      // Lists
+                      .replace(/^\s*[-*+]\s+(.*$)/gim, '<li class="ml-4 text-slate-300">$1</li>')
+                      .replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="ml-4 text-slate-300 list-decimal">$1</li>')
+                      // Blockquotes
+                      .replace(/^>\s*(.*$)/gim, '<blockquote class="border-l-4 border-purple-500 pl-4 py-1 my-2 text-slate-400 italic">$1</blockquote>')
+                      // Links
+                      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:underline" target="_blank">$1</a>')
+                      // Line breaks and paragraphs
+                      .replace(/\n\n/g, '</p><p class="mb-3 text-slate-300">')
+                      .replace(/\n/g, '<br/>')
+                      // Wrap in paragraph if not already wrapped
+                      .replace(/^(.+)$/gim, '<p class="mb-3 text-slate-300">$1</p>')
+                      // Clean up empty paragraphs
+                      .replace(/<p class="mb-3 text-slate-300"><\/p>/g, '')
+                      // Fix nested paragraphs in lists
+                      .replace(/<li class="ml-4 text-slate-300"><p class="mb-3 text-slate-300">(.*?)<\/p><\/li>/g, '<li class="ml-4 text-slate-300">$1</li>')
+                  }}
                 />
               ) : (
                 <textarea
