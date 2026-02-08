@@ -153,6 +153,30 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const th = getThemeClasses(theme);
   const isDark = theme === 'dark';
 
+  // Update progress message when generating state changes
+  useEffect(() => {
+    if (!isGenerating) {
+      setProgressMessage('');
+      return;
+    }
+    
+    // Cycle through progress messages for better UX
+    const messages = [
+      t('analyzingContent'),
+      t('generatingOutline'),
+      t('generating')
+    ];
+    let index = 0;
+    setProgressMessage(messages[index]);
+    
+    const interval = setInterval(() => {
+      index = (index + 1) % messages.length;
+      setProgressMessage(messages[index]);
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [isGenerating, t]);
+
   // ========== PERSISTENCE EFFECTS ==========
   useEffect(() => localStorage.setItem('gendeck_topic', topic), [topic]);
   useEffect(() => localStorage.setItem('gendeck_count', slideCount.toString()), [slideCount]);
