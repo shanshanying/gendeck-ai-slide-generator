@@ -171,12 +171,17 @@ Slides are generated with strict constraints (enforced via prompts):
 - **Backgrounds**: Solid colors using CSS variables only (no gradients)
 - **Print Support**: `print-color-adjust: exact` for PDF export
 
-CSS Variables used:
-- `--c-bg`: Main background
-- `--c-surface`: Card/surface background
-- `--c-text`: Primary text
-- `--c-text-muted`: Secondary text
-- `--c-accent`: Brand/highlight color
+CSS Variables used (18-Color Standard Deck System):
+
+**Background** (4): `--c-bg`, `--c-bg-soft`, `--c-bg-glass`, `--c-bg-invert`
+
+**Text** (4): `--c-text`, `--c-text-muted`, `--c-text-faint`, `--c-text-invert`
+
+**Structure** (3): `--c-border`, `--c-border-strong`, `--c-divider`
+
+**Accent** (3): `--c-primary`, `--c-secondary`, `--c-accent`
+
+**Semantic** (4): `--c-success`, `--c-warning`, `--c-danger`, `--c-info`
 
 ## Data Types
 

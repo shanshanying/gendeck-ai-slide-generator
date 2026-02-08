@@ -27,13 +27,11 @@ const DESIGN_CONSTRAINTS = [
 
 // Group themes by category
 const THEME_CATEGORIES = [
-  { id: 'corporate', label: 'Corporate', labelZh: '商务', themeIds: ['executive', 'midnight', 'corporate-navy', 'platinum', 'deep-slate', 'business-green'] },
-  { id: 'minimal-dark', label: 'Minimal Dark', labelZh: '极简暗色', themeIds: ['minimal-dark', 'space-gray', 'graphite', 'ink', 'obsidian', 'carbon', 'prism', 'mono-blue', 'mono-amber'] },
-  { id: 'minimal-light', label: 'Minimal Light', labelZh: '极简浅色', themeIds: ['titanium', 'arctic', 'silicon', 'zenith'] },
-  { id: 'minimal-accent', label: 'Minimal Accent', labelZh: '极简强调', themeIds: ['neon-edge', 'quantum'] },
-  { id: 'giants', label: 'Tech Giants', labelZh: '大厂深色', themeIds: ['google', 'amazon', 'alibaba', 'huawei-dark', 'meta', 'netflix', 'tesla', 'apple', 'microsoft', 'tencent', 'bytedance'] },
-  { id: 'giants-light', label: 'Tech Giants Light', labelZh: '大厂浅色', themeIds: ['google-light', 'amazon-light', 'alibaba-light', 'huawei-light', 'meta-light', 'netflix-light', 'tesla-light', 'apple-light', 'microsoft-light', 'tencent-light', 'bytedance-light'] },
-  { id: 'light', label: 'Light', labelZh: '浅色', themeIds: ['pure-white', 'soft-gray', 'warm-paper', 'cream', 'mint-light', 'sky-light', 'rose-light', 'lavender-light'] },
+  { id: 'business', label: 'Business', labelZh: '商务', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
+  { id: 'government', label: 'Government', labelZh: '政企', themeIds: ['government-red', 'government-red-light', 'soe-navy', 'soe-navy-light', 'executive-gray', 'executive-gray-light'] },
+  { id: 'tech', label: 'Tech Internet', labelZh: '科技互联网', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
+  { id: 'minimalist', label: 'Minimalist', labelZh: '极简', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
+  { id: 'artistic', label: 'Artistic', labelZh: '艺术', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
 ];
 
 const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
@@ -56,38 +54,60 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   const isDark = theme === 'dark';
 
   // Parse palette to CSS variables
-  // Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
+  // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
+  //          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
   const colors = colorPalette.split(',').map(c => c.trim());
   
   const themeStyles = {
+    /* Background */
     '--c-bg': colors[0] || '#0a0a0a',
-    '--c-surface': colors[1] || '#1a1a1a',
-    '--c-text': colors[2] || '#ffffff',
-    '--c-text-muted': colors[3] || '#a1a1aa',
-    '--c-accent': colors[4] || '#3b82f6',
-    '--c-accent-2': colors[5] || '#8b5cf6',
-    '--c-success': colors[6] || '#22c55e',
-    '--c-warning': colors[7] || '#f59e0b',
-    '--c-error': colors[8] || '#ef4444',
+    '--c-bg-soft': colors[1] || '#141414',
+    '--c-bg-glass': colors[2] || '#0a0a0a80',
+    '--c-bg-invert': colors[3] || '#ffffff',
+    /* Text */
+    '--c-text': colors[4] || '#ffffff',
+    '--c-text-muted': colors[5] || '#a1a1aa',
+    '--c-text-faint': colors[6] || '#6b7280',
+    '--c-text-invert': colors[7] || '#0a0a0a',
+    /* Structure */
+    '--c-border': colors[8] || '#404040',
+    '--c-border-strong': colors[9] || '#525252',
+    '--c-divider': colors[10] || '#40404040',
+    /* Accent */
+    '--c-primary': colors[11] || '#3b82f6',
+    '--c-secondary': colors[12] || '#8b5cf6',
+    '--c-accent': colors[13] || '#3b82f6',
+    /* Semantic */
+    '--c-success': colors[14] || '#22c55e',
+    '--c-warning': colors[15] || '#f59e0b',
+    '--c-danger': colors[16] || '#ef4444',
+    '--c-info': colors[17] || '#06b6d4',
   } as React.CSSProperties;
   
   // Helper to ensure slide HTML has proper container styling with actual color values
   const processSlideHtml = (html: string) => {
     if (!html) return html;
     
-    const bgColor = colors[0] || '#0a0a0a';
-    const textColor = colors[2] || '#ffffff';
-    const surfaceColor = colors[1] || '#1a1a1a';
-    const accentColor = colors[4] || '#3b82f6';
-    const mutedColor = colors[3] || '#a1a1aa';
-    
     // Replace CSS variables with actual color values for preview reliability
     html = html
-      .replace(/var\(--c-bg\)/g, bgColor)
-      .replace(/var\(--c-text\)/g, textColor)
-      .replace(/var\(--c-surface\)/g, surfaceColor)
-      .replace(/var\(--c-accent\)/g, accentColor)
-      .replace(/var\(--c-text-muted\)/g, mutedColor);
+      .replace(/var\(--c-bg\)/g, colors[0] || '#0a0a0a')
+      .replace(/var\(--c-bg-soft\)/g, colors[1] || '#141414')
+      .replace(/var\(--c-bg-glass\)/g, colors[2] || '#0a0a0a80')
+      .replace(/var\(--c-bg-invert\)/g, colors[3] || '#ffffff')
+      .replace(/var\(--c-text\)/g, colors[4] || '#ffffff')
+      .replace(/var\(--c-text-muted\)/g, colors[5] || '#a1a1aa')
+      .replace(/var\(--c-text-faint\)/g, colors[6] || '#6b7280')
+      .replace(/var\(--c-text-invert\)/g, colors[7] || '#0a0a0a')
+      .replace(/var\(--c-border\)/g, colors[8] || '#404040')
+      .replace(/var\(--c-border-strong\)/g, colors[9] || '#525252')
+      .replace(/var\(--c-divider\)/g, colors[10] || '#40404040')
+      .replace(/var\(--c-primary\)/g, colors[11] || '#3b82f6')
+      .replace(/var\(--c-secondary\)/g, colors[12] || '#8b5cf6')
+      .replace(/var\(--c-accent\)/g, colors[13] || '#3b82f6')
+      .replace(/var\(--c-success\)/g, colors[14] || '#22c55e')
+      .replace(/var\(--c-warning\)/g, colors[15] || '#f59e0b')
+      .replace(/var\(--c-danger\)/g, colors[16] || '#ef4444')
+      .replace(/var\(--c-info\)/g, colors[17] || '#06b6d4');
     
     // Ensure section element has proper dimensions and background
     if (html.includes('<section')) {
@@ -102,7 +122,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         // Add background color if missing
         html = html.replace(
           /<section([^>]*)style="([^"]*)"/i,
-          `<section$1style="background-color: ${bgColor}; $2"`
+          `<section$1style="background-color: ${colors[0] || '#0a0a0a'}; $2"`
         );
       }
     }
@@ -325,10 +345,16 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                             )}
                             title={colorTheme.label}
                           >
-                            {/* Mini Color Preview */}
+                            {/* Mini Color Preview - Key Colors Only */}
                             <div className="flex gap-px mb-1 rounded overflow-hidden h-5">
-                              {colorTheme.colors.slice(0, 6).map((c, i) => (
-                                <div key={i} style={{backgroundColor: c}} className="flex-1" />
+                              {/* Show key colors: bg, text, primary, secondary, accent, border */}
+                              {[0, 4, 11, 12, 13, 8].map((colorIdx, i) => (
+                                <div 
+                                  key={i} 
+                                  style={{backgroundColor: colorTheme.colors[colorIdx]}} 
+                                  className="flex-1"
+                                  title={['Background', 'Text', 'Primary', 'Secondary', 'Accent', 'Border'][i]}
+                                />
                               ))}
                             </div>
                             <span className={cx(
@@ -364,33 +390,140 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
                  />
             </div>
             
-            {/* Live Color Preview */}
+            {/* Live Color Preview - 18 Color System */}
             <div className="mt-3 pt-3 border-t border-dashed border-gray-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <span className={cx('text-[11px] font-medium', th.text.muted)}>{t('livePreview')}</span>
               </div>
-              <div className="flex items-start gap-1.5 flex-wrap">
-                {localPalette.split(',').slice(0, 9).map((color, idx) => {
-                  const trimmedColor = color.trim();
-                  const isValid = /^#([0-9A-Fa-f]{3}){1,2}$/.test(trimmedColor);
-                  const labels = [t('bg'), t('surface'), t('text'), t('muted'), t('accent'), t('accent2'), t('success'), t('warning'), t('error')];
-                  const fullNames = ['Background', 'Surface', 'Text', 'Muted', 'Accent', 'Accent 2', 'Success', 'Warning', 'Error'];
-                  return (
-                    <div key={idx} className="flex flex-col items-center gap-1 w-8">
-                      <div 
-                        className={cx(
-                          'w-6 h-6 rounded-md border shadow-sm transition-all',
-                          isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
-                        )}
-                        style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                        title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
-                      />
-                      <span className={cx('text-[8px] font-bold uppercase tracking-wider text-center w-full truncate', th.text.muted)}>
-                        {labels[idx] || '-'}
-                      </span>
-                    </div>
-                  );
-                })}
+              {/* Background Group */}
+              <div className="mb-2">
+                <div className="flex items-center gap-1 mb-1">
+                  {localPalette.split(',').slice(0, 4).map((color, idx) => {
+                    const trimmedColor = color.trim();
+                    const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
+                    const labels = [t('cBg'), t('cBgSoft'), t('cBgGlass'), t('cBgInvert')];
+                    const fullNames = ['Background', 'Background Soft', 'Background Glass', 'Background Invert'];
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-0.5 w-10">
+                        <div 
+                          className={cx(
+                            'w-7 h-7 rounded-md border shadow-sm transition-all',
+                            isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                          )}
+                          style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                        />
+                        <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
+                          {labels[idx] || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Text Group */}
+              <div className="mb-2">
+                <div className="flex items-center gap-1 mb-1">
+                  {localPalette.split(',').slice(4, 8).map((color, idx) => {
+                    const trimmedColor = color.trim();
+                    const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
+                    const labels = [t('cText'), t('cTextMuted'), t('cTextFaint'), t('cTextInvert')];
+                    const fullNames = ['Text', 'Text Muted', 'Text Faint', 'Text Invert'];
+                    return (
+                      <div key={idx + 4} className="flex flex-col items-center gap-0.5 w-10">
+                        <div 
+                          className={cx(
+                            'w-7 h-7 rounded-md border shadow-sm transition-all',
+                            isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                          )}
+                          style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                        />
+                        <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
+                          {labels[idx] || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Structure Group */}
+              <div className="mb-2">
+                <div className="flex items-center gap-1 mb-1">
+                  {localPalette.split(',').slice(8, 11).map((color, idx) => {
+                    const trimmedColor = color.trim();
+                    const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
+                    const labels = [t('cBorder'), t('cBorderStrong'), t('cDivider')];
+                    const fullNames = ['Border', 'Border Strong', 'Divider'];
+                    return (
+                      <div key={idx + 8} className="flex flex-col items-center gap-0.5 w-10">
+                        <div 
+                          className={cx(
+                            'w-7 h-7 rounded-md border shadow-sm transition-all',
+                            isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                          )}
+                          style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                        />
+                        <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
+                          {labels[idx] || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Accent Group */}
+              <div className="mb-2">
+                <div className="flex items-center gap-1 mb-1">
+                  {localPalette.split(',').slice(11, 14).map((color, idx) => {
+                    const trimmedColor = color.trim();
+                    const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
+                    const labels = [t('cPrimary'), t('cSecondary'), t('cAccent')];
+                    const fullNames = ['Primary', 'Secondary', 'Accent'];
+                    return (
+                      <div key={idx + 11} className="flex flex-col items-center gap-0.5 w-10">
+                        <div 
+                          className={cx(
+                            'w-7 h-7 rounded-md border shadow-sm transition-all',
+                            isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                          )}
+                          style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                        />
+                        <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
+                          {labels[idx] || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Semantic Group */}
+              <div>
+                <div className="flex items-center gap-1">
+                  {localPalette.split(',').slice(14, 18).map((color, idx) => {
+                    const trimmedColor = color.trim();
+                    const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
+                    const labels = [t('cSuccess'), t('cWarning'), t('cDanger'), t('cInfo')];
+                    const fullNames = ['Success', 'Warning', 'Danger', 'Info'];
+                    return (
+                      <div key={idx + 14} className="flex flex-col items-center gap-0.5 w-10">
+                        <div 
+                          className={cx(
+                            'w-7 h-7 rounded-md border shadow-sm transition-all',
+                            isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
+                          )}
+                          style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                        />
+                        <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
+                          {labels[idx] || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

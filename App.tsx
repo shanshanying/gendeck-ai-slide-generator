@@ -738,29 +738,33 @@ const App: React.FC = () => {
 
   const getFullHtml = () => {
     const colors = colorPalette.split(',').map(c => c.trim());
-    // Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
+    // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
+    //          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
     const themeCss = `
     :root {
+      /* Background */
       --c-bg: ${colors[0] || '#0a0a0a'};
-      --c-surface: ${colors[1] || '#1a1a1a'};
-      --c-text: ${colors[2] || '#ffffff'};
-      --c-text-muted: ${colors[3] || '#a1a1aa'};
-      --c-accent: ${colors[4] || '#3b82f6'};
-      --c-accent-2: ${colors[5] || '#8b5cf6'};
-      --c-success: ${colors[6] || '#22c55e'};
-      --c-warning: ${colors[7] || '#f59e0b'};
-      --c-error: ${colors[8] || '#ef4444'};
-    }
-    .theme-light {
-      --c-bg: ${colors[2] || '#ffffff'};
-      --c-surface: #f3f4f6;
-      --c-text: ${colors[0] || '#0a0a0a'};
-      --c-text-muted: ${colors[0] ? colors[0] + 'aa' : '#0a0a0aaa'};
-      --c-accent: ${colors[4] || '#3b82f6'};
-      --c-accent-2: ${colors[5] || '#8b5cf6'};
-      --c-success: ${colors[6] || '#22c55e'};
-      --c-warning: ${colors[7] || '#f59e0b'};
-      --c-error: ${colors[8] || '#ef4444'};
+      --c-bg-soft: ${colors[1] || '#141414'};
+      --c-bg-glass: ${colors[2] || '#0a0a0a80'};
+      --c-bg-invert: ${colors[3] || '#ffffff'};
+      /* Text */
+      --c-text: ${colors[4] || '#ffffff'};
+      --c-text-muted: ${colors[5] || '#a1a1aa'};
+      --c-text-faint: ${colors[6] || '#6b7280'};
+      --c-text-invert: ${colors[7] || '#0a0a0a'};
+      /* Structure */
+      --c-border: ${colors[8] || '#404040'};
+      --c-border-strong: ${colors[9] || '#525252'};
+      --c-divider: ${colors[10] || '#40404040'};
+      /* Accent */
+      --c-primary: ${colors[11] || '#3b82f6'};
+      --c-secondary: ${colors[12] || '#8b5cf6'};
+      --c-accent: ${colors[13] || '#3b82f6'};
+      /* Semantic */
+      --c-success: ${colors[14] || '#22c55e'};
+      --c-warning: ${colors[15] || '#f59e0b'};
+      --c-danger: ${colors[16] || '#ef4444'};
+      --c-info: ${colors[17] || '#06b6d4'};
     }
     `;
 

@@ -90,279 +90,371 @@ export const PROVIDERS: {
   },
 ];
 
-// Format: [bg, surface, text, textMuted, accent, accent2, success, warning, error]
-// 9-Color System optimized for presentation decks (dark mode optimized)
+// Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
+//          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
+// 18-Color Standard Deck System
+// Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
+//          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
+// 18-Color Standard Deck System
 export const COLOR_THEMES = [
-  // === CORPORATE CLASSICS ===
+  // ============================================================
+  // 1. 商务类 (Business)
+  // ============================================================
+  
+  // 1.1 经典商务 · 深蓝金 (Classic Navy)
   { 
-    id: 'executive', 
-    label: 'Executive', 
-    colors: ['#0a0a0a', '#141414', '#ffffff', '#888888', '#ffffff', '#a3a3a3', '#525252', '#a16207', '#7f1d1d'] 
+    id: 'classic-navy', 
+    label: 'Classic Navy', 
+    colors: ['#0F1419', '#1A2332', '#1a2332cc', '#F0F4F8', '#F0F4F8', '#8B9AAA', '#5A6A7A', '#0F1419', '#2A3442', '#3A4856', '#1A2332', '#5B8DB8', '#E8D179', '#7AA8D0', '#4ADE80', '#FCD34D', '#F87171', '#60A5FA']
   },
   { 
-    id: 'midnight', 
-    label: 'Midnight', 
-    colors: ['#020617', '#0f172a', '#f8fafc', '#64748b', '#60a5fa', '#93c5fd', '#0369a1', '#854d0e', '#991b1b'] 
+    id: 'classic-navy-light', 
+    label: 'Classic Navy Light', 
+    colors: ['#FAF8F5', '#FFFFFF', '#ffffffd8', '#0F172A', '#1A2332', '#6B7B8C', '#9AA5B1', '#FFFFFF', '#E8E4DF', '#D0C8C0', '#F0EDE8', '#1E3A5F', '#C9A227', '#2E5A8F', '#2D8659', '#B8860B', '#8B2635', '#4A6FA5']
+  },
+  
+  // 1.2 现代商务 · 石墨青 (Modern Graphite)
+  { 
+    id: 'modern-graphite', 
+    label: 'Modern Graphite', 
+    colors: ['#171923', '#1A202C', '#1a202cd8', '#F7FAFC', '#F7FAFC', '#A0AEC0', '#718096', '#171923', '#2D3748', '#4A5568', '#171923', '#4FD1C5', '#A0AEC0', '#81E6D9', '#68D391', '#F6E05E', '#FC8181', '#63B3ED']
   },
   { 
-    id: 'corporate-navy', 
-    label: 'Corporate Navy', 
-    colors: ['#0f172a', '#1e3a5f', '#f8fafc', '#94a3b8', '#3b82f6', '#60a5fa', '#166534', '#92400e', '#9f1239'] 
+    id: 'modern-graphite-light', 
+    label: 'Modern Graphite Light', 
+    colors: ['#F5F7FA', '#FFFFFF', '#ffffffe5', '#1A202C', '#2C3E50', '#718096', '#A0AEC0', '#FFFFFF', '#E2E8F0', '#CBD5E0', '#EDF2F7', '#319795', '#2D3748', '#38B2AC', '#38A169', '#D69E2E', '#E53E3E', '#4299E1']
+  },
+  
+  // 1.3 金融商务 · 墨绿金 (Finance Emerald)
+  { 
+    id: 'finance-emerald', 
+    label: 'Finance Emerald', 
+    colors: ['#0C1F1A', '#112826', '#112826d8', '#ECFDF5', '#ECFDF5', '#6EE7B7', '#34D399', '#0C1F1A', '#1A3C34', '#2D5A50', '#112826', '#34D399', '#FCD34D', '#6EE7B7', '#4ADE80', '#FBBF24', '#F87171', '#22D3EE']
   },
   { 
-    id: 'platinum', 
-    label: 'Platinum', 
-    colors: ['#fafafa', '#f3f4f6', '#111827', '#6b7280', '#374151', '#9ca3af', '#14532d', '#78350f', '#7f1d1d'] 
-  },
-  { 
-    id: 'deep-slate', 
-    label: 'Deep Slate', 
-    colors: ['#0f172a', '#1e293b', '#f1f5f9', '#475569', '#64748b', '#94a3b8', '#065f46', '#78350f', '#7f1d1d'] 
-  },
-  { 
-    id: 'business-green', 
-    label: 'Business Green', 
-    colors: ['#022c22', '#064e3b', '#ecfdf5', '#6ee7b7', '#10b981', '#34d399', '#047857', '#a16207', '#991b1b'] 
-  },
-
-  // === MINIMALIST TECH ===
-  { 
-    id: 'minimal-dark', 
-    label: 'Minimal Dark', 
-    colors: ['#0a0a0a', '#141414', '#fafafa', '#737373', '#3b82f6', '#60a5fa', '#1e3a5f', '#854d0e', '#7f1d1d'] 
-  },
-  { 
-    id: 'space-gray', 
-    label: 'Space Gray', 
-    colors: ['#1c1c1e', '#2c2c2e', '#f5f5f7', '#8e8e93', '#0a84ff', '#5ac8fa', '#065f46', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'titanium', 
-    label: 'Titanium', 
-    colors: ['#f5f5f7', '#e8e8ed', '#1d1d1f', '#6e6e73', '#0071e3', '#5e5ce6', '#14532d', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'neon-edge', 
-    label: 'Neon Edge', 
-    colors: ['#09090b', '#18181b', '#fafafa', '#a1a1aa', '#06b6d4', '#22d3ee', '#0e7490', '#a16207', '#991b1b'] 
-  },
-  { 
-    id: 'arctic', 
-    label: 'Arctic', 
-    colors: ['#f8fafc', '#f1f5f9', '#0f172a', '#475569', '#0ea5e9', '#38bdf8', '#0369a1', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'graphite', 
-    label: 'Graphite', 
-    colors: ['#18181b', '#27272a', '#fafafa', '#a1a1aa', '#a1a1aa', '#d4d4d8', '#3f6212', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'silicon', 
-    label: 'Silicon', 
-    colors: ['#fafaf9', '#f5f5f4', '#292524', '#78716c', '#78716c', '#a8a29e', '#3f6212', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'quantum', 
-    label: 'Quantum', 
-    colors: ['#0f0518', '#1a0b2e', '#faf5ff', '#a855f7', '#a855f7', '#c084fc', '#6b21a8', '#be1850', '#9f1239'] 
-  },
-  { 
-    id: 'zenith', 
-    label: 'Zenith', 
-    colors: ['#ffffff', '#f0fdfa', '#134e4a', '#0d9488', '#14b8a6', '#2dd4bf', '#0f766e', '#a16207', '#9f1239'] 
-  },
-  { 
-    id: 'prism', 
-    label: 'Prism', 
-    colors: ['#0f0f0f', '#1a1a1a', '#ffffff', '#a3a3a3', '#ec4899', '#8b5cf6', '#581c87', '#be1850', '#9f1239'] 
-  },
-  { 
-    id: 'mono-blue', 
-    label: 'Mono Blue', 
-    colors: ['#0a0f1c', '#111827', '#f8fafc', '#6b7280', '#3b82f6', '#60a5fa', '#1e40af', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'mono-amber', 
-    label: 'Mono Amber', 
-    colors: ['#1c1917', '#292524', '#fafaf9', '#a8a29e', '#f59e0b', '#fbbf24', '#3f6212', '#92400e', '#991b1b'] 
+    id: 'finance-emerald-light', 
+    label: 'Finance Emerald Light', 
+    colors: ['#F9F8F6', '#FFFFFF', '#ffffffe0', '#064E3B', '#1C4532', '#588A6E', '#8FB5A0', '#FFFFFF', '#E5E0D8', '#D0C8B8', '#F0EDE8', '#064E3B', '#B8860B', '#065F46', '#059669', '#D97706', '#991B1B', '#0891B2']
   },
 
-  // === MINIMALIST CLEAN ===
+  // ============================================================
+  // 2. 政企类 (Government)
+  // ============================================================
+  
+  // 2.1 政务红 · 国旗红 (Government Red)
   { 
-    id: 'ink', 
-    label: 'True Ink', 
-    colors: ['#0a0a0a', '#171717', '#fafafa', '#737373', '#ffffff', '#a3a3a3', '#3f6212', '#92400e', '#7f1d1d'] 
+    id: 'government-red', 
+    label: 'Government Red', 
+    colors: ['#0A0A0A', '#1A1A1A', '#1a1a1ae5', '#F5F5F5', '#F5F5F5', '#808080', '#505050', '#0A0A0A', '#2A2A2A', '#404040', '#1A1A1A', '#FF2D2D', '#FFD700', '#FF5757', '#32CD32', '#FFA500', '#FF4444', '#60A5FA']
   },
   { 
-    id: 'obsidian', 
-    label: 'Obsidian', 
-    colors: ['#000000', '#1c1c1e', '#ffffff', '#8e8e93', '#007aff', '#5ac8fa', '#065f46', '#92400e', '#9f1239'] 
+    id: 'government-red-light', 
+    label: 'Government Red Light', 
+    colors: ['#FFFBF7', '#FFFFFF', '#fffbf7f2', '#1F1F1F', '#1F1F1F', '#737373', '#A3A3A3', '#FFFFFF', '#E8E0D8', '#D0C8C0', '#F5F0EB', '#DE2910', '#8B0000', '#FF1A1A', '#228B22', '#FF8C00', '#B22222', '#4169E1']
+  },
+  
+  // 2.2 国企蓝 · 藏青银 (SOE Navy)
+  { 
+    id: 'soe-navy', 
+    label: 'SOE Navy', 
+    colors: ['#020617', '#0F172A', '#0f172ae0', '#F8FAFC', '#F8FAFC', '#94A3B8', '#64748B', '#020617', '#1E293B', '#334155', '#0F172A', '#60A5FA', '#CBD5E1', '#93C5FD', '#4ADE80', '#FBBF24', '#F87171', '#38BDF8']
   },
   { 
-    id: 'carbon', 
-    label: 'Carbon Fiber', 
-    colors: ['#0c0c0c', '#1f1f1f', '#fafafa', '#6b7280', '#3b82f6', '#60a5fa', '#1e3a5f', '#92400e', '#7f1d1d'] 
+    id: 'soe-navy-light', 
+    label: 'SOE Navy Light', 
+    colors: ['#F5F7FA', '#FFFFFF', '#ffffffea', '#0F172A', '#0F172A', '#64748B', '#94A3B8', '#FFFFFF', '#E2E8F0', '#CBD5E1', '#F1F5F9', '#1E3A8A', '#64748B', '#2563EB', '#15803D', '#B45309', '#991B1B', '#0284C7']
+  },
+  
+  // 2.3 行政灰 · 低调奢华 (Executive Gray)
+  { 
+    id: 'executive-gray', 
+    label: 'Executive Gray', 
+    colors: ['#0C0A09', '#1C1917', '#1c1917d8', '#FAFAF9', '#FAFAF9', '#A8A29E', '#78716C', '#0C0A09', '#292524', '#44403C', '#1C1917', '#D6D3D1', '#F59E0B', '#E7E5E4', '#A3A3A3', '#D97706', '#DC2626', '#A8A29E']
+  },
+  { 
+    id: 'executive-gray-light', 
+    label: 'Executive Gray Light', 
+    colors: ['#FAFAF9', '#FFFFFF', '#fafaf9e5', '#292524', '#292524', '#78716C', '#A8A29E', '#FFFFFF', '#E7E5E4', '#D6D3D1', '#F5F5F4', '#44403C', '#A8A29E', '#57534E', '#57534E', '#B45309', '#7F1D1D', '#57534E']
   },
 
-  // === TECH GIANTS ===
+  // ============================================================
+  // 3. 科技互联网 (Tech Internet)
+  // ============================================================
+  
+  // 3.1 赛博蓝 · 电光蓝 (Cyber Electric)
+  { 
+    id: 'cyber-electric', 
+    label: 'Cyber Electric', 
+    colors: ['#050A14', '#0A192F', '#0a192fbf', '#E6F1FF', '#E6F1FF', '#8892B0', '#5F6B7A', '#050A14', '#1D4E89', '#2E5AA0', '#0A192F', '#00D4FF', '#FF006E', '#80EBFF', '#00E676', '#FFD600', '#FF5252', '#40C4FF']
+  },
+  { 
+    id: 'cyber-electric-light', 
+    label: 'Cyber Electric Light', 
+    colors: ['#F0F4F8', '#FFFFFF', '#ffffffcc', '#0A192F', '#0A192F', '#5F6B7A', '#8B95A8', '#FFFFFF', '#E0E6ED', '#C0C8D8', '#F0F4F8', '#00D4FF', '#FF006E', '#33DDFF', '#00C853', '#FFAB00', '#FF1744', '#00B0FF']
+  },
+  
+  // 3.2 极光紫 · 紫罗兰 (Aurora Violet)
+  { 
+    id: 'aurora-violet', 
+    label: 'Aurora Violet', 
+    colors: ['#0F0A1A', '#1A103C', '#1a103ccc', '#F3E8FF', '#F3E8FF', '#A78BFA', '#7C3AED', '#0F0A1A', '#4C1D95', '#5B21B6', '#1A103C', '#C084FC', '#22D3EE', '#D8B4FE', '#34D399', '#FBBF24', '#F87171', '#60A5FA']
+  },
+  { 
+    id: 'aurora-violet-light', 
+    label: 'Aurora Violet Light', 
+    colors: ['#F8F7FA', '#FFFFFF', '#ffffffd8', '#2D1B4E', '#2D1B4E', '#7C3AED', '#A78BFA', '#FFFFFF', '#E9E4F0', '#D4C4E0', '#F3F0F8', '#8B5CF6', '#06B6D4', '#A78BFA', '#10B981', '#F59E0B', '#EF4444', '#3B82F6']
+  },
+  
+  // 3.3 神经元橙 · 活力橙 (Neuron Orange)
+  { 
+    id: 'neuron-orange', 
+    label: 'Neuron Orange', 
+    colors: ['#0F0F0F', '#1A1A1A', '#1a1a1ad8', '#FAFAFA', '#FAFAFA', '#A3A3A3', '#737373', '#0F0F0F', '#333333', '#525252', '#1A1A1A', '#FF7A45', '#FF4D9E', '#FF9E7A', '#4ADE80', '#FCD34D', '#F87171', '#60A5FA']
+  },
+  { 
+    id: 'neuron-orange-light', 
+    label: 'Neuron Orange Light', 
+    colors: ['#FFFBF5', '#FFFFFF', '#ffffffe0', '#1F2937', '#1F2937', '#6B7280', '#9CA3AF', '#FFFFFF', '#FFE4D6', '#FFD0C0', '#FFF0E8', '#FF6B35', '#FF006E', '#FF8C5A', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
+  },
+
+  // ============================================================
+  // 4. 极简类 (Minimalist)
+  // ============================================================
+  
+  // 4.1 纸白 · 日系极简 (Paper White)
+  { 
+    id: 'paper-white', 
+    label: 'Paper White', 
+    colors: ['#1A1A1A', '#242424', '#242424d8', '#F5F5F0', '#F5F5F0', '#808080', '#505050', '#1A1A1A', '#333333', '#505050', '#242424', '#F5F5F0', '#A0A0A0', '#FFFFFF', '#7A8B7C', '#C4A574', '#B88B8B', '#8B9BAB']
+  },
+  { 
+    id: 'paper-white-light', 
+    label: 'Paper White Light', 
+    colors: ['#FDFCF8', '#FFFFFF', '#ffffffe5', '#2C2C2C', '#2C2C2C', '#8C8C8C', '#B8B8B8', '#FFFFFF', '#E8E8E8', '#D0D0D0', '#F5F5F5', '#2C2C2C', '#B8B8B8', '#404040', '#5A6B5C', '#B8956A', '#9B6B6B', '#6B7B8B']
+  },
+  
+  // 4.2 水泥灰 · 工业极简 (Concrete Gray)
+  { 
+    id: 'concrete-gray', 
+    label: 'Concrete Gray', 
+    colors: ['#262626', '#333333', '#333333cc', '#E0E0E0', '#E0E0E0', '#808080', '#606060', '#262626', '#404040', '#606060', '#333333', '#B0B0B0', '#909090', '#D0D0D0', '#8FA88F', '#C4B48A', '#C48A8A', '#90A0B0']
+  },
+  { 
+    id: 'concrete-gray-light', 
+    label: 'Concrete Gray Light', 
+    colors: ['#F2F2F2', '#FFFFFF', '#ffffffd8', '#404040', '#404040', '#808080', '#B0B0B0', '#FFFFFF', '#D9D9D9', '#BFBFBF', '#E6E6E6', '#808080', '#B0B0B0', '#606060', '#6B8E6B', '#B8A06B', '#B87070', '#708090']
+  },
+  
+  // 4.3 奶油色 · 温馨极简 (Cream Minimal)
+  { 
+    id: 'cream-minimal', 
+    label: 'Cream Minimal', 
+    colors: ['#1A1714', '#2A2520', '#2a2520d8', '#F5F0E8', '#F5F0E8', '#A69B8A', '#786C5C', '#1A1714', '#3A342E', '#5A5046', '#2A2520', '#D4B896', '#C9B896', '#E8D6B8', '#9AAF8E', '#E0C878', '#D4A0A0', '#9AABBB']
+  },
+  { 
+    id: 'cream-minimal-light', 
+    label: 'Cream Minimal Light', 
+    colors: ['#FAF8F5', '#FFFFFF', '#ffffffe0', '#3D3833', '#3D3833', '#8B8279', '#B0A89F', '#FFFFFF', '#E8E0D5', '#D0C8BC', '#F0EAE0', '#A67B5B', '#C4A77D', '#8B6548', '#7A8B6E', '#C9A959', '#B87676', '#7A8B9B']
+  },
+
+  // ============================================================
+  // 5. 艺术类 (Artistic)
+  // ============================================================
+  
+  // 5.1 莫兰迪 · 高级灰 (Morandi)
+  { 
+    id: 'morandi', 
+    label: 'Morandi', 
+    colors: ['#2A2826', '#363432', '#363432d8', '#E8E4E0', '#E8E4E0', '#989088', '#706860', '#2A2826', '#42403E', '#5A5856', '#363432', '#D4C4B8', '#B8C4B0', '#E0D4C8', '#A8B8A0', '#D4C8A8', '#C8A8A8', '#B0B8C0']
+  },
+  { 
+    id: 'morandi-light', 
+    label: 'Morandi Light', 
+    colors: ['#F5F3F0', '#FAFAF8', '#fafaf8e5', '#4A4A48', '#4A4A48', '#8B8B89', '#B0A8A0', '#FFFFFF', '#E0DCD5', '#C8C4BC', '#EBE8E3', '#B5A397', '#A8B5A0', '#9B8B7D', '#8FA088', '#C4B598', '#B59898', '#98A0A8']
+  },
+  
+  // 5.2 包豪斯 · 三原色 (Bauhaus)
+  { 
+    id: 'bauhaus', 
+    label: 'Bauhaus', 
+    colors: ['#0A0A0A', '#1A1A1A', '#1a1a1ae5', '#FFFFFF', '#FFFFFF', '#888888', '#555555', '#0A0A0A', '#333333', '#666666', '#1A1A1A', '#FF4757', '#48DBFB', '#FECA57', '#1DD1A1', '#FECA57', '#FF6B6B', '#48DBFB']
+  },
+  { 
+    id: 'bauhaus-light', 
+    label: 'Bauhaus Light', 
+    colors: ['#FFFFFF', '#F5F5F5', '#fffffff2', '#1A1A1A', '#1A1A1A', '#666666', '#999999', '#FFFFFF', '#E0E0E0', '#BFBFBF', '#F0F0F0', '#E63946', '#457B9D', '#F4A261', '#2A9D8F', '#E9C46A', '#E63946', '#457B9D']
+  },
+  
+  // 5.3 复古胶片 · 暖棕 (Vintage Film)
+  { 
+    id: 'vintage-film', 
+    label: 'Vintage Film', 
+    colors: ['#1A1410', '#2A2018', '#2a2018d8', '#F5E6D3', '#F5E6D3', '#A89080', '#685848', '#1A1410', '#3A2C20', '#5A4838', '#2A2018', '#CD853F', '#D2B48C', '#DEB887', '#8FBC8F', '#F4A460', '#D2691E', '#8FA0B0']
+  },
+  { 
+    id: 'vintage-film-light', 
+    label: 'Vintage Film Light', 
+    colors: ['#F5F1E8', '#FFFCF5', '#fffcf5e0', '#3D3229', '#3D3229', '#8B7355', '#B8A090', '#FFFCF5', '#E0D5C5', '#C8B8A8', '#EBE5D8', '#8B4513', '#D4A574', '#A0522D', '#556B2F', '#CD853F', '#A0522D', '#708090']
+  },
+
+  // 5.4 漫威宇宙 · 英雄本色 (Marvel Universe)
+  { 
+    id: 'marvel', 
+    label: 'Marvel', 
+    colors: ['#0D0D0D', '#1A1A1A', '#1a1a1acc', '#FFD700', '#F0F0F0', '#808080', '#505050', '#0D0D0D', '#333333', '#FF4444', '#2A2A2A', '#FF4444', '#4D79FF', '#FFE55C', '#00E676', '#FF9100', '#FF4444', '#4D79FF']
+  },
+  { 
+    id: 'marvel-light', 
+    label: 'Marvel Light', 
+    colors: ['#F5F5F5', '#FFFFFF', '#ffffffe5', '#0D0D0D', '#0D0D0D', '#4A4A4A', '#888888', '#FFFFFF', '#E0E0E0', '#E23636', '#E23636', '#E23636', '#0033CC', '#FFD700', '#00C853', '#FF6D00', '#E23636', '#0033CC']
+  },
+
+  // 5.5 美拉德 · 焦糖棕 (Maillard Caramel)
+  { 
+    id: 'maillard', 
+    label: 'Maillard', 
+    colors: ['#1A1410', '#2A211B', '#2a211be0', '#FAF7F2', '#F5F0E8', '#A89080', '#786C5C', '#1A1410', '#3D3229', '#C4A77D', '#2A211B', '#C4A77D', '#D4B896', '#E8C4A0', '#8A9B6F', '#D4B896', '#A65D3D', '#8B9BAB']
+  },
+  { 
+    id: 'maillard-light', 
+    label: 'Maillard Light', 
+    colors: ['#FAF7F2', '#F5F0E8', '#f5f0e8eb', '#3D3229', '#3D3229', '#8B7355', '#B8A090', '#FAF7F2', '#E8E0D5', '#A67B5B', '#F0EAE0', '#A67B5B', '#8B6239', '#D4A574', '#5A6B47', '#B8956A', '#8B4513', '#6B7B8B']
+  },
+
+  // 5.6 藕粉灰 · 温柔雅致 (Lotus Pink)
+  { 
+    id: 'lotus-pink', 
+    label: 'Lotus Pink', 
+    colors: ['#2A2527', '#363033', '#363033e0', '#F5E6E8', '#F0E5E7', '#A898A0', '#786870', '#2A2527', '#4A4045', '#E8A5B5', '#363033', '#E8A5B5', '#B8A8B0', '#F4C2C2', '#A8C4A8', '#E8D4A8', '#E89090', '#A8C0D0']
+  },
+  { 
+    id: 'lotus-pink-light', 
+    label: 'Lotus Pink Light', 
+    colors: ['#FDF8F8', '#FFFFFF', '#fffffff5', '#4A4A4A', '#3D3D3D', '#8B7B7B', '#B8A8A8', '#FDF8F8', '#E8D8D8', '#D4A5A5', '#F0E5E5', '#D4A5A5', '#6B6B6B', '#E8B4B4', '#8FA68F', '#D4B896', '#C47070', '#8FA0B0']
+  },
+
+  // ============================================================
+  // 6. 科技大厂 (Tech Giants)
+  // ============================================================
+  
+  // 6.1 Google
   { 
     id: 'google', 
     label: 'Google', 
-    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#4285f4', '#34a853', '#166534', '#92400e', '#b91c1c'] 
+    colors: ['#0D1117', '#161B22', '#161b22d8', '#FFFFFF', '#FFFFFF', '#8B949E', '#5A6570', '#0D1117', '#30363D', '#484F58', '#161B22', '#4285F4', '#34A853', '#EA4335', '#34A853', '#FBBC05', '#EA4335', '#4285F4']
   },
-  { 
-    id: 'amazon', 
-    label: 'Amazon', 
-    colors: ['#0f1419', '#1a2332', '#ffffff', '#94a3b8', '#ff9900', '#00a8e1', '#065f46', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'alibaba', 
-    label: 'Alibaba', 
-    colors: ['#0D1117', '#161B22', '#FFFFFF', '#8B949E', '#FF7A1A', '#40A9FF', '#10B981', '#F59E0B', '#EF4444'] 
-  },
-  { 
-    id: 'huawei', 
-    label: 'Huawei', 
-    colors: ['#FFFFFF', '#F5F7FA', '#000000', '#666666', '#FA6400', '#E60012', '#10B981', '#F59E0B', '#EF4444'] 
-  },
-  { 
-    id: 'huawei-dark', 
-    label: 'Huawei Dark', 
-    colors: ['#0D1117', '#161B22', '#FFFFFF', '#8B949E', '#FF7A1A', '#FF4D4F', '#34D399', '#FBBF24', '#F87171'] 
-  },
-  { 
-    id: 'meta', 
-    label: 'Meta', 
-    colors: ['#0f1115', '#1c1e21', '#ffffff', '#8b949e', '#0668e1', '#0081fb', '#14532d', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'netflix', 
-    label: 'Netflix', 
-    colors: ['#000000', '#141414', '#ffffff', '#b3b3b3', '#e50914', '#ff4d4d', '#14532d', '#92400e', '#b91c1c'] 
-  },
-  { 
-    id: 'tesla', 
-    label: 'Tesla', 
-    colors: ['#0a0a0a', '#171717', '#ffffff', '#888888', '#cc0000', '#e82127', '#14532d', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'apple', 
-    label: 'Apple', 
-    colors: ['#000000', '#1d1d1f', '#f5f5f7', '#86868b', '#0071e3', '#2997ff', '#14532d', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'microsoft', 
-    label: 'Microsoft', 
-    colors: ['#0d1117', '#161b22', '#ffffff', '#8b949e', '#0078d4', '#106ebe', '#14532d', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'tencent', 
-    label: 'Tencent', 
-    colors: ['#082f49', '#0c4a6e', '#f0f9ff', '#7dd3fc', '#38bdf8', '#7dd3fc', '#065f46', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'bytedance', 
-    label: 'ByteDance', 
-    colors: ['#0a0a0a', '#1a1a1a', '#ffffff', '#a1a1aa', '#00f2ea', '#ff0050', '#14532d', '#92400e', '#991b1b'] 
-  },
-
-  // === TECH GIANTS LIGHT ===
   { 
     id: 'google-light', 
     label: 'Google Light', 
-    colors: ['#ffffff', '#f8f9fa', '#202124', '#5f6368', '#1557b0', '#0d5c26', '#14532d', '#92400e', '#991b1b'] 
+    colors: ['#FFFFFF', '#F8F9FA', '#f8f9fae0', '#202124', '#202124', '#5F6368', '#9AA0A6', '#FFFFFF', '#DADCE0', '#BDC1C6', '#F1F3F4', '#1A73E8', '#188038', '#EA4335', '#188038', '#F9AB00', '#D93025', '#4285F4']
   },
+  
+  // 6.2 Tesla
   { 
-    id: 'amazon-light', 
-    label: 'Amazon Light', 
-    colors: ['#ffffff', '#f3f3f3', '#0f1111', '#565959', '#92400e', '#1557b0', '#14532d', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'alibaba-light', 
-    label: 'Alibaba Light', 
-    colors: ['#FFFFFF', '#F5F7FA', '#1A1A1A', '#666666', '#FF6701', '#007ACC', '#10B981', '#F59E0B', '#EF4444'] 
-  },
-  { 
-    id: 'huawei-light', 
-    label: 'Huawei Light', 
-    colors: ['#FFFFFF', '#F5F7FA', '#000000', '#666666', '#FA6400', '#E60012', '#10B981', '#F59E0B', '#EF4444'] 
-  },
-  { 
-    id: 'meta-light', 
-    label: 'Meta Light', 
-    colors: ['#ffffff', '#f5f6f7', '#1c1e21', '#606770', '#1557b0', '#0066a1', '#14532d', '#92400e', '#9f1239'] 
-  },
-  { 
-    id: 'netflix-light', 
-    label: 'Netflix Light', 
-    colors: ['#ffffff', '#f5f5f5', '#000000', '#757575', '#b91c1c', '#dc2626', '#14532d', '#92400e', '#9f1239'] 
+    id: 'tesla', 
+    label: 'Tesla', 
+    colors: ['#0A0A0A', '#171717', '#171717d8', '#FFFFFF', '#FFFFFF', '#888888', '#555555', '#0A0A0A', '#333333', '#CC0000', '#171717', '#E82127', '#CC0000', '#FF4D4D', '#22C55E', '#F59E0B', '#E82127', '#3B82F6']
   },
   { 
     id: 'tesla-light', 
     label: 'Tesla Light', 
-    colors: ['#ffffff', '#f4f4f4', '#171a20', '#5c5e62', '#7f1d1d', '#b91c1c', '#14532d', '#92400e', '#7f1d1d'] 
+    colors: ['#FFFFFF', '#F4F4F4', '#f4f4f4e0', '#171A20', '#171A20', '#5C5E62', '#8E9094', '#FFFFFF', '#E0E0E0', '#D1D1D1', '#F0F0F0', '#CC0000', '#E82127', '#FF3333', '#16A34A', '#D97706', '#DC2626', '#2563EB']
+  },
+  
+  // 6.3 Alibaba
+  { 
+    id: 'alibaba', 
+    label: 'Alibaba', 
+    colors: ['#0D1117', '#161B22', '#161b22d8', '#FFFFFF', '#FFFFFF', '#8B949E', '#5A6570', '#0D1117', '#FF6600', '#FF8533', '#161B22', '#FF6600', '#FF8533', '#FF9900', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
+  },
+  { 
+    id: 'alibaba-light', 
+    label: 'Alibaba Light', 
+    colors: ['#FFFFFF', '#FFF5F0', '#fff5f0e0', '#1A1A1A', '#1A1A1A', '#666666', '#999999', '#FFFFFF', '#FFE4D6', '#FFD0C0', '#FFF0E8', '#FF6600', '#FF8533', '#FF9900', '#16A34A', '#D97706', '#DC2626', '#2563EB']
+  },
+  
+  // 6.4 Huawei
+  { 
+    id: 'huawei', 
+    label: 'Huawei', 
+    colors: ['#0A0A0A', '#141414', '#141414d8', '#FFFFFF', '#FFFFFF', '#A0A0A0', '#707070', '#0A0A0A', '#CF0A2C', '#FF1A3D', '#141414', '#CF0A2C', '#FF1A3D', '#FA6400', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
+  },
+  { 
+    id: 'huawei-light', 
+    label: 'Huawei Light', 
+    colors: ['#FFFFFF', '#F7F7F7', '#f7f7f7e0', '#232527', '#232527', '#666666', '#999999', '#FFFFFF', '#FFE4E8', '#FFC8D0', '#FFF0F2', '#CF0A2C', '#FF1A3D', '#FA6400', '#16A34A', '#D97706', '#DC2626', '#2563EB']
+  },
+  
+  // 6.5 Apple
+  { 
+    id: 'apple', 
+    label: 'Apple', 
+    colors: ['#000000', '#1D1D1F', '#1d1d1fd8', '#F5F5F7', '#F5F5F7', '#86868B', '#636366', '#000000', '#424245', '#6E6E73', '#1D1D1F', '#0071E3', '#5E5CE6', '#34C759', '#34C759', '#FF9500', '#FF3B30', '#5AC8FA']
   },
   { 
     id: 'apple-light', 
     label: 'Apple Light', 
-    colors: ['#ffffff', '#f5f5f7', '#1d1d1f', '#6e6e73', '#0066a1', '#1557b0', '#14532d', '#92400e', '#9f1239'] 
+    colors: ['#FFFFFF', '#F5F5F7', '#f5f5f7e0', '#1D1D1F', '#1D1D1F', '#6E6E73', '#AEAEB2', '#FFFFFF', '#D2D2D7', '#C4C4C7', '#E8E8ED', '#0071E3', '#5E5CE6', '#34C759', '#16A34A', '#D97706', '#DC2626', '#0A84FF']
+  },
+  
+  // 6.6 Microsoft
+  { 
+    id: 'microsoft', 
+    label: 'Microsoft', 
+    colors: ['#0D1117', '#161B22', '#161b22d8', '#FFFFFF', '#FFFFFF', '#8B949E', '#5A6570', '#0D1117', '#30363D', '#484F58', '#161B22', '#00A4EF', '#7FBA00', '#FFB900', '#7FBA00', '#FFB900', '#F25022', '#00A4EF']
   },
   { 
     id: 'microsoft-light', 
     label: 'Microsoft Light', 
-    colors: ['#ffffff', '#f8f9fa', '#323130', '#605e5c', '#1557b0', '#1557b0', '#14532d', '#92400e', '#991b1b'] 
+    colors: ['#FFFFFF', '#F8F9FA', '#f8f9fae0', '#323130', '#323130', '#605E5C', '#A19F9D', '#FFFFFF', '#C8C6C4', '#B3B0AD', '#EDEBE9', '#0078D4', '#107C10', '#FFB900', '#107C10', '#D97706', '#D83B01', '#0078D4']
+  },
+  
+  // 6.7 Meta
+  { 
+    id: 'meta', 
+    label: 'Meta', 
+    colors: ['#0F1115', '#1C1E21', '#1c1e21d8', '#FFFFFF', '#FFFFFF', '#8B949E', '#5A6570', '#0F1115', '#0668E1', '#1877F2', '#1C1E21', '#0668E1', '#0081FB', '#42B72A', '#42B72A', '#F7B928', '#FA383E', '#00A4FF']
   },
   { 
-    id: 'tencent-light', 
-    label: 'Tencent Light', 
-    colors: ['#ffffff', '#f0f9ff', '#0c4a6e', '#075985', '#1557b0', '#0e7490', '#065f46', '#92400e', '#991b1b'] 
+    id: 'meta-light', 
+    label: 'Meta Light', 
+    colors: ['#FFFFFF', '#F5F6F7', '#f5f6f7e0', '#1C1E21', '#1C1E21', '#606770', '#8A8D91', '#FFFFFF', '#DADDE1', '#CCD0D5', '#E4E6EB', '#1877F2', '#42B72A', '#0081FB', '#16A34A', '#D97706', '#DC2626', '#00A4FF']
+  },
+  
+  // 6.8 Netflix
+  { 
+    id: 'netflix', 
+    label: 'Netflix', 
+    colors: ['#000000', '#141414', '#141414d8', '#FFFFFF', '#FFFFFF', '#B3B3B3', '#808080', '#000000', '#333333', '#E50914', '#141414', '#E50914', '#FF4D4D', '#B20710', '#22C55E', '#F59E0B', '#E50914', '#3B82F6']
+  },
+  { 
+    id: 'netflix-light', 
+    label: 'Netflix Light', 
+    colors: ['#FFFFFF', '#F5F5F5', '#f5f5f5e0', '#000000', '#000000', '#757575', '#A3A3A3', '#FFFFFF', '#E0E0E0', '#D1D1D1', '#F0F0F0', '#E50914', '#FF4D4D', '#B20710', '#16A34A', '#D97706', '#DC2626', '#2563EB']
+  },
+  
+  // 6.9 ByteDance
+  { 
+    id: 'bytedance', 
+    label: 'ByteDance', 
+    colors: ['#0A0A0A', '#1A1A1A', '#1a1a1ad8', '#FFFFFF', '#FFFFFF', '#A1A1AA', '#707070', '#0A0A0A', '#00F2EA', '#FF0050', '#1A1A1A', '#00F2EA', '#FF0050', '#00D2DB', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
   },
   { 
     id: 'bytedance-light', 
     label: 'ByteDance Light', 
-    colors: ['#ffffff', '#f9fafb', '#111827', '#374151', '#0f766e', '#991b1b', '#14532d', '#92400e', '#991b1b'] 
+    colors: ['#FFFFFF', '#F9FAFB', '#f9fafbe0', '#111827', '#111827', '#374151', '#9CA3AF', '#FFFFFF', '#CCFCFB', '#FFD6E5', '#F3F4F6', '#00C7C0', '#E6004C', '#00A8B0', '#16A34A', '#D97706', '#DC2626', '#2563EB']
   },
-
-  // === LIGHT THEMES ===
+  
+  // 6.10 Tencent
   { 
-    id: 'pure-white', 
-    label: 'Pure White', 
-    colors: ['#ffffff', '#f1f5f9', '#0f172a', '#475569', '#1e40af', '#581c87', '#14532d', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'soft-gray', 
-    label: 'Soft Gray', 
-    colors: ['#f8fafc', '#e2e8f0', '#1e293b', '#475569', '#1e40af', '#581c87', '#14532d', '#92400e', '#991b1b'] 
+    id: 'tencent', 
+    label: 'Tencent', 
+    colors: ['#082F49', '#0C4A6E', '#0c4a6ed8', '#F0F9FF', '#F0F9FF', '#7DD3FC', '#38BDF8', '#082F49', '#0284C7', '#0369A1', '#0C4A6E', '#00A1D6', '#00C3FF', '#0052D9', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
   },
   { 
-    id: 'warm-paper', 
-    label: 'Warm Paper', 
-    colors: ['#fafaf9', '#e7e5e4', '#292524', '#57534e', '#9a3412', '#78350f', '#3f6212', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'cream', 
-    label: 'Cream', 
-    colors: ['#fefce8', '#fef9c3', '#422006', '#713f12', '#854d0e', '#a16207', '#3f6212', '#92400e', '#7f1d1d'] 
-  },
-  { 
-    id: 'mint-light', 
-    label: 'Mint Light', 
-    colors: ['#f0fdf4', '#dcfce7', '#14532d', '#166534', '#15803d', '#166534', '#064e3b', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'sky-light', 
-    label: 'Sky Light', 
-    colors: ['#f0f9ff', '#e0f2fe', '#0c4a6e', '#075985', '#075985', '#0369a1', '#065f46', '#92400e', '#991b1b'] 
-  },
-  { 
-    id: 'rose-light', 
-    label: 'Rose Light', 
-    colors: ['#fff1f2', '#ffe4e6', '#881337', '#9f1239', '#be123c', '#9f1239', '#14532d', '#9a3412', '#991b1b'] 
-  },
-  { 
-    id: 'lavender-light', 
-    label: 'Lavender Light', 
-    colors: ['#faf5ff', '#f3e8ff', '#581c87', '#6b21a8', '#6d28d9', '#7c3aed', '#14532d', '#92400e', '#991b1b'] 
+    id: 'tencent-light', 
+    label: 'Tencent Light', 
+    colors: ['#FFFFFF', '#F0F9FF', '#f0f9ffe0', '#0C4A6E', '#0C4A6E', '#075985', '#38BDF8', '#FFFFFF', '#BAE6FD', '#7DD3FC', '#E0F2FE', '#00A1D6', '#00C3FF', '#0052D9', '#16A34A', '#D97706', '#DC2626', '#2563EB']
   },
 ];
 
@@ -496,7 +588,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Authoritative, data-driven, minimalist. Best for executives and board presentations.',
       zh: '权威、数据驱动、极简。适合高管和董事会演示。'
     },
-    recommendedThemes: ['executive', 'midnight', 'corporate-navy', 'platinum', 'obsidian', 'carbon'],
+    recommendedThemes: ['classic-navy', 'modern-graphite', 'finance-emerald', 'executive-gray', 'soe-navy'],
     typography: {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontCharacteristics: 'Clean, bold, confident. Large impactful titles (56-72px). Generous letter-spacing on headers.',
@@ -523,7 +615,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Professional, trustworthy, conservative. Ideal for investors and financial presentations.',
       zh: '专业、可信赖、保守。适合投资者和金融演示。'
     },
-    recommendedThemes: ['executive', 'platinum', 'titanium', 'midnight', 'silicon', 'warm-paper'],
+    recommendedThemes: ['classic-navy-light', 'modern-graphite-light', 'finance-emerald-light', 'executive-gray-light', 'cream-minimal-light'],
     typography: {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontCharacteristics: 'Professional, trustworthy. Mix of serif for gravitas and sans-serif for clarity. Conservative sizing.',
@@ -550,7 +642,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Traditional, authoritative, policy-focused. Suitable for government and SOE presentations.',
       zh: '传统、权威、政策导向。适合政府和国企演示。'
     },
-    recommendedThemes: ['corporate-navy', 'deep-slate', 'warm-paper', 'pure-white', 'soft-gray', 'business-green'],
+    recommendedThemes: ['soe-navy', 'government-red', 'executive-gray', 'executive-gray-light', 'soe-navy-light'],
     typography: {
       fontFamily: '"Noto Serif", "Noto Serif SC", Georgia, serif',
       fontCharacteristics: 'Traditional, authoritative serif fonts. Conservative, understated elegance. Stable and trustworthy appearance.',
@@ -577,7 +669,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Precise, detailed, architecture-focused. Perfect for engineering and technical teams.',
       zh: '精确、详细、架构导向。适合工程和技术团队。'
     },
-    recommendedThemes: ['minimal-dark', 'space-gray', 'neon-edge', 'arctic', 'graphite', 'quantum'],
+    recommendedThemes: ['cyber-electric', 'aurora-violet', 'neuron-orange', 'concrete-gray', 'paper-white'],
     typography: {
       fontFamily: '"SF Mono", Monaco, "Cascadia Code", monospace',
       fontCharacteristics: 'Monospace or technical sans-serif. Precise, clean. Code snippets use monospace.',
@@ -604,7 +696,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Bold, energetic, opportunity-focused. Great for entrepreneurs and growth-stage companies.',
       zh: '大胆、活力、机会导向。适合创业者和成长期公司。'
     },
-    recommendedThemes: ['alibaba', 'bytedance', 'huawei', 'tesla', 'meta', 'amazon', 'netflix'],
+    recommendedThemes: ['cyber-electric', 'neuron-orange', 'aurora-violet', 'bauhaus', 'concrete-gray'],
     typography: {
       fontFamily: 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
       fontCharacteristics: 'Bold, energetic, modern. Strong contrasts. Business-impact focused.',
@@ -631,7 +723,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Clean, modern, user-centric. Ideal for product managers and UX presentations.',
       zh: '简洁、现代、用户导向。适合产品经理和UX演示。'
     },
-    recommendedThemes: ['apple', 'meta', 'google', 'minimal-dark', 'zenith', 'prism', 'arctic'],
+    recommendedThemes: ['modern-graphite', 'paper-white-light', 'cream-minimal-light', 'morandi-light', 'concrete-gray-light'],
     typography: {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       fontCharacteristics: 'Clean, modern, user-friendly. Balanced hierarchy.',
@@ -658,7 +750,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Persuasive, benefit-driven, attention-grabbing. Best for marketing and sales teams.',
       zh: '有说服力、利益导向、吸引眼球。适合营销和销售团队。'
     },
-    recommendedThemes: ['bytedance', 'netflix', 'prism', 'neon-edge', 'alibaba', 'tencent'],
+    recommendedThemes: ['cyber-electric', 'neuron-orange', 'aurora-violet', 'bauhaus', 'vintage-film'],
     typography: {
       fontFamily: '"Impact", "Arial Black", sans-serif',
       fontCharacteristics: 'Bold, attention-grabbing, high energy. Strong contrasts and vibrant accents.',
@@ -685,7 +777,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Friendly, approachable, benefit-focused. Perfect for consumer-facing presentations.',
       zh: '友好、亲和、利益导向。适合面向消费者的演示。'
     },
-    recommendedThemes: ['apple-light', 'google-light', 'cream', 'mint-light', 'rose-light', 'sky-light'],
+    recommendedThemes: ['paper-white-light', 'cream-minimal-light', 'morandi-light', 'modern-graphite-light', 'classic-navy-light'],
     typography: {
       fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
       fontCharacteristics: 'Friendly, approachable, warm. Generous spacing. Easy to read.',
@@ -712,7 +804,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Scholarly, clear, foundational. Suitable for educational and academic presentations.',
       zh: '学术、清晰、基础导向。适合教育和学术演示。'
     },
-    recommendedThemes: ['arctic', 'lavender-light', 'pure-white', 'soft-gray', 'warm-paper'],
+    recommendedThemes: ['morandi', 'morandi-light', 'vintage-film', 'vintage-film-light', 'cream-minimal'],
     typography: {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontCharacteristics: 'Scholarly, readable serif. Clear hierarchy for learning.',
@@ -739,7 +831,7 @@ export const STYLE_PRESETS: StylePreset[] = [
       en: 'Balanced, accessible, versatile. Works for broad audiences and general purposes.',
       zh: '平衡、易懂、通用。适合广泛受众和一般目的。'
     },
-    recommendedThemes: ['pure-white', 'soft-gray', 'cream', 'mint-light', 'sky-light', 'titanium'],
+    recommendedThemes: ['paper-white-light', 'concrete-gray-light', 'cream-minimal-light', 'morandi-light', 'bauhaus-light'],
     typography: {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontCharacteristics: 'Clear, accessible, highly readable. Avoid jargon.',
@@ -1308,16 +1400,26 @@ export const TRANSLATIONS = {
     themeSelectionHint: "Theme Selection",
     themeSelectionHintDesc: "You can change the color theme in Deck Preview after generating slides",
     paletteHint: "Click any theme to instantly preview on your slide",
-    livePreview: "Preview",
-    bg: "BG",
-    surface: "SUR",
-    text: "TXT",
-    muted: "MUT",
-    accent: "ACC",
-    accent2: "ALT",
-    success: "OK",
-    warning: "WARN",
-    error: "ERR",
+    livePreview: "Palette Preview",
+    // 18-Color System Labels
+    cBg: "BG",
+    cBgSoft: "SOFT",
+    cBgGlass: "GLASS",
+    cBgInvert: "INV",
+    cText: "TXT",
+    cTextMuted: "MUTED",
+    cTextFaint: "FAINT",
+    cTextInvert: "TINV",
+    cBorder: "BDR",
+    cBorderStrong: "BDR+",
+    cDivider: "DIV",
+    cPrimary: "PRI",
+    cSecondary: "SEC",
+    cAccent: "ACC",
+    cSuccess: "OK",
+    cWarning: "WARN",
+    cDanger: "ERR",
+    cInfo: "INFO",
 
     // Sidebar
     slidesHeader: "Slides",
@@ -1432,16 +1534,26 @@ export const TRANSLATIONS = {
     themeSelectionHint: "主题选择",
     themeSelectionHintDesc: "生成幻灯片后，您可以在预览页面更改颜色主题",
     paletteHint: "点击任意主题即可在幻灯片上实时预览",
-    livePreview: "预览",
-    bg: "BG",
-    surface: "SUR",
-    text: "TXT",
-    muted: "MUT",
-    accent: "ACC",
-    accent2: "ALT",
-    success: "OK",
-    warning: "WARN",
-    error: "ERR",
+    livePreview: "配色预览",
+    // 18-Color System Labels
+    cBg: "背景",
+    cBgSoft: "柔和",
+    cBgGlass: "玻璃",
+    cBgInvert: "反色",
+    cText: "文字",
+    cTextMuted: "次要",
+    cTextFaint: "微弱",
+    cTextInvert: "反文",
+    cBorder: "边框",
+    cBorderStrong: "强边",
+    cDivider: "分隔",
+    cPrimary: "主色",
+    cSecondary: "次色",
+    cAccent: "强调",
+    cSuccess: "成功",
+    cWarning: "警告",
+    cDanger: "危险",
+    cInfo: "信息",
 
     // Sidebar
     slidesHeader: "幻灯片",

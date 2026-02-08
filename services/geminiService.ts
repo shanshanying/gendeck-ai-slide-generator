@@ -530,15 +530,34 @@ export const generateSlideHtml = async (
       9. **Contrast**: Ensure text has sufficient contrast against background (WCAG AA minimum).
       10. **Spacing**: Use consistent spacing based on 8px scale: 48px, 32px, 24px, 16px, 8px.
       11. **CSS Variables**: DO NOT generate a <style> block. Use inline styles with CSS variables. Available variables:
-         - \`var(--c-bg)\`: Main background color (dark)
-         - \`var(--c-surface)\`: Card/Section background
-         - \`var(--c-text)\`: Primary text color
-         - \`var(--c-text-muted)\`: Secondary/muted text color
-         - \`var(--c-accent)\`: Primary accent/brand color
-         - \`var(--c-accent-2)\`: Secondary accent for highlights
-         - \`var(--c-success)\`: Success/positive color (for good data, growth)
-         - \`var(--c-warning)\`: Warning/attention color (for cautions, callouts)
-         - \`var(--c-error)\`: Error/negative color (for problems, declines)
+         
+         **Background** (4):
+         - \`var(--c-bg)\`: Main background
+         - \`var(--c-bg-soft)\`: Soft/subtle background
+         - \`var(--c-bg-glass)\`: Glassmorphism background (with transparency)
+         - \`var(--c-bg-invert)\`: Inverted background (for contrast)
+         
+         **Text** (4):
+         - \`var(--c-text)\`: Primary text
+         - \`var(--c-text-muted)\`: Secondary/muted text
+         - \`var(--c-text-faint)\`: Very subtle text
+         - \`var(--c-text-invert)\`: Inverted text (for contrast)
+         
+         **Structure** (3):
+         - \`var(--c-border)\`: Standard border
+         - \`var(--c-border-strong)\`: Emphasized border
+         - \`var(--c-divider)\`: Divider line
+         
+         **Accent** (3):
+         - \`var(--c-primary)\`: Primary brand color
+         - \`var(--c-secondary)\`: Secondary color
+         - \`var(--c-accent)\`: Accent highlight
+         
+         **Semantic** (4):
+         - \`var(--c-success)\`: Success/positive
+         - \`var(--c-warning)\`: Warning/attention
+         - \`var(--c-danger)\`: Error/danger
+         - \`var(--c-info)\`: Information
       
       ${styleGuidance}
 
@@ -549,7 +568,7 @@ export const generateSlideHtml = async (
       <!-- 1. Header (Except Cover/Ending) -->
       <header style="position: absolute; top: 0; left: 0; width: 100%; padding: 48px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;">
          <div>
-            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: var(--c-surface); color: var(--c-accent); font-size: 12px; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 8px; text-transform: uppercase; opacity: 0.8;">
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: var(--c-bg-soft); color: var(--c-primary); font-size: 12px; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 8px; text-transform: uppercase; opacity: 0.8;">
                GenDeck AI
             </span>
             <h2 class="text-5xl font-bold leading-tight text-[var(--c-text)]">
@@ -561,11 +580,11 @@ export const generateSlideHtml = async (
 
       <!-- 2. Main Content -->
       <main style="position: absolute; top: 200px; left: 0; width: 100%; height: 780px; padding: 0 48px; z-index: 0;">
-         <!-- YOUR GENERATED LAYOUT CONTENT HERE - Use CSS variables for colors: style="color: var(--c-text);" or style="background-color: var(--c-surface);" -->
+         <!-- YOUR GENERATED LAYOUT CONTENT HERE - Use CSS variables for colors: style="color: var(--c-text);" or style="background-color: var(--c-bg-soft);" -->
       </main>
 
       <!-- 3. Footer -->
-      <footer style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 32px; display: flex; align-items: flex-end; color: var(--c-text-muted); z-index: 10; border-top: 1px solid rgba(255,255,255,0.1); margin: 0 48px; width: calc(100% - 96px);">
+      <footer style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 32px; display: flex; align-items: flex-end; color: var(--c-text-muted); z-index: 10; border-top: 1px solid var(--c-border); margin: 0 48px; width: calc(100% - 96px);">
          <div style="flex: 1; text-align: left; font-size: 14px; font-weight: 500; opacity: 0.5;">GenDeck</div>
          <div style="flex: 1; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.8; letter-spacing: 0.05em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 16px;">${deckTitle}</div>
          <div style="flex: 1; text-align: right; font-size: 14px; font-family: monospace; opacity: 0.5;">${pageNumber} / ${totalPages}</div>
@@ -588,7 +607,7 @@ export const generateSlideHtml = async (
 
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
       If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant styles.
-      - Use inline styles for colors: \`style="color: var(--c-text);"\`, \`style="background-color: var(--c-surface);"\`, etc.
+      - Use inline styles for colors: \`style="color: var(--c-text);"\`, \`style="background-color: var(--c-bg-soft);"\`, etc.
       - Use Tailwind for layout: \`flex\`, \`grid\`, \`absolute\`, \`relative\`, etc.
       - Typography: \`font-serif\`, \`uppercase\`, \`font-bold\`, \`text-center\`, etc.
 

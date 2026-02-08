@@ -109,24 +109,32 @@ const extractColorPalette = (doc: Document): string => {
     cssText += style.textContent || '';
   });
 
-  // Try to find CSS variables
+  // Try to find CSS variables (18-color system)
   const bgMatch = cssText.match(/--c-bg:\s*([^;]+)/);
-  const surfaceMatch = cssText.match(/--c-surface:\s*([^;]+)/);
-  const accentMatch = cssText.match(/--c-accent:\s*([^;]+)/);
+  const bgSoftMatch = cssText.match(/--c-bg-soft:\s*([^;]+)/);
+  const bgGlassMatch = cssText.match(/--c-bg-glass:\s*([^;]+)/);
+  const bgInvertMatch = cssText.match(/--c-bg-invert:\s*([^;]+)/);
   const textMatch = cssText.match(/--c-text:\s*([^;]+)/);
+  const textMutedMatch = cssText.match(/--c-text-muted:\s*([^;]+)/);
+  const textFaintMatch = cssText.match(/--c-text-faint:\s*([^;]+)/);
+  const textInvertMatch = cssText.match(/--c-text-invert:\s*([^;]+)/);
+  const borderMatch = cssText.match(/--c-border:\s*([^;]+)/);
+  const borderStrongMatch = cssText.match(/--c-border-strong:\s*([^;]+)/);
+  const dividerMatch = cssText.match(/--c-divider:\s*([^;]+)/);
+  const primaryMatch = cssText.match(/--c-primary:\s*([^;]+)/);
+  const secondaryMatch = cssText.match(/--c-secondary:\s*([^;]+)/);
+  const accentMatch = cssText.match(/--c-accent:\s*([^;]+)/);
+  const successMatch = cssText.match(/--c-success:\s*([^;]+)/);
+  const warningMatch = cssText.match(/--c-warning:\s*([^;]+)/);
+  const dangerMatch = cssText.match(/--c-danger:\s*([^;]+)/);
+  const infoMatch = cssText.match(/--c-info:\s*([^;]+)/);
 
-  if (bgMatch && surfaceMatch && accentMatch && textMatch) {
-    return `${bgMatch[1].trim()},${surfaceMatch[1].trim()},${accentMatch[1].trim()},${textMatch[1].trim()}`;
+  if (bgMatch && textMatch && primaryMatch) {
+    return `${bgMatch[1].trim()},${bgSoftMatch?.[1].trim() || bgMatch[1].trim()},${bgGlassMatch?.[1].trim() || bgMatch[1].trim() + '80'},${bgInvertMatch?.[1].trim() || textMatch[1].trim()},${textMatch[1].trim()},${textMutedMatch?.[1].trim() || textMatch[1].trim()},${textFaintMatch?.[1].trim() || textMatch[1].trim()},${textInvertMatch?.[1].trim() || bgMatch[1].trim()},${borderMatch?.[1].trim() || '#404040'},${borderStrongMatch?.[1].trim() || '#525252'},${dividerMatch?.[1].trim() || '#40404040'},${primaryMatch[1].trim()},${secondaryMatch?.[1].trim() || primaryMatch[1].trim()},${accentMatch?.[1].trim() || primaryMatch[1].trim()},${successMatch?.[1].trim() || '#22c55e'},${warningMatch?.[1].trim() || '#f59e0b'},${dangerMatch?.[1].trim() || '#ef4444'},${infoMatch?.[1].trim() || '#06b6d4'}`;
   }
 
-  // Fallback: try to find in :root or theme-light
-  const rootMatch = cssText.match(/:root\s*\{[^}]*--c-bg:\s*([^;]+)[^}]*--c-surface:\s*([^;]+)[^}]*--c-accent:\s*([^;]+)[^}]*--c-text:\s*([^;\}]+)/);
-  if (rootMatch) {
-    return `${rootMatch[1].trim()},${rootMatch[2].trim()},${rootMatch[3].trim()},${rootMatch[4].trim()}`;
-  }
-
-  // Default fallback
-  return '#111111,#222222,#4f46e5,#ffffff';
+  // Default fallback (executive dark theme)
+  return '#0a0a0a,#141414,#0a0a0a80,#ffffff,#ffffff,#a1a1aa,#6b7280,#0a0a0a,#404040,#525252,#40404040,#3b82f6,#8b5cf6,#3b82f6,#22c55e,#f59e0b,#ef4444,#06b6d4';
 };
 
 /**
