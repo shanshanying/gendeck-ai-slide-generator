@@ -8,12 +8,14 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 
 - **Outline Generation**: Converts raw text into structured presentation outlines with titles, content points, and layout suggestions
 - **Slide HTML Generation**: Creates individual slide HTML fragments using Tailwind CSS with a strict design system
-- **Multi-Provider AI Support**: Works with Google Gemini, OpenAI, DeepSeek, Moonshot (Kimi), Anthropic Claude, and custom OpenAI-compatible APIs
-- **Visual Themes**: 20+ predefined color palettes (Tech Giants, Professional, Minimalist, Creative themes)
+- **Multi-Provider AI Support**: Works with Google Gemini, OpenAI, DeepSeek, Moonshot (Kimi), and Anthropic Claude
+- **Visual Themes**: 40+ predefined color palettes across categories (Business, Government, Tech, Minimalist, Artistic, Tech Giants, Feminine Power)
+- **Style Presets**: 10 audience-driven style presets (Corporate Formal, Technical, Startup, Marketing, etc.)
 - **Export Options**: HTML deck (with built-in presentation viewer), Markdown outline, speaker notes, and PDF print support
 - **Interactive Editor**: Review and edit outlines before generating slides, with layout presets and drag-drop reordering
 - **Database Persistence**: Optional PostgreSQL backend for saving decks and slide version history
 - **Internationalization**: Support for English and Chinese (UI and content generation)
+- **Auto-Save**: Automatic persistence to browser localStorage (7-day retention)
 
 ## Technology Stack
 
@@ -25,7 +27,7 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 | Styling | Tailwind CSS (via CDN) |
 | UI Icons | lucide-react |
 | AI SDK | @google/genai |
-| Backend | Node.js + Express + PostgreSQL |
+| Backend | Node.js 18+ + Express + PostgreSQL |
 | Utilities | uuid |
 
 ## Project Structure
@@ -43,30 +45,48 @@ GenDeck is an AI-powered HTML presentation deck generator that converts unstruct
 ├── .env.local              # Environment variables (GEMINI_API_KEY)
 ├── .gitignore              # Git ignore patterns
 ├── Dockerfile              # Frontend container image
-├── README.md               # Basic project documentation
+├── README.md               # User-facing documentation
+├── DATABASE.md             # Database setup guide
+├── AGENTS.md               # This file
 ├── components/
 │   ├── InputForm.tsx       # Initial configuration form (topic, audience, model settings)
 │   ├── OutlineEditor.tsx   # Outline review/editor with theme selection
 │   ├── Sidebar.tsx         # Slide thumbnail navigation
 │   ├── SlidePreview.tsx    # Slide preview with zoom, code view, regeneration
 │   ├── DeckBrowser.tsx     # Browse saved decks from database
-│   └── SlideHistory.tsx    # View slide version history
+│   ├── SlideHistory.tsx    # View slide version history
+│   └── ProviderSelector.tsx # AI provider and model selection
 ├── services/
 │   ├── geminiService.ts    # LLM API abstraction and prompt engineering
 │   ├── importService.ts    # HTML import parsing
 │   └── databaseService.ts  # Database API client with runtime config
+├── styles/
+│   ├── theme.ts            # Centralized theme configuration (dark only)
+│   └── themeUtils.ts       # Theme utility functions
+├── contexts/
+│   └── ThemeContext.tsx    # React context for theme management
+├── hooks/
+│   └── useTheme.ts         # Theme hook
 ├── server/                 # Backend API
 │   ├── Dockerfile          # Backend container image
 │   ├── index.js            # Express server entry
-│   ├── db.js               # PostgreSQL connection
-│   ├── services/           # Business logic
-│   └── routes/             # API endpoints
+│   ├── db.js               # PostgreSQL connection pool
+│   ├── package.json        # Backend dependencies
+│   ├── routes/
+│   │   ├── decks.js        # Deck CRUD and history endpoints
+│   │   └── slides.js       # Slide endpoints
+│   └── services/
+│       ├── deckService.js       # Deck business logic
+│       ├── deckHistoryService.js # Version history logic
+│       └── slideService.js      # Slide business logic
 ├── database/
-│   └── schema.sql          # Database schema
+│   └── schema.sql          # PostgreSQL schema (decks, slides, deck_history tables)
+├── scripts/
+│   └── setup-db.sh         # Automated database setup script
 └── gendeck-chart/          # Helm chart for Kubernetes
     ├── Chart.yaml
     ├── values.yaml
-    └── templates/
+    └── templates/          # K8s deployment manifests
 ```
 
 ## Build and Development Commands
@@ -84,21 +104,31 @@ npm run build
 # Preview production build
 npm run preview
 
-# Start backend server
-cd server && npm install && npm run dev
+# Start backend server (requires cd server && npm install first)
+npm run server
+npm run server:dev       # With nodemon auto-reload
+
+# Database setup
+npm run setup-db         # Run setup script
+./scripts/setup-db.sh -H <host> -P <password>  # With custom params
+./scripts/setup-db.sh -U "postgresql://user:pass@host/db"  # With URL
 ```
 
-### Development Server
+### Backend Commands (in server/ directory)
 
-- **Port**: 3000
-- **Host**: 0.0.0.0 (accessible from network)
-- **Hot Reload**: Enabled via Vite
+```bash
+cd server
+npm install
+npm start                # Production mode
+npm run dev              # Development with nodemon
+npm run test-db          # Test database connection
+```
 
 ## Configuration
 
 ### Environment Variables
 
-Create a `.env.local` file in the project root:
+**Frontend (.env.local - Local Development)**
 
 ```bash
 # Required for Google Gemini
@@ -108,28 +138,27 @@ GEMINI_API_KEY=your_gemini_api_key_here
 VITE_API_URL=http://localhost:3001/api
 ```
 
-The Vite config injects this as `process.env.API_KEY` and `process.env.GEMINI_API_KEY` at build time.
-
-### Runtime Configuration (Docker/Kubernetes)
-
-The frontend uses **runtime configuration** via the `VITE_API_URL` environment variable:
-
-1. At container startup, the `start.sh` script creates `/app/dist/config.json`
-2. Frontend reads this file at runtime to get the backend API URL
-3. This allows the same Docker image to work with different backend URLs
+**Frontend (Docker/Kubernetes Runtime)**
 
 ```bash
-# Docker run with runtime API URL
-docker run -e VITE_API_URL=http://backend:3001/api -p 3000:3000 gendeck-frontend
+VITE_API_URL=http://backend:3001/api  # Runtime API URL
 ```
 
-### TypeScript Path Aliases
+The frontend uses **runtime configuration** via `config.json` created at container startup by `start.sh`.
 
-The `@/` prefix maps to the project root:
+**Backend (server/.env)**
 
-```typescript
-import { Something } from '@/types';
-// Resolves to ./types.ts
+```bash
+# Option 1: Connection URL (recommended for cloud)
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Option 2: Individual parameters
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=gendeck
+DB_USER=gendeck_app
+DB_PASSWORD=your_secure_password
+PORT=3001
 ```
 
 ## Architecture Overview
@@ -145,19 +174,19 @@ import { Something } from '@/types';
 
 ### Slide Generation Process
 
-The app uses a two-phase generation approach:
+The app uses a **two-phase generation approach**:
 
 1. **Phase 1 (Outline)**: Generates structured JSON with titles, content points, and layout hints
 2. **Phase 2 (Slides)**: Generates actual HTML fragments for each slide using the outline data
 
-Each phase can use different AI providers/models (configured separately in settings).
+Both phases use the same AI provider/model (configured in settings).
 
 ### AI Provider Abstraction
 
 The `callLLM()` function in `geminiService.ts` provides a unified interface for:
 
 - **Google Gemini**: Native SDK with JSON schema support
-- **OpenAI/DeepSeek/Moonshot/Custom**: OpenAI-compatible REST API
+- **OpenAI/DeepSeek/Moonshot**: OpenAI-compatible REST API
 - **Anthropic Claude**: Native REST API with special headers for browser access
 
 ### Design System Constraints
@@ -171,7 +200,7 @@ Slides are generated with strict constraints (enforced via prompts):
 - **Backgrounds**: Solid colors using CSS variables only (no gradients)
 - **Print Support**: `print-color-adjust: exact` for PDF export
 
-CSS Variables used (18-Color Standard Deck System):
+### CSS Variables (18-Color Standard Deck System)
 
 **Background** (4): `--c-bg`, `--c-bg-soft`, `--c-bg-glass`, `--c-bg-invert`
 
@@ -209,11 +238,10 @@ interface SlideData {
 // AI provider configuration
 interface ApiSettings {
   apiKeys: Partial<Record<ApiProvider, string>>;
-  outline: ModelSelection;
-  slides: ModelSelection;
+  model: ModelSelection;  // Single model for both outline and slides
 }
 
-type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
+type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot';
 
 type Language = 'en' | 'zh';
 ```
@@ -227,15 +255,13 @@ The `databaseService.ts` module provides:
 - **Health Check**: `checkBackendAvailable()` to verify backend connectivity
 
 ```typescript
-// API Base URL is determined at runtime
-const API_BASE_URL = await loadRuntimeConfig();
-
 // Check if backend is available
 const available = await checkBackendAvailable();
 
 // API operations
 const decks = await deckApi.list();
-const slide = await slideApi.save(deckId, index, slideData);
+const deck = await deckApi.create({ topic, slides, ... });
+const versions = await deckApi.getVersions(deckId);
 ```
 
 ## Code Style Guidelines
@@ -276,8 +302,7 @@ User preferences are automatically saved to localStorage with keys prefixed by `
 - `gendeck_count`, `gendeck_content`
 - `gendeck_api_keys`
 - `gendeck_lang` (language preference)
-- `gendeck_p_outline`, `gendeck_m_outline` (outline provider/model)
-- `gendeck_p_slide`, `gendeck_m_slide` (slide provider/model)
+- `gendeck_autosave` (full state snapshot, 7-day expiry)
 
 ## Export Formats
 
@@ -308,22 +333,6 @@ Plain text format with slide numbers.
 ### PDF Export
 Injected auto-print script opens browser print dialog with optimized CSS for 1920x1080 page size.
 
-## Security Considerations
-
-- API keys for non-Google providers are stored in localStorage (user's browser)
-- Google API key can be injected via environment variable for shared deployments
-- Content is rendered using `dangerouslySetInnerHTML` - the AI-generated HTML is trusted
-- Anthropic API requires special `anthropic-dangerous-direct-browser-access` header for browser usage
-
-## Development Notes
-
-- No testing framework is currently configured
-- No linting/formatting tools are configured (consider adding ESLint/Prettier)
-- The project uses ES modules (`"type": "module"` in package.json)
-- Importmap in index.html enables CDN-based dependencies during development
-- Tailwind CSS is loaded via CDN (not bundled)
-- Backend API URL is configured at runtime via `config.json` (not build time)
-
 ## Layout Presets
 
 The following layout presets are available for slides:
@@ -342,13 +351,17 @@ The following layout presets are available for slides:
 ## Supported AI Models
 
 ### Google Gemini
+- gemini-3-pro-exp
 - gemini-3-flash-preview
-- gemini-3-pro-preview
-- gemini-2.5-flash-latest
+- gemini-2.5-pro-preview-03-25
+- gemini-2.5-flash-preview-04-17
+- gemini-2.5-flash-lite-preview
 
 ### OpenAI
-- gpt-4o
-- gpt-4o-mini
+- gpt-5.2, gpt-5.1, gpt-5, gpt-5-mini, gpt-5-nano
+- gpt-5.2-chat-latest, gpt-5.1-chat-latest
+- gpt-5.2-codex, gpt-5.1-codex-max, gpt-5.1-codex
+- gpt-5.2-pro, gpt-5-pro
 
 ### DeepSeek
 - deepseek-chat (V3)
@@ -359,11 +372,9 @@ The following layout presets are available for slides:
 - kimi-k2-turbo-preview
 
 ### Anthropic Claude
-- claude-3-5-sonnet-20240620
-- claude-3-haiku-20240307
-
-### Custom
-- Any OpenAI-compatible API (e.g., Ollama local models)
+- claude-opus-4.5-20251101
+- claude-sonnet-4.5-20251101
+- claude-haiku-4.5-20251101
 
 ## Kubernetes Deployment
 
@@ -376,7 +387,7 @@ Two separate images are built:
    - Runtime config via `VITE_API_URL` env var
    - Port 3000
 
-2. **Backend**: `gendeck-frontend:latest`
+2. **Backend**: `gendeck-backend:latest`
    - Express API server
    - Connects to PostgreSQL
    - Port 3001
@@ -388,15 +399,15 @@ gendeck-chart/
 ├── Chart.yaml
 ├── values.yaml
 └── templates/
-    ├── _helpers.tpl           # Template helpers
-    ├── frontend-deployment.yaml
-    ├── backend-deployment.yaml
-    ├── frontend-service.yaml
-    ├── backend-service.yaml
-    ├── frontend-hpa.yaml      # Horizontal Pod Autoscaler
+    ├── _helpers.tpl              # Template helpers
+    ├── frontend-deployment.yaml  # Frontend deployment
+    ├── backend-deployment.yaml   # Backend deployment
+    ├── frontend-service.yaml     # Frontend service
+    ├── backend-service.yaml      # Backend service
+    ├── frontend-hpa.yaml         # Horizontal Pod Autoscaler
     ├── backend-hpa.yaml
-    ├── configmap.yaml         # Backend config
-    ├── secret.yaml            # DB password, API keys
+    ├── configmap.yaml            # Backend config
+    ├── secret.yaml               # DB password, API keys
     ├── serviceaccount.yaml
     └── tests/
         └── test-connection.yaml
@@ -425,3 +436,74 @@ service:
     type: ClusterIP
     port: 3001
 ```
+
+## Security Considerations
+
+- API keys for non-Google providers are stored in localStorage (user's browser)
+- Google API key can be injected via environment variable for shared deployments
+- Content is rendered using `dangerouslySetInnerHTML` - the AI-generated HTML is trusted
+- Anthropic API requires special `anthropic-dangerous-direct-browser-access` header for browser usage
+- Database credentials should never be committed to git
+- Use SSL for production database connections
+
+## Development Notes
+
+- No testing framework is currently configured
+- No linting/formatting tools are configured (consider adding ESLint/Prettier)
+- The project uses ES modules (`"type": "module"` in package.json)
+- Importmap in index.html enables CDN-based dependencies during development
+- Tailwind CSS is loaded via CDN (not bundled)
+- Backend API URL is configured at runtime via `config.json` (not build time)
+
+## API Endpoints
+
+### Decks
+- `GET /api/decks` - List all decks
+- `POST /api/decks` - Create new deck
+- `GET /api/decks/:id` - Get deck with slides
+- `PUT /api/decks/:id` - Update deck metadata
+- `DELETE /api/decks/:id` - Delete deck
+- `GET /api/decks/search?q=query` - Search decks
+- `GET /api/decks/:id/html` - Download full HTML
+
+### Deck History
+- `GET /api/decks/:id/history` - Get all versions
+- `POST /api/decks/:id/history` - Save new version
+- `GET /api/decks/history/:id` - Get specific version
+
+### Health
+- `GET /api/health` - Health check
+
+## Database Schema
+
+### Tables
+
+**decks**: Stores presentation metadata
+- `id` (UUID PK), `topic`, `audience`, `purpose`
+- `color_palette`, `slide_count`, `total_cost`
+- `full_html`, `document_content`
+- `outline_provider`, `outline_model`, `outline_base_url`
+- `slides_provider`, `slides_model`, `slides_base_url`
+- `created_at`, `updated_at`
+
+**slides**: Current version of each slide
+- `id` (UUID PK), `deck_id` (FK)
+- `slide_index`, `title`, `content_points` (array)
+- `html_content`, `notes`, `layout_suggestion`
+- `version`, `is_current`, `created_at`, `updated_at`
+
+**deck_history**: All historical versions of full decks
+- `id` (UUID PK), `deck_id` (FK)
+- `topic`, `full_html`, `outline` (JSONB)
+- `color_palette`, `version`, `saved_at`
+
+### Indexes
+- `idx_slides_deck_id` on slides(deck_id)
+- `idx_slides_slide_index` on slides(slide_index)
+- `idx_slides_current` on slides(deck_id, slide_index, is_current) WHERE is_current = true
+- `idx_deck_history_deck_id` on deck_history(deck_id)
+- `idx_decks_created_at` on decks(created_at DESC)
+
+### Triggers
+- `update_decks_updated_at` - Auto-updates updated_at timestamp
+- `update_slides_updated_at` - Auto-updates updated_at timestamp

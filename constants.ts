@@ -216,6 +216,18 @@ export const COLOR_THEMES = [
     label: 'Neuron Orange Light', 
     colors: ['#FFFBF5', '#FFFFFF', '#ffffffe0', '#1F2937', '#1F2937', '#6B7280', '#9CA3AF', '#FFFFFF', '#FFE4D6', '#FFD0C0', '#FFF0E8', '#FF6B35', '#FF006E', '#FF8C5A', '#22C55E', '#F59E0B', '#EF4444', '#3B82F6']
   },
+  
+  // 3.4 KubeCon · 云原生蓝 (Cloud Native Blue)
+  { 
+    id: 'kubecon', 
+    label: 'KubeCon Dark', 
+    colors: ['#0A0E17', '#111827', '#111827cc', '#F8FAFC', '#F8FAFC', '#94A3B8', '#64748B', '#0A0E17', '#1E293B', '#334155', '#0F172A', '#326CE5', '#00D4AA', '#60A5FA', '#10B981', '#F59E0B', '#EF4444', '#3B82F6']
+  },
+  { 
+    id: 'kubecon-light', 
+    label: 'KubeCon Light', 
+    colors: ['#F8FAFC', '#FFFFFF', '#ffffffcc', '#0F172A', '#0F172A', '#475569', '#94A3B8', '#FFFFFF', '#E2E8F0', '#CBD5E1', '#F1F5F9', '#326CE5', '#0891B2', '#60A5FA', '#10B981', '#F59E0B', '#EF4444', '#3B82F6']
+  },
 
   // ============================================================
   // 4. 极简类 (Minimalist)
@@ -752,6 +764,33 @@ export const STYLE_PRESETS: StylePreset[] = [
     visualDensity: 'dense',
     dataVisualization: 'moderate',
   },
+  // === KUBECON / CLOUD NATIVE CONFERENCE ===
+  {
+    id: 'kubecon-conf',
+    label: { en: 'KubeCon / Cloud Native', zh: 'KubeCon / 云原生' },
+    description: { 
+      en: 'Optimized for KubeCon and cloud native conferences. Code-friendly, diagram-heavy, community-focused.',
+      zh: '专为 KubeCon 和云原生会议优化。适合代码展示、架构图和社区分享。'
+    },
+    recommendedThemes: ['kubecon', 'kubecon-light', 'cyber-electric', 'aurora-violet', 'concrete-gray'],
+    typography: {
+      fontFamily: '"SF Mono", "JetBrains Mono", "Cascadia Code", monospace',
+      fontCharacteristics: 'Monospace-forward. Clear code blocks. Technical diagrams. High contrast for projector visibility.',
+      titleCase: 'sentence',
+    },
+    layoutPreferences: {
+      primary: ['Standard', 'Grid', 'Timeline', 'Data', 'Compare'],
+      avoid: ['Center'],
+    },
+    contentStyle: {
+      tone: 'Technical but accessible. Community-oriented. Practical examples.',
+      formality: 'semi-formal',
+      bulletStyle: 'fragments',
+      emphasis: ['architecture diagrams', 'code examples', 'best practices', 'community', 'open source', 'cloud native patterns'],
+    },
+    visualDensity: 'balanced',
+    dataVisualization: 'heavy',
+  },
   // === ENTREPRENEUR / STARTUP ===
   {
     id: 'entrepreneur',
@@ -1087,7 +1126,7 @@ export const AUDIENCE_CATEGORIES: AudienceCategory[] = [
       en: 'Kubernetes, cloud native technologies, and open source communities like KubeCon',
       zh: 'Kubernetes、云原生技术和KubeCon等开源社区'
     },
-    defaultStylePreset: 'technical',
+    defaultStylePreset: 'kubecon-conf',
     audiences: [
       { id: 'kubecon', label: { en: 'KubeCon / CloudNativeCon Attendees', zh: 'KubeCon / CloudNativeCon 参会者' } },
       { id: 'k8s-engineers', label: { en: 'Kubernetes Engineers', zh: 'Kubernetes 工程师' } },
@@ -1139,9 +1178,9 @@ export const findAudienceProfile = (audience: string): StylePreset | undefined =
     return STYLE_PRESETS.find(p => p.id === 'corporate-formal');
   if (normalized.includes('investor') || normalized.includes('vc') || normalized.includes('pe'))
     return STYLE_PRESETS.find(p => p.id === 'corporate-trust');
-  if (normalized.includes('engineer') || normalized.includes('technical') || normalized.includes('developer') || normalized.includes('tech') || normalized.includes('架构'))
-    return STYLE_PRESETS.find(p => p.id === 'technical');
-  if (normalized.includes('kubernetes') || normalized.includes('k8s') || normalized.includes('kubecon') || normalized.includes('cloud native') || normalized.includes('云原生') || normalized.includes('开源') || normalized.includes('open source') || normalized.includes('platform') || normalized.includes('sre') || normalized.includes('devops'))
+  if (normalized.includes('kubernetes') || normalized.includes('k8s') || normalized.includes('kubecon') || normalized.includes('cloud native') || normalized.includes('云原生') || normalized.includes('开源') || normalized.includes('open source'))
+    return STYLE_PRESETS.find(p => p.id === 'kubecon-conf');
+  if (normalized.includes('engineer') || normalized.includes('technical') || normalized.includes('developer') || normalized.includes('tech') || normalized.includes('架构') || normalized.includes('platform') || normalized.includes('sre') || normalized.includes('devops'))
     return STYLE_PRESETS.find(p => p.id === 'technical');
   if (normalized.includes('government') || normalized.includes('official') || normalized.includes('政府') || normalized.includes('官员'))
     return STYLE_PRESETS.find(p => p.id === 'government-official');
