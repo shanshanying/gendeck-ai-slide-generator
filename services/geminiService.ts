@@ -607,25 +607,116 @@ export const generateSlideHtml = async (
       </footer>
       \`\`\`
 
-      ## 📋 COVER PAGE DESIGN GUIDE
-      The Cover slide should create immediate impact:
-      - Full-screen centered layout with NO header/footer
-      - Large hero visual: geometric shapes, abstract tech patterns, or meaningful icon (200-400px)
-      - Title: 80-120px, font-weight 800, center-aligned, maximum 2 lines
-      - Subtitle: 28-36px, color: --c-text-muted, positioned 32-48px below title
-      - Speaker info block at bottom: name (24px, --c-text), title/company (18px, --c-text-muted), social (16px, --c-text-faint)
-      - Optional: Event badge in top-right corner with --c-bg-soft background
-      - Background: solid --c-bg color with optional subtle radial gradient accent (opacity 0.08)
+      ## 📋 COVER PAGE DESIGN GUIDE - CREATIVE VARIATIONS
+      The Cover slide should create immediate impact. Choose ONE of these creative layouts based on content mood:
+
+      ### 🎨 LAYOUT OPTION 1: "Hero Center" (Classic Impact)
+      - Full-screen centered composition
+      - Large geometric/abstract visual (250-400px) centered above title
+      - Title: 80-120px, font-weight 800, center-aligned
+      - Subtitle: 28-36px, --c-text-muted, 32-48px below title
+      - Speaker info at bottom center
+      - Best for: General tech talks, product launches
+
+      ### 🎨 LAYOUT OPTION 2: "Split Screen" (Bold Contrast)
+      - Left half (40%): Solid --c-bg-soft background with large icon/geometric pattern (300-500px)
+      - Right half (60%): Title, subtitle, speaker info left-aligned
+      - Title: 72-96px, bold, left-aligned on right side
+      - Visual divider: subtle line or overlapping shape between halves
+      - Best for: Architecture talks, before/after themes, contrasting ideas
+
+      ### 🎨 LAYOUT OPTION 3: "Diagonal Dynamic" (High Energy)
+      - Diagonal split using CSS clip-path or positioned elements
+      - Upper area (angled): Accent color block (--c-primary at 10-15% opacity) with large icon
+      - Lower area: Title positioned asymmetrically (left or right biased)
+      - Decorative diagonal lines or shapes creating movement
+      - Title: 80-100px, positioned with intention (not dead center)
+      - Best for: DevOps, performance talks, energetic topics
+
+      ### 🎨 LAYOUT OPTION 4: "Code Editorial" (Developer Focus)
+      - Background: Faint code snippet pattern (opacity 0.03-0.05) using --c-text-faint
+      - Large monospace-style title with code-inspired accents (e.g., function brackets, terminal cursor)
+      - Terminal/command-line style decorative box containing subtitle
+      - Accent: --c-secondary for syntax-highlight effect on key words
+      - Best for: CLI tools, developer experience, coding talks
+
+      ### 🎨 LAYOUT OPTION 5: "Minimal Zen" (Premium Feel)
+      - Extensive whitespace (60%+ empty space)
+      - Title: 64-80px, placed in golden ratio position (not center)
+      - Single elegant line or dot as only decorative element
+      - Ultra-clean typography, generous letter-spacing
+      - Speaker info: subtle, bottom-right corner
+      - Best for: Design systems, philosophy, conceptual talks
+
+      ### 🎨 LAYOUT OPTION 6: "Architecture Blueprint" (Technical)
+      - Background: Subtle grid pattern (opacity 0.05) or connection lines
+      - Central "node" visual with connecting lines to edge labels
+      - Title integrated into the diagram as a central label
+      - Nodes/circles at corners containing: Speaker, Event, Date, Company
+      - Best for: System design, microservices, distributed systems
+
+      ### 🎨 LAYOUT OPTION 7: "Hero Image" (Visual Story)
+      - Large rectangular "image placeholder" (60% width, 50% height) with gradient fill using --c-primary to --c-secondary
+      - Title overlays the bottom portion of the image area with --c-bg-glass backdrop
+      - Clean text shadow for readability
+      - Best for: Case studies, visual demos, product showcases
+
+      ### 📐 UNIVERSAL COVER RULES:
+      - NO header/footer on any cover layout
+      - NO bullet points (use visual elements instead)
+      - Event badge: optional, top corner, --c-bg-soft background
+      - Speaker info: always include somewhere (bottom preferred)
+      - Background: always solid --c-bg as base layer
       
-      ## 📋 ENDING PAGE DESIGN GUIDE
-      The Ending slide should be memorable and actionable:
-      - Full-screen centered layout with NO header/footer
-      - Main message: "Thank You" at 72-96px OR powerful takeaway sentence at 48-64px
-      - Call to Action: Clear next step (28-32px, use --c-primary for emphasis)
-      - QR Code placeholder: 180px square, bordered with --c-border-strong, centered below CTA
-      - Links section: GitHub, docs, social handles in horizontal row or clean vertical list
-      - Visual hierarchy: Main message > CTA > QR > Links
-      - Background: solid --c-bg with optional subtle accent shape
+      ## 📋 ENDING PAGE DESIGN GUIDE - CREATIVE VARIATIONS
+      The Ending slide should be memorable and actionable. Choose ONE of these creative layouts:
+
+      ### 🎨 ENDING OPTION 1: "Classic Thanks" (Safe Default)
+      - Large "Thank You" (72-96px) centered at top third
+      - Subtitle/CTA (28-32px, --c-primary) centered below
+      - QR code placeholder (180px) centered at bottom
+      - Social links in horizontal row beneath QR
+      - Best for: Most presentations, clean professional close
+
+      ### 🎨 ENDING OPTION 2: "One Big Message" (Impact Close)
+      - Single powerful takeaway sentence (48-64px) filling 60% of slide
+      - Text arranged creatively (line breaks for emphasis)
+      - No QR code - just the message and subtle attribution
+      - Example: "The future of infrastructure is autonomous. Build for it today."
+      - Best for: Inspirational talks, keynotes, paradigm shifts
+
+      ### 🎨 ENDING OPTION 3: "Split CTA" (Action Oriented)
+      - Left side: Large QR code (240px) with scan prompt
+      - Right side: Thank you message + multiple CTAs stacked
+      - Resource list: "Slides: url | Code: url | Docs: url"
+      - Best for: Workshops, tutorials, resource-heavy talks
+
+      ### 🎨 ENDING OPTION 4: "Community Connect" (OSS Focus)
+      - Central GitHub logo or project icon (120px)
+      - "Star us on GitHub" or contribution invitation
+      - Contributor avatars placeholder (row of circles)
+      - Discord/Slack community link
+      - Best for: Open source projects, community building
+
+      ### 🎨 ENDING OPTION 5: "Question Mark" (Interactive)
+      - Giant question mark or conversation icon as background element (opacity 0.1)
+      - "Questions?" or "Let's Discuss" as main text
+      - Speaker contact info prominently displayed
+      - Social handles with platform icons
+      - Best for: Interactive sessions, controversial topics
+
+      ### 🎨 ENDING OPTION 6: "Next Steps" (Tutorial Style)
+      - "What's Next?" header
+      - 3-step numbered list: Try it → Read docs → Join community
+      - Each step has icon and brief instruction
+      - QR code linking to getting-started guide
+      - Best for: How-to talks, getting started guides
+
+      ### 📐 UNIVERSAL ENDING RULES:
+      - NO header/footer on any ending layout
+      - Always include SOME form of CTA or next step
+      - QR codes should have descriptive labels (not just floating)
+      - Social/contact info should be readable from back row
 
       ## 📊 LAYOUT LOGIC
       Select layout based on Input Data 'Layout Hint':
