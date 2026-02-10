@@ -364,13 +364,28 @@ export const generateOutline = async (
       **Language:** The output language MUST match the language of the 'User Input'.
 
       Structure Requirements (MANDATORY):
-      1. **Slide 1 (Cover Page)**:
-         - Title: Generate a compelling, professional title based on the input content (do NOT just use the provided 'Topic', make it descriptive).
-         - ContentPoints: Use the first point for a subtitle/summary.
+      1. **Slide 1 (Cover Page)** - GRAND OPENING:
+         - Title: Create an impactful, memorable title (5-8 words). Use action verbs or bold statements. NOT just the topic name.
+         - ContentPoints: 
+           * First point: Compelling subtitle that explains the value proposition (what will audience learn/take away)
+           * Second point: Speaker name, title, company
+           * Third point: Event/conference name (if applicable)
+           * Fourth point: Social handle or GitHub (optional)
          - Layout: 'Cover'
+         - Design Notes: Will feature large typography (80-120px), hero visual element, centered composition
+      
       2. **Slides 2 to ${slideCount - 1} (Main Content)**: Logical flow. ${profile ? `Prioritize these layouts: ${profile.layoutPreferences.primary.slice(0, 4).join(', ')}.` : "Vary layouts ('Compare', 'Grid', 'Timeline', 'Data', 'Standard')."}
-      3. **Slide ${slideCount} (Ending Page)**: One powerful summary sentence, Call to Action, "Thank You", or company contact info.
+      
+      3. **Slide ${slideCount} (Ending Page)** - POWERFUL CLOSE:
+         - Title: "Thank You" OR a powerful one-sentence takeaway/lesson
+         - ContentPoints:
+           * First point: Clear Call to Action (visit repo, try the tool, read docs, etc.)
+           * Second point: GitHub repository URL or main resource link
+           * Third point: Social handles (Twitter/X, LinkedIn, GitHub) for connection
+           * Fourth point: Website or documentation link
+           * Fifth point: QR code destination (if applicable)
          - Layout: 'Ending'
+         - Design Notes: Centered, large thank you message, QR code placeholder, social links row
 
       Output Format:
       - Return a RAW JSON array of slides.
@@ -592,11 +607,47 @@ export const generateSlideHtml = async (
       </footer>
       \`\`\`
 
+      ## 📋 COVER PAGE DESIGN GUIDE
+      The Cover slide should create immediate impact:
+      - Full-screen centered layout with NO header/footer
+      - Large hero visual: geometric shapes, abstract tech patterns, or meaningful icon (200-400px)
+      - Title: 80-120px, font-weight 800, center-aligned, maximum 2 lines
+      - Subtitle: 28-36px, color: --c-text-muted, positioned 32-48px below title
+      - Speaker info block at bottom: name (24px, --c-text), title/company (18px, --c-text-muted), social (16px, --c-text-faint)
+      - Optional: Event badge in top-right corner with --c-bg-soft background
+      - Background: solid --c-bg color with optional subtle radial gradient accent (opacity 0.08)
+      
+      ## 📋 ENDING PAGE DESIGN GUIDE
+      The Ending slide should be memorable and actionable:
+      - Full-screen centered layout with NO header/footer
+      - Main message: "Thank You" at 72-96px OR powerful takeaway sentence at 48-64px
+      - Call to Action: Clear next step (28-32px, use --c-primary for emphasis)
+      - QR Code placeholder: 180px square, bordered with --c-border-strong, centered below CTA
+      - Links section: GitHub, docs, social handles in horizontal row or clean vertical list
+      - Visual hierarchy: Main message > CTA > QR > Links
+      - Background: solid --c-bg with optional subtle accent shape
+
       ## 📊 LAYOUT LOGIC
       Select layout based on Input Data 'Layout Hint':
 
-      1. **Cover**: Central focus, big typography (72-96px title). No gradients. No header/footer.
-      2. **Ending**: Central focus. MUST include a large 'Thank You' or concluding statement. MUST include a large SVG placeholder for a Company Logo. Clean, professional. No header/footer.
+      1. **Cover** (Slide 1): Impactful first impression. No header/footer.
+         - **Structure**: Full-screen centered composition with dramatic typography
+         - **Title**: 80-120px, bold, maximum impact (use CSS font-weight: 800 or font-black)
+         - **Subtitle**: 28-36px, positioned below title with generous spacing (32-48px gap)
+         - **Visual Element**: Large geometric shape, abstract tech pattern, or hero icon (200-400px) using CSS variables --c-primary and --c-secondary
+         - **Speaker Info**: Bottom area - name, title, company, social handle (GitHub/Twitter). Use --c-text-muted at 20-24px
+         - **Event Badge**: Optional top corner badge with conference/event name using --c-bg-soft background
+         - **Background**: Solid --c-bg with optional subtle geometric accent shapes (very low opacity ~0.1)
+         - **Layout Rules**: Center-aligned. Ample whitespace. No bullet points.
+
+      2. **Ending** (Last Slide): Memorable closing. No header/footer.
+         - **Structure**: Centered composition with clear visual hierarchy
+         - **Main Message**: Large "Thank You" (72-96px) OR powerful one-sentence takeaway (48-64px)
+         - **Call to Action**: Clear CTA below main message - GitHub repo, Documentation URL, or "Try it now" (28-32px, use --c-primary color or button style)
+         - **QR Code Placeholder**: 160-200px square with border --c-border-strong for project links/resources
+         - **Connect Section**: Social/GitHub handles, website URL in horizontal row at bottom
+         - **Company Logo Area**: Centered logo placeholder (if applicable) above connect section
+         - **Background**: Solid --c-bg - can use a subtle gradient accent line or shape for visual interest (keep minimal)
       3. **Compare**: Split screen (Left/Right). Good for Pros/Cons, Before/After, or comparisons.
       4. **Grid**: 2x2 or 3x2 cards. Good for lists/features, pillars, or equal-weight items.
       5. **Timeline**: Horizontal flow with connected steps. Good for roadmaps, history, or processes.
