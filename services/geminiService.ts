@@ -483,7 +483,8 @@ export const generateSlideHtml = async (
   pageNumber: number,
   totalPages: number,
   customInstruction?: string,
-  stylePresetId?: string
+  stylePresetId?: string,
+  currentHtml?: string
 ): Promise<ServiceResponse<string>> => {
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
@@ -623,6 +624,7 @@ export const generateSlideHtml = async (
       - Content: ${JSON.stringify(slide.contentPoints)}
       - Layout Hint: ${slide.layoutSuggestion}
       ${customInstruction ? `- User Override: ${customInstruction}` : ''}
+      ${currentHtml ? `- Current Slide HTML: \n\`\`\`html\n${currentHtml}\n\`\`\`` : ''}
 
       ## OUTPUT
       - Return ONLY valid HTML code for the <section>.

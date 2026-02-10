@@ -1080,6 +1080,23 @@ export const AUDIENCE_CATEGORIES: AudienceCategory[] = [
       { id: 'educators', label: { en: 'Educators / Trainers', zh: '教育工作者 / 培训师' } },
     ],
   },
+  {
+    id: 'cloud-native',
+    label: { en: 'Cloud Native & Open Source', zh: '云原生与开源' },
+    description: { 
+      en: 'Kubernetes, cloud native technologies, and open source communities like KubeCon',
+      zh: 'Kubernetes、云原生技术和KubeCon等开源社区'
+    },
+    defaultStylePreset: 'technical',
+    audiences: [
+      { id: 'kubecon', label: { en: 'KubeCon / CloudNativeCon Attendees', zh: 'KubeCon / CloudNativeCon 参会者' } },
+      { id: 'k8s-engineers', label: { en: 'Kubernetes Engineers', zh: 'Kubernetes 工程师' } },
+      { id: 'platform-engineers', label: { en: 'Platform Engineers', zh: '平台工程师' } },
+      { id: 'oss-maintainers', label: { en: 'OSS Maintainers / Contributors', zh: '开源维护者 / 贡献者' } },
+      { id: 'cloud-architects', label: { en: 'Cloud Architects', zh: '云架构师' } },
+      { id: 'sre-devops', label: { en: 'SRE / DevOps Practitioners', zh: 'SRE / DevOps 实践者' } },
+    ],
+  },
 ];
 
 // ============================================
@@ -1123,6 +1140,8 @@ export const findAudienceProfile = (audience: string): StylePreset | undefined =
   if (normalized.includes('investor') || normalized.includes('vc') || normalized.includes('pe'))
     return STYLE_PRESETS.find(p => p.id === 'corporate-trust');
   if (normalized.includes('engineer') || normalized.includes('technical') || normalized.includes('developer') || normalized.includes('tech') || normalized.includes('架构'))
+    return STYLE_PRESETS.find(p => p.id === 'technical');
+  if (normalized.includes('kubernetes') || normalized.includes('k8s') || normalized.includes('kubecon') || normalized.includes('cloud native') || normalized.includes('云原生') || normalized.includes('开源') || normalized.includes('open source') || normalized.includes('platform') || normalized.includes('sre') || normalized.includes('devops'))
     return STYLE_PRESETS.find(p => p.id === 'technical');
   if (normalized.includes('government') || normalized.includes('official') || normalized.includes('政府') || normalized.includes('官员'))
     return STYLE_PRESETS.find(p => p.id === 'government-official');
@@ -1230,6 +1249,19 @@ export const PURPOSE_CATEGORIES: PurposeCategory[] = [
       { id: 'team-building', label: { en: 'Team Building / Motivation', zh: '团队建设/激励' } },
       { id: 'change-management', label: { en: 'Change Management', zh: '变革管理' } },
       { id: 'crisis-communication', label: { en: 'Crisis Communication', zh: '危机沟通' } },
+    ],
+  },
+  {
+    id: 'tech-conference',
+    label: { en: 'Technical Conference', zh: '技术会议' },
+    description: { en: 'Conference talks, technical deep-dives, and community presentations like KubeCon', zh: '会议演讲、技术深度分享和社区演示，如 KubeCon' },
+    purposes: [
+      { id: 'conference-talk', label: { en: 'Conference Talk / Session', zh: '会议演讲 / 议题' } },
+      { id: 'tech-deep-dive', label: { en: 'Technical Deep Dive', zh: '技术深度解析' } },
+      { id: 'project-showcase', label: { en: 'Open Source Project Showcase', zh: '开源项目展示' } },
+      { id: 'case-study', label: { en: 'Production Case Study', zh: '生产实践案例' } },
+      { id: 'lightning-talk', label: { en: 'Lightning Talk', zh: '闪电演讲' } },
+      { id: 'panel-discussion', label: { en: 'Panel / Community Discussion', zh: '圆桌讨论 / 社区交流' } },
     ],
   },
 ];

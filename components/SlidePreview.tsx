@@ -10,7 +10,8 @@ import { getThemeClasses, cx } from '../styles/theme';
 
 interface SlidePreviewProps {
   slide: SlideData | undefined;
-  onRegenerate: (id: string, customPrompt?: string) => void;
+  onRegenerate: (id: string, customPrompt?: string, selectedCode?: string) => void;
+  onSaveHtml?: (id: string, htmlContent: string) => void;
   colorPalette: string;
   onColorPaletteChange?: (palette: string) => void;
   lang: Language;
@@ -35,7 +36,7 @@ const THEME_CATEGORIES = [
   { id: 'feminine', label: 'Feminine Power', labelZh: '女性力量', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, onSaveHtml, colorPalette, onColorPaletteChange, lang, t, theme }) => {
   const [showCode, setShowCode] = useState(false);
   const [customInstruction, setCustomInstruction] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -44,6 +45,12 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['corporate', 'tech', 'creative']);
   const [localPalette, setLocalPalette] = useState(colorPalette);
+  const [editedHtml, setEditedHtml] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  const [showSelectionActions, setShowSelectionActions] = useState(false);
+  const [selectionInstruction, setSelectionInstruction] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Update local palette when prop changes
@@ -156,6 +163,52 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   useEffect(() => {
     if (!isEditing) setShowConfirmation(false);
   }, [isEditing, slide?.id]);
+
+  // Initialize editedHtml when slide changes or code view is opened
+  useEffect(() => {
+    if (slide?.htmlContent) {
+      setEditedHtml(slide.htmlContent);
+      setHasChanges(false);
+    }
+  }, [slide?.id, slide?.htmlContent]);
+
+  // Handle text selection in textarea
+  const handleTextSelect = () => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const text = textareaRef.current.value.substring(start, end);
+      if (text && text.trim()) {
+        setSelectedText(text);
+        setShowSelectionActions(true);
+      } else {
+        setSelectedText('');
+        setShowSelectionActions(false);
+      }
+    }
+  };
+
+  const handleHtmlChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedHtml(e.target.value);
+    setHasChanges(e.target.value !== slide?.htmlContent);
+  };
+
+  const handleSaveHtml = () => {
+    if (slide && onSaveHtml) {
+      onSaveHtml(slide.id, editedHtml);
+      setHasChanges(false);
+    }
+  };
+
+  const handleUpdateSelection = () => {
+    if (slide && selectedText && selectionInstruction) {
+      const prompt = `Update the following selected code based on this instruction: "${selectionInstruction}"\n\nSelected code:\n${selectedText}`;
+      onRegenerate(slide.id, prompt, selectedText);
+      setSelectionInstruction('');
+      setShowSelectionActions(false);
+      setSelectedText('');
+    }
+  };
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.1));
@@ -605,10 +658,102 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/10 w-full h-full">
         {slide.htmlContent ? (
            showCode ? (
-             <div className={cx('w-full h-full p-4 overflow-auto', 'bg-slate-950')}>
-               <pre className={cx('text-xs font-mono whitespace-pre-wrap font-medium', 'text-emerald-400')}>
-                 {slide.htmlContent}
-               </pre>
+             <div className={cx('w-full h-full flex flex-col', 'bg-slate-950')}>
+               {/* Code Editor Toolbar */}
+               <div className={cx('flex items-center justify-between px-3 py-2 border-b', 'bg-slate-900 border-white/10')}>
+                 <div className="flex items-center gap-2">
+                   <span className={cx('text-xs font-medium', 'text-slate-400')}>HTML Editor</span>
+                   {hasChanges && (
+                     <span className={cx('text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400')}>
+                       {lang === 'zh' ? '未保存' : 'Unsaved'}
+                     </span>
+                   )}
+                 </div>
+                 <div className="flex items-center gap-2">
+                   {hasChanges && (
+                     <button
+                       onClick={handleSaveHtml}
+                       disabled={!onSaveHtml}
+                       className={cx(
+                         'text-[11px] px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 border',
+                         onSaveHtml
+                           ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
+                           : 'bg-slate-800 text-slate-500 cursor-not-allowed border-white/10'
+                       )}
+                     >
+                       <CheckCircle className="w-3 h-3" />
+                       {lang === 'zh' ? '保存' : 'Save'}
+                     </button>
+                   )}
+                   <button
+                     onClick={() => setEditedHtml(slide.htmlContent || '')}
+                     className={cx('text-[11px] px-3 py-1.5 rounded-lg transition-all border', 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-white/10')}
+                   >
+                     {lang === 'zh' ? '重置' : 'Reset'}
+                   </button>
+                 </div>
+               </div>
+               
+               {/* Selection Actions Panel */}
+               {showSelectionActions && selectedText && (
+                 <div className={cx('px-3 py-2 border-b', 'bg-indigo-950/30 border-indigo-500/20')}>
+                   <div className="flex items-center gap-2">
+                     <span className={cx('text-[11px]', 'text-indigo-400')}>
+                       {lang === 'zh' ? `已选择 ${selectedText.length} 字符` : `${selectedText.length} chars selected`}
+                     </span>
+                     <input
+                       type="text"
+                       value={selectionInstruction}
+                       onChange={(e) => setSelectionInstruction(e.target.value)}
+                       placeholder={lang === 'zh' ? '输入指令更新选中代码...' : 'Enter instruction to update selection...'}
+                       className={cx(
+                         'flex-1 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 border',
+                         'bg-slate-900 border-indigo-500/30 text-slate-200 focus:ring-indigo-500/50'
+                       )}
+                       onKeyDown={(e) => e.key === 'Enter' && handleUpdateSelection()}
+                     />
+                     <button
+                       onClick={handleUpdateSelection}
+                       disabled={!selectionInstruction.trim()}
+                       className={cx(
+                         'text-[11px] px-2 py-1 rounded transition-all',
+                         selectionInstruction.trim()
+                           ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                           : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                       )}
+                     >
+                       {lang === 'zh' ? '更新' : 'Update'}
+                     </button>
+                     <button
+                       onClick={() => {
+                         setShowSelectionActions(false);
+                         setSelectedText('');
+                         setSelectionInstruction('');
+                       }}
+                       className={cx('text-[11px] px-2 py-1 rounded text-slate-400 hover:text-slate-200')}
+                     >
+                       {lang === 'zh' ? '取消' : 'Cancel'}
+                     </button>
+                   </div>
+                 </div>
+               )}
+               
+               {/* Editable Textarea */}
+               <div className="flex-1 overflow-auto p-4">
+                 <textarea
+                   ref={textareaRef}
+                   value={editedHtml}
+                   onChange={handleHtmlChange}
+                   onSelect={handleTextSelect}
+                   onMouseUp={handleTextSelect}
+                   onKeyUp={handleTextSelect}
+                   spellCheck={false}
+                   className={cx(
+                     'w-full h-full min-h-[400px] resize-none font-mono text-xs leading-relaxed focus:outline-none',
+                     'bg-transparent text-emerald-400 selection:bg-emerald-500/30 selection:text-emerald-100'
+                   )}
+                 />
+               </div>
              </div>
            ) : (
               <div

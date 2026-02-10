@@ -698,7 +698,7 @@ const App: React.FC = () => {
     setConfig(null);
   };
 
-  const handleRegenerateSlide = async (id: string, customInstruction?: string) => {
+  const handleRegenerateSlide = async (id: string, customInstruction?: string, selectedCode?: string) => {
     if (!config) return;
 
     setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: true } : s));
@@ -716,6 +716,12 @@ const App: React.FC = () => {
         layoutSuggestion: slide.layoutSuggestion || ""
       };
 
+      // Build custom instruction with selected code context if provided
+      let finalInstruction = customInstruction;
+      if (selectedCode && customInstruction) {
+        finalInstruction = `UPDATE ONLY THE FOLLOWING SELECTED CODE SECTION:\n\n${selectedCode}\n\nINSTRUCTION: ${customInstruction}\n\nIMPORTANT: Return ONLY the updated code section. The rest of the slide should remain unchanged.`;
+      }
+
       const result = await generateSlideHtml(
         outlineItem,
         colorPalette, // Use stored palette
@@ -724,16 +730,27 @@ const App: React.FC = () => {
         config.topic,
         slideIndex + 1,
         slides.length,
-        customInstruction,
-        config.stylePresetId
+        finalInstruction,
+        config.stylePresetId,
+        selectedCode ? slide.htmlContent || undefined : undefined
       );
 
       setTotalCost(prev => prev + result.cost);
 
-      setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: result.data, isRegenerating: false } : s));
+      // If partial update (selectedCode), merge the result back
+      if (selectedCode && slide.htmlContent) {
+        const updatedHtml = slide.htmlContent.replace(selectedCode, result.data);
+        setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: updatedHtml, isRegenerating: false } : s));
+      } else {
+        setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: result.data, isRegenerating: false } : s));
+      }
     } catch (e) {
       setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false } : s));
     }
+  };
+
+  const handleSaveSlideHtml = (id: string, htmlContent: string) => {
+    setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent } : s));
   };
 
   const getFullHtml = () => {
@@ -1391,6 +1408,7 @@ const App: React.FC = () => {
                <SlidePreview
                  slide={currentSlide}
                  onRegenerate={handleRegenerateSlide}
+                 onSaveHtml={handleSaveSlideHtml}
                  colorPalette={colorPalette}
                  onColorPaletteChange={setColorPalette}
                  lang={language}
