@@ -1407,7 +1407,6 @@ export const TRANSLATIONS = {
     otherFormats: "Other Formats",
     exportOutline: "Outline (Markdown)",
     exportNotes: "Speaker Notes (Txt)",
-    exportPdf: "Print / Save as PDF",
     new: "New",
     confirmNew: "Are you sure? All progress will be lost.",
 
@@ -1543,7 +1542,6 @@ export const TRANSLATIONS = {
     otherFormats: "其他格式",
     exportOutline: "导出大纲 (Markdown)",
     exportNotes: "导出讲稿 (Txt)",
-    exportPdf: "打印 / 另存为 PDF",
     new: "新建",
     confirmNew: "确定要重新开始吗？所有进度将丢失。",
 

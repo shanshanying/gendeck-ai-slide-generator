@@ -105,7 +105,8 @@ const callLLM = async (
   modelSelection: ModelSelection,
   apiKeys: Partial<Record<ApiProvider, string>>,
   jsonMode: boolean = false,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onProgress?: (partialText: string) => void
 ): Promise<{ text: string; cost: number }> => {
 
   const { provider, modelId, baseUrl } = modelSelection;
@@ -170,6 +171,8 @@ const callLLM = async (
       headers.Authorization = `Bearer ${apiKey}`;
     }
 
+    const useStreaming = Boolean(onProgress) && !jsonMode;
+
     const response = await fetch(url, {
       method: 'POST',
       headers,
@@ -177,6 +180,7 @@ const callLLM = async (
         model: modelId,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
+        ...(useStreaming ? { stream: true } : {}),
         ...(jsonMode && provider === 'openai' ? { response_format: { type: "json_object" } } : {})
       }),
       signal
@@ -187,8 +191,42 @@ const callLLM = async (
       throw new Error(`API Error (${provider}): ${err}`);
     }
 
-    const data = await response.json();
-    outputText = data.choices?.[0]?.message?.content || "";
+    if (useStreaming && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      outputText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const data = trimmed.replace(/^data:\s*/, '');
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (typeof delta === 'string' && delta.length > 0) {
+              outputText += delta;
+              onProgress?.(outputText);
+            }
+          } catch {
+            // ignore malformed non-JSON SSE fragments
+          }
+        }
+      }
+
+    } else {
+      const data = await response.json();
+      outputText = data.choices?.[0]?.message?.content || "";
+    }
   }
 
   // 3. Anthropic Strategy
@@ -559,7 +597,8 @@ export const generateSlideHtml = async (
   totalPages: number,
   customInstruction?: string,
   stylePresetId?: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onProgress?: (partialText: string) => void
 ): Promise<ServiceResponse<string>> => {
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
@@ -705,7 +744,7 @@ export const generateSlideHtml = async (
       - NO markdown blocks.
     `;
 
-    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false, signal);
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false, signal, onProgress);
     return { data: cleanHtml(text), cost };
 
   } catch (error) {

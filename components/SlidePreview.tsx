@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
-import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, CheckCircle, AlertTriangle, PaintBucket, ChevronRight } from 'lucide-react';
+import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, PaintBucket, ChevronRight } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
@@ -10,55 +10,15 @@ import { getThemeClasses, cx } from '../styles/theme';
 
 interface SlidePreviewProps {
   slide: SlideData | undefined;
-  onRegenerate: (id: string, customPrompt?: string) => void;
   colorPalette: string;
   onColorPaletteChange?: (palette: string) => void;
+  liveCodeOutput?: string;
   lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
 }
 
-const DESIGN_CONSTRAINTS = [
-  "Dimensions: 1920x1080px (Strict)",
-  "Theme: CSS Variables for consistent branding",
-  "Assets: Inline SVGs only (No bitmaps)",
-  "Layout: Unique styles for Cover/Ending"
-];
-
-const QUICK_ACTIONS = [
-  {
-    id: 'executive',
-    label: { en: 'More executive', zh: '更高管化' },
-    instruction: {
-      en: 'Rewrite with executive tone: concise, outcome-first, and decision-oriented wording.',
-      zh: '改写为高管风格：更精炼、结论先行、强调决策价值。'
-    }
-  },
-  {
-    id: 'concise',
-    label: { en: 'More concise', zh: '更精炼' },
-    instruction: {
-      en: 'Reduce text density. Keep only core message and shortest supporting points.',
-      zh: '降低文字密度，仅保留核心结论与最关键支持点。'
-    }
-  },
-  {
-    id: 'data',
-    label: { en: 'More data-focused', zh: '更数据化' },
-    instruction: {
-      en: 'Emphasize metrics and quantitative evidence. Use data cards/charts where applicable.',
-      zh: '强化指标与量化证据，优先使用数据卡片或图表示意。'
-    }
-  },
-  {
-    id: 'story',
-    label: { en: 'More storytelling', zh: '更叙事化' },
-    instruction: {
-      en: 'Restructure into story flow: context, tension, and resolution with clearer narrative progression.',
-      zh: '改为叙事结构：背景、问题张力、解决方案，增强故事推进感。'
-    }
-  }
-];
+const VIEW_MODE_STORAGE_KEY = 'gendeck_slide_view_mode';
 
 // Group themes by category
 const THEME_CATEGORIES = [
@@ -70,11 +30,8 @@ const THEME_CATEGORIES = [
   { id: 'feminine', label: 'Feminine Power', labelZh: '女性力量', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorPalette, onColorPaletteChange, lang, t, theme }) => {
-  const [showCode, setShowCode] = useState(false);
-  const [customInstruction, setCustomInstruction] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, lang, t, theme }) => {
+  const [showCode, setShowCode] = useState(() => localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'code');
   const [scale, setScale] = useState(0.5);
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['corporate', 'tech', 'creative']);
@@ -230,10 +187,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
     return () => observer.disconnect();
   }, [slide, showCode]);
 
-  // Reset confirmation state when closing edit panel or switching slides
   useEffect(() => {
-    if (!isEditing) setShowConfirmation(false);
-  }, [isEditing, slide?.id]);
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, showCode ? 'code' : 'preview');
+  }, [showCode]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.1));
@@ -250,28 +206,6 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       </div>
     );
   }
-
-  const handleApplyClick = () => {
-    if (slide.htmlContent) {
-      setShowConfirmation(true);
-    } else {
-      performRegeneration();
-    }
-  };
-
-  const performRegeneration = () => {
-    onRegenerate(slide.id, customInstruction);
-    setIsEditing(false);
-    setShowConfirmation(false);
-    setCustomInstruction('');
-  };
-
-  const applyQuickAction = (actionId: string) => {
-    const action = QUICK_ACTIONS.find((a) => a.id === actionId);
-    if (!action) return;
-    const addition = action.instruction[lang];
-    setCustomInstruction((prev) => (prev.trim() ? `${prev.trim()} ${addition}` : addition));
-  };
 
   return (
     <div className={cx('flex-1 flex flex-col h-full border-l relative', th.bg.primary, th.border.primary)}>
@@ -311,19 +245,6 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
 
            <div className={cx('w-px h-4 mx-1', th.border.divider)} />
 
-           <button
-             onClick={() => setIsEditing(!isEditing)}
-             disabled={slide.isRegenerating}
-             className={cx(
-               'text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border',
-               isEditing
-                 ? 'bg-slate-600 text-white'
-                 : 'bg-slate-800 text-white hover:bg-slate-700 border-white/10'
-             )}
-           >
-             <RefreshCw className={`w-3.5 h-3.5 ${slide.isRegenerating ? 'animate-spin' : ''}`} />
-             {t('regenerate')}
-           </button>
            <button
              onClick={() => setShowCode(!showCode)}
              className={cx(
@@ -605,109 +526,13 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
         </div>
       )}
 
-      {/* Regeneration Input Panel */}
-      {isEditing && (
-        <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur border-b p-4 shadow-xl animate-in fade-in slide-in-from-top-2', 'bg-slate-900/95 border-white/5 shadow-black/20')}>
-          <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('instructions')}</label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={() => applyQuickAction(action.id)}
-                className={cx(
-                  'px-2.5 py-1.5 rounded-full text-[11px] border transition-all',
-                  'bg-slate-800/80 border-white/10 text-slate-200 hover:border-violet-400/50 hover:text-white'
-                )}
-              >
-                {action.label[lang]}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
-              placeholder={t('instructionPlaceholder')}
-              className={cx('flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all border', th.input.bg, th.input.border, th.input.text, th.input.focusBorder)}
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleApplyClick()}
-            />
-            <button
-              onClick={handleApplyClick}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-500/20"
-            >
-              {t('apply')}
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className={cx('px-4 py-2 rounded-lg text-sm font-medium transition-all border', th.button.primary)}
-            >
-              {t('cancel')}
-            </button>
-          </div>
-
-          {/* Design Checklist */}
-          <div className={cx('p-3 rounded-lg border', 'bg-slate-950/50 border-white/5')}>
-               <div className="flex items-center gap-2 mb-2">
-                 <span className={cx('text-[10px] font-bold uppercase tracking-wider', th.text.muted)}>{t('constraints')}</span>
-                 <div className="h-px bg-white/5 flex-1"></div>
-               </div>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
-                 {DESIGN_CONSTRAINTS.map((c, i) => (
-                   <div key={i} className="flex items-center gap-2">
-                     <CheckCircle className="w-3 h-3 text-emerald-500/80" />
-                     <span className={cx('text-[11px]', th.text.secondary)}>{c}</span>
-                   </div>
-                 ))}
-               </div>
-            </div>
-        </div>
-      )}
-
-      {/* Overwrite confirmation modal – same style as App New Deck confirm */}
-      {showConfirmation && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowConfirmation(false)}
-        >
-          <div className={cx('absolute inset-0 backdrop-blur-sm', 'bg-slate-950/80')} />
-          <div className={cx('relative border rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', 'bg-slate-900 border-white/10')}>
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', 'border-white/5')}> 
-              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', 'bg-amber-500/10 ring-amber-500/20')}>
-                <AlertTriangle className={cx('w-5 h-5', 'text-amber-400')} />
-              </div>
-              <div>
-                <h3 className={cx('text-lg font-semibold', th.text.primary)}>{t('overwriteConfirm')}</h3>
-                <p className={cx('text-sm', th.text.muted)}>{lang === 'zh' ? '将使用新指令重新生成此幻灯片，当前内容将被替换。' : 'This slide will be regenerated with your instruction. Current content will be replaced.'}</p>
-              </div>
-            </div>
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', 'border-white/5 bg-slate-900/50')}> 
-              <button
-                onClick={() => setShowConfirmation(false)}
-                className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
-              >
-                {t('cancel')}
-              </button>
-              <button
-                onClick={performRegeneration}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
-              >
-                {t('yesRegenerate')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Content Area */}
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/10 w-full h-full">
         {slide.htmlContent ? (
            showCode ? (
              <div className={cx('w-full h-full p-4 overflow-auto', 'bg-slate-950')}>
                <pre className={cx('text-xs font-mono whitespace-pre-wrap font-medium', 'text-emerald-400')}>
-                 {slide.htmlContent}
+                 {liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : slide.htmlContent}
                </pre>
              </div>
            ) : (
