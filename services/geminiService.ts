@@ -35,6 +35,70 @@ const calculateEstimatedCost = (
   return cost;
 };
 
+const ALLOWED_LAYOUTS = ['Cover', 'Ending', 'Standard', 'Compare', 'Grid', 'Timeline', 'Data', 'Center', 'Quote', 'Image-Heavy'] as const;
+type AllowedLayout = (typeof ALLOWED_LAYOUTS)[number];
+
+const normalizePurposeText = (text: string): string => text.toLowerCase().trim();
+
+const selectPurposeGuide = (purpose: string) => {
+  const normalizedPurpose = normalizePurposeText(purpose);
+  return PURPOSE_LAYOUT_GUIDES.find((guide) => {
+    const candidates = [guide.purpose, ...(guide.keywords || [])].map(normalizePurposeText);
+    return candidates.some((candidate) => normalizedPurpose.includes(candidate) || candidate.includes(normalizedPurpose));
+  });
+};
+
+const normalizeLayoutSuggestion = (
+  rawLayout: string | undefined,
+  index: number,
+  total: number
+): AllowedLayout => {
+  const normalized = (rawLayout || '').toLowerCase().replace(/layout[:\s-]*/g, '').trim();
+  const matched = ALLOWED_LAYOUTS.find((layout) => layout.toLowerCase() === normalized);
+  if (matched) return matched;
+  if (index === 0) return 'Cover';
+  if (index === total - 1) return 'Ending';
+  return 'Standard';
+};
+
+const hasSlideMarkers = (content: string): boolean => {
+  return /(^|\n)\s*#{1,6}\s*(slide|幻灯片|頁|页)\s*\d+/i.test(content);
+};
+
+const countSlideMarkers = (content: string): number => {
+  const matches = content.match(/(^|\n)\s*#{1,6}\s*(slide|幻灯片|頁|页)\s*\d+/gi);
+  return matches ? matches.length : 0;
+};
+
+const ensureOutlineShape = (items: OutlineItem[], slideCount: number): OutlineItem[] => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('Failed to generate a valid outline JSON array.');
+  }
+  if (items.length !== slideCount) {
+    throw new Error(`Outline slide count mismatch: expected ${slideCount}, got ${items.length}.`);
+  }
+
+  return items.map((item, index) => {
+    const title = (item?.title || '').toString().trim();
+    const pointsRaw = Array.isArray(item?.contentPoints) ? item.contentPoints : [];
+    const contentPoints = pointsRaw.map((p) => String(p).trim()).filter(Boolean);
+
+    if (!title) {
+      throw new Error(`Slide ${index + 1} is missing a title.`);
+    }
+    if (contentPoints.length === 0) {
+      throw new Error(`Slide ${index + 1} is missing content points.`);
+    }
+
+    return {
+      title,
+      contentPoints,
+      notes: "",
+      layoutSuggestion: normalizeLayoutSuggestion(item?.layoutSuggestion, index, items.length)
+    };
+  });
+};
+
 // --- Generic LLM Caller ---
 const callLLM = async (
   prompt: string,
@@ -94,17 +158,21 @@ const callLLM = async (
   }
 
   // 2. OpenAI Compatible Strategy (OpenAI, DeepSeek, Moonshot)
-  else if (['openai', 'deepseek', 'moonshot'].includes(provider)) {
-    if (!apiKey) throw new Error(`Missing API Key for ${provider}`);
+  else if (['openai', 'deepseek', 'moonshot', 'custom'].includes(provider)) {
+    if (provider !== 'custom' && !apiKey) throw new Error(`Missing API Key for ${provider}`);
+    if (!baseUrl) throw new Error(`Missing Base URL for ${provider}`);
 
     const url = `${baseUrl?.replace(/\/+$/, '')}/chat/completions`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers,
       body: JSON.stringify({
         model: modelId,
         messages: [{ role: 'user', content: prompt }],
@@ -257,9 +325,10 @@ export const generateOutline = async (
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
     const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
-    const purposeGuide = PURPOSE_LAYOUT_GUIDES.find(g => 
-      purpose.toLowerCase().includes(g.purpose.toLowerCase())
-    );
+    const purposeGuide = selectPurposeGuide(purpose);
+    const structuredInputDetected = strictMode && hasSlideMarkers(content);
+    const markerSlideCount = structuredInputDetected ? countSlideMarkers(content) : 0;
+    const expectedSlideCount = structuredInputDetected && markerSlideCount > 0 ? markerSlideCount : slideCount;
 
     const strictModeInstruction = strictMode ? `
       ⚠️ STRICT MODE ENABLED:
@@ -271,14 +340,26 @@ export const generateOutline = async (
       - You may rephrase for clarity and structure, but the meaning and information must remain exactly as provided.
       
       INPUT STRUCTURE RECOGNITION:
-      - The user's input may already be structured with slide markers like "## Slide 1", "## Slide 2", etc.
-      - If such markers exist, you MUST preserve the original slide structure and count.
-      - Map each "## Slide N" section to a corresponding slide in the output.
-      - Use the content under each "## Slide N" section as the contentPoints for that slide.
-      - Derive the slide title from the first line after "## Slide N" or from the main heading within that section.
-      - DO NOT merge or split slides that are already defined by "## Slide N" markers.
-      - Maintain the exact order of slides as they appear in the input.
+      - If slide markers like "## Slide 1", "## Slide 2" exist, preserve structure and order.
+      - Do not merge or split slides already defined in user input.
     ` : '';
+
+    const structureRequirements = structuredInputDetected ? `
+      Structure Requirements (MANDATORY - Structured Input Detected):
+      1. Preserve each user-defined "Slide N" section as one output slide.
+      2. Keep the original order and count exactly as provided.
+      3. Derive each title from section content; do not force extra Cover/Ending slides.
+      4. Choose layoutSuggestion from allowed values only.
+    ` : `
+      Structure Requirements (MANDATORY):
+      1. **Slide 1 (Cover Page)**:
+         - Title: Generate a compelling, professional title based on the input content (do NOT just use the provided 'Topic', make it descriptive).
+         - ContentPoints: Use the first point for a subtitle/summary.
+         - Layout: 'Cover'
+      2. **Slides 2 to ${Math.max(2, expectedSlideCount - 1)} (Main Content)**: Logical flow. ${profile ? `Prioritize these layouts: ${profile.layoutPreferences.primary.slice(0, 4).join(', ')}.` : "Vary layouts ('Compare', 'Grid', 'Timeline', 'Data', 'Standard')."}
+      3. **Slide ${expectedSlideCount} (Ending Page)**: One powerful summary sentence, Call to Action, "Thank You", or company contact info.
+         - Layout: 'Ending'
+    `;
 
     // Build audience-specific style guidance
     const styleGuidance = profile ? `
@@ -355,7 +436,7 @@ export const generateOutline = async (
       - Topic: ${topic}
       - Target Audience: ${audience}
       - Presentation Purpose: ${purpose}
-      - Target Slide Count: ${slideCount} (Strict adherence)
+      - Target Slide Count: ${expectedSlideCount} (Strict adherence)
 
       ${styleGuidance}
 
@@ -363,23 +444,18 @@ export const generateOutline = async (
 
       **Language:** The output language MUST match the language of the 'User Input'.
 
-      Structure Requirements (MANDATORY):
-      1. **Slide 1 (Cover Page)**:
-         - Title: Generate a compelling, professional title based on the input content (do NOT just use the provided 'Topic', make it descriptive).
-         - ContentPoints: Use the first point for a subtitle/summary.
-         - Layout: 'Cover'
-      2. **Slides 2 to ${slideCount - 1} (Main Content)**: Logical flow. ${profile ? `Prioritize these layouts: ${profile.layoutPreferences.primary.slice(0, 4).join(', ')}.` : "Vary layouts ('Compare', 'Grid', 'Timeline', 'Data', 'Standard')."}
-      3. **Slide ${slideCount} (Ending Page)**: One powerful summary sentence, Call to Action, "Thank You", or company contact info.
-         - Layout: 'Ending'
+      ${structureRequirements}
 
       Output Format:
       - Return a RAW JSON array of slides.
+      - slide array length MUST equal ${expectedSlideCount}.
+      - layoutSuggestion MUST be exactly one of: ${ALLOWED_LAYOUTS.join(', ')}.
       - JSON Structure:
         [
           {
             "title": "Slide Title",
             "contentPoints": ["Point 1", "Point 2"],
-            "layoutSuggestion": "Layout Name"
+            "layoutSuggestion": "Standard"
           }
         ]
     `;
@@ -401,8 +477,7 @@ export const generateOutline = async (
     else if (parsed.slides && Array.isArray(parsed.slides)) items = parsed.slides as OutlineItem[];
     else items = [parsed] as OutlineItem[];
 
-    // Ensure notes field exists but is empty
-    items = items.map(i => ({ ...i, notes: "" }));
+    items = ensureOutlineShape(items, expectedSlideCount);
 
     return { data: items, cost };
 
@@ -483,7 +558,8 @@ export const generateSlideHtml = async (
   pageNumber: number,
   totalPages: number,
   customInstruction?: string,
-  stylePresetId?: string
+  stylePresetId?: string,
+  signal?: AbortSignal
 ): Promise<ServiceResponse<string>> => {
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
@@ -629,17 +705,13 @@ export const generateSlideHtml = async (
       - NO markdown blocks.
     `;
 
-    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false);
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, false, signal);
     return { data: cleanHtml(text), cost };
 
-  } catch (error: any) {
-    // Log error for debugging
-    console.error('Error generating slide:', error);
-    
-    // Error handled by returning fallback HTML
-    return {
-      data: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Error generating slide</div><div style="font-size:18px;margin-top:8px;opacity:0.7;">${error.message || 'Unknown error'}</div></div></section>`,
-      cost: 0
-    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+    throw error;
   }
 };

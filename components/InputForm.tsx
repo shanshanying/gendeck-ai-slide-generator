@@ -57,6 +57,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [inputMode, setInputMode] = useState<'quick' | 'advanced'>(() =>
     loadStr('gendeck_input_mode', 'quick') === 'advanced' ? 'advanced' : 'quick'
   );
+  const [showAdvancedModelOptions, setShowAdvancedModelOptions] = useState(false);
 
   // ========== AUDIENCE SELECTION STATE ==========
   const [audienceCategoryId, setAudienceCategoryId] = useState<string>(() => 
@@ -146,6 +147,18 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [model, setModel] = useState(() =>
     loadStr('gendeck_model', PROVIDERS.find(p=>p.id==='google')?.models[0].id || '')
   );
+  const [customModelId, setCustomModelId] = useState(() => loadStr('gendeck_custom_model_id', ''));
+  const [baseUrls, setBaseUrls] = useState<Partial<Record<ApiProvider, string>>>(() =>
+    loadJson('gendeck_base_urls', {})
+  );
+  const selectedProvider = useMemo(() => PROVIDERS.find(p => p.id === provider), [provider]);
+  const resolvedModelId = provider === 'custom' ? customModelId.trim() : model;
+  const resolvedBaseUrl = useMemo(() => {
+    const override = (baseUrls[provider] || '').trim();
+    if (override) return override;
+    return (selectedProvider?.defaultBaseUrl || '').trim();
+  }, [baseUrls, provider, selectedProvider]);
+  const requiresApiKey = provider !== 'custom';
 
   // Progress and analysis state
   const [progressMessage, setProgressMessage] = useState("");
@@ -194,6 +207,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     localStorage.setItem('gendeck_provider', provider);
     localStorage.setItem('gendeck_model', model);
   }, [provider, model]);
+  useEffect(() => localStorage.setItem('gendeck_custom_model_id', customModelId), [customModelId]);
+  useEffect(() => localStorage.setItem('gendeck_base_urls', JSON.stringify(baseUrls)), [baseUrls]);
 
   // Audience persistence
   useEffect(() => localStorage.setItem('gendeck_audience_category', audienceCategoryId), [audienceCategoryId]);
@@ -254,9 +269,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
 
-    if (!apiKeys[provider] || apiKeys[provider]!.trim() === '') {
+    if (requiresApiKey && (!apiKeys[provider] || apiKeys[provider]!.trim() === '')) {
       setShowSettings(true);
       setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
+      return;
+    }
+    if (!resolvedModelId) {
+      setShowSettings(true);
+      setErrorMsg(lang === 'zh' ? '请填写模型 ID。' : 'Please set a model ID.');
+      return;
+    }
+    if (provider !== 'google' && !resolvedBaseUrl) {
+      setShowSettings(true);
+      setShowAdvancedModelOptions(true);
+      setErrorMsg(lang === 'zh' ? '请设置 Base URL。' : 'Please set a Base URL.');
       return;
     }
 
@@ -265,13 +291,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     setAnalysisResult(null);
 
     try {
-      const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
       const apiSettings: ApiSettings = {
         apiKeys: apiKeys,
         model: {
           provider: provider,
-          modelId: model,
-          baseUrl: getBaseUrl(provider)
+          modelId: resolvedModelId,
+          baseUrl: provider === 'google' ? undefined : resolvedBaseUrl
         }
       };
 
@@ -279,10 +304,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       const { audience: suggestedAudience, purpose: suggestedPurpose, reasoning } = result.data;
       
       // Find best matching audience category and subcategory
-      let matchedAudienceCat = AUDIENCE_CATEGORIES[0].id;
-      let matchedAudienceSub = AUDIENCE_CATEGORIES[0].audiences[0].id;
-      let matchedPurposeCat = PURPOSE_CATEGORIES[0].id;
-      let matchedPurposeSub = PURPOSE_CATEGORIES[0].purposes[0].id;
+      let matchedAudienceCat: string | null = null;
+      let matchedAudienceSub: string | null = null;
+      let matchedPurposeCat: string | null = null;
+      let matchedPurposeSub: string | null = null;
 
       // Match audience
       const audLower = suggestedAudience.toLowerCase();
@@ -297,7 +322,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             break;
           }
         }
-        if (matchedAudienceCat !== AUDIENCE_CATEGORIES[0].id) break;
+        if (matchedAudienceCat) break;
       }
 
       // Match purpose
@@ -313,22 +338,32 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             break;
           }
         }
-        if (matchedPurposeCat !== PURPOSE_CATEGORIES[0].id) break;
+        if (matchedPurposeCat) break;
       }
 
       // Update state
-      setAudienceCategoryId(matchedAudienceCat);
-      setAudienceSubcategoryId(matchedAudienceSub);
-      setPurposeCategoryId(matchedPurposeCat);
-      setPurposeSubcategoryId(matchedPurposeSub);
-      setUseCustomAudience(false);
-      setUseCustomPurpose(false);
+      if (matchedAudienceCat && matchedAudienceSub) {
+        setAudienceCategoryId(matchedAudienceCat);
+        setAudienceSubcategoryId(matchedAudienceSub);
+        setUseCustomAudience(false);
+      } else {
+        setUseCustomAudience(true);
+        setCustomAudience(suggestedAudience);
+      }
+      if (matchedPurposeCat && matchedPurposeSub) {
+        setPurposeCategoryId(matchedPurposeCat);
+        setPurposeSubcategoryId(matchedPurposeSub);
+        setUseCustomPurpose(false);
+      } else {
+        setUseCustomPurpose(true);
+        setCustomPurpose(suggestedPurpose);
+      }
       
       setAnalysisResult({
-        suggestedAudienceCat: matchedAudienceCat,
-        suggestedAudienceSub: matchedAudienceSub,
-        suggestedPurposeCat: matchedPurposeCat,
-        suggestedPurposeSub: matchedPurposeSub,
+        suggestedAudienceCat: matchedAudienceCat || undefined,
+        suggestedAudienceSub: matchedAudienceSub || undefined,
+        suggestedPurposeCat: matchedPurposeCat || undefined,
+        suggestedPurposeSub: matchedPurposeSub || undefined,
         reasoning
       });
       
@@ -346,9 +381,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!apiKeys[provider] || apiKeys[provider]!.trim() === '') {
+    if (requiresApiKey && (!apiKeys[provider] || apiKeys[provider]!.trim() === '')) {
       setShowSettings(true);
       setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
+      return;
+    }
+    if (!resolvedModelId) {
+      setShowSettings(true);
+      setErrorMsg(lang === 'zh' ? '请填写模型 ID。' : 'Please set a model ID.');
+      return;
+    }
+    if (provider !== 'google' && !resolvedBaseUrl) {
+      setShowSettings(true);
+      setShowAdvancedModelOptions(true);
+      setErrorMsg(lang === 'zh' ? '请设置 Base URL。' : 'Please set a Base URL.');
       return;
     }
 
@@ -362,14 +408,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
 
-    const getBaseUrl = (pId: ApiProvider) => PROVIDERS.find(p => p.id === pId)?.defaultBaseUrl;
-
     const apiSettings: ApiSettings = {
       apiKeys: apiKeys,
       model: {
         provider: provider,
-        modelId: model,
-        baseUrl: getBaseUrl(provider)
+        modelId: resolvedModelId,
+        baseUrl: provider === 'google' ? undefined : resolvedBaseUrl
       }
     };
 
@@ -454,80 +498,125 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               </div>
             )}
 
-            {/* API Keys */}
-            <div>
-              <h3 className={cx('text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2', th.text.tertiary)}>
-                <Key className="w-3 h-3" /> {t('apiCredentials')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PROVIDERS.map(p => (
-                  <div key={p.id}>
-                    <label className={cx(
-                      'block text-xs mb-1.5',
-                      !apiKeys[p.id] && provider === p.id ? 'text-orange-500 font-bold' : th.text.tertiary
-                    )}>
-                      {p.name} API Key {(!apiKeys[p.id] && provider === p.id) ? '*' : ''}
-                    </label>
-                    <input
-                      type="password"
-                      value={apiKeys[p.id] || ''}
-                      onChange={(e) => setApiKeys(prev => ({ ...prev, [p.id]: e.target.value }))}
-                      placeholder={p.placeholderKey}
-                      className={cx(
-                        'w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                        th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                      )}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={cx('h-px w-full', th.border.divider)} />
-
-            {/* Model Selection */}
-            <div className={cx(
-              'p-4 rounded-lg border max-w-md mx-auto',
-              'bg-slate-900/50 border-white/5'
-            )}>
-              <label className="block text-xs font-bold text-purple-400 mb-3 flex items-center gap-1">
+            <div className={cx('p-4 rounded-lg border space-y-4', 'bg-slate-900/50 border-white/5')}>
+              <label className="block text-xs font-bold text-purple-400 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> {t('aiModel')}
               </label>
-              <div className="space-y-3">
-                <div>
-                  <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('provider')}</label>
-                  <select
-                    value={provider}
-                    onChange={(e) => {
-                      const newProvider = e.target.value as ApiProvider;
-                      setProvider(newProvider);
+
+              <div>
+                <label className={cx('block text-xs mb-1.5', th.text.tertiary)}>{t('provider')}</label>
+                <select
+                  value={provider}
+                  onChange={(e) => {
+                    const newProvider = e.target.value as ApiProvider;
+                    setProvider(newProvider);
+                    if (newProvider !== 'custom') {
                       const defaultModel = PROVIDERS.find(p => p.id === newProvider)?.models[0].id || '';
                       setModel(defaultModel);
-                    }}
+                    }
+                  }}
+                  className={cx(
+                    'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                    th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                  )}
+                >
+                  {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className={cx('block text-xs mb-1.5', th.text.tertiary)}>{t('model')}</label>
+                {provider === 'custom' ? (
+                  <input
+                    type="text"
+                    value={customModelId}
+                    onChange={(e) => setCustomModelId(e.target.value)}
+                    placeholder={lang === 'zh' ? '例如：qwen2.5:14b 或 gpt-4o-mini' : 'e.g. qwen2.5:14b or gpt-4o-mini'}
                     className={cx(
-                      'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                      'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                       th.input.bg, th.input.border, th.input.text, th.input.focusBorder
                     )}
-                  >
-                    {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={cx('block text-[10px] mb-1', th.text.muted)}>{t('model')}</label>
+                  />
+                ) : (
                   <select
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     className={cx(
-                      'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                      'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                       th.input.bg, th.input.border, th.input.text, th.input.focusBorder
                     )}
                   >
-                    {PROVIDERS.find(p => p.id === provider)?.models.map(m => (
+                    {selectedProvider?.models.map(m => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
-                </div>
+                )}
               </div>
+
+              <div>
+                <label className={cx(
+                  'block text-xs mb-1.5',
+                  requiresApiKey && !apiKeys[provider] ? 'text-orange-400 font-semibold' : th.text.tertiary
+                )}>
+                  <Key className="w-3 h-3 inline mr-1" />
+                  {selectedProvider?.name} API Key {requiresApiKey && !apiKeys[provider] ? '*' : ''}
+                </label>
+                <input
+                  type="password"
+                  value={apiKeys[provider] || ''}
+                  onChange={(e) => setApiKeys(prev => ({ ...prev, [provider]: e.target.value }))}
+                  placeholder={selectedProvider?.placeholderKey || 'Enter API Key'}
+                  className={cx(
+                    'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                    th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                  )}
+                />
+                {requiresApiKey && !apiKeys[provider] && (
+                  <p className="text-[11px] mt-1 text-orange-300">
+                    {lang === 'zh' ? '当前提供商缺少 API Key。' : 'API key is required for the selected provider.'}
+                  </p>
+                )}
+              </div>
+
+              <div className={cx('pt-2 border-t space-y-3', th.border.divider)}>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedModelOptions(v => !v)}
+                  className={cx('text-xs underline decoration-dotted underline-offset-2', th.text.muted)}
+                >
+                  {showAdvancedModelOptions
+                    ? (lang === 'zh' ? '隐藏高级选项' : 'Hide advanced options')
+                    : (lang === 'zh' ? '高级选项' : 'Advanced options')}
+                </button>
+
+                {showAdvancedModelOptions && (
+                  <div>
+                    <label className={cx('block text-xs mb-1.5', th.text.tertiary)}>
+                      Base URL {provider === 'google' ? `(${lang === 'zh' ? 'Google 不需要' : 'Not required for Google'})` : ''}
+                    </label>
+                    <input
+                      type="text"
+                      value={baseUrls[provider] ?? selectedProvider?.defaultBaseUrl ?? ''}
+                      onChange={(e) => setBaseUrls(prev => ({ ...prev, [provider]: e.target.value }))}
+                      placeholder={selectedProvider?.defaultBaseUrl || (lang === 'zh' ? '输入 API Base URL' : 'Enter API Base URL')}
+                      disabled={provider === 'google'}
+                      className={cx(
+                        'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                        provider === 'google' ? 'opacity-60 cursor-not-allowed' : '',
+                        th.input.bg, th.input.border, th.input.text, th.input.focusBorder
+                      )}
+                    />
+                    {provider !== 'google' && (
+                      <p className={cx('text-[11px] mt-1', th.text.muted)}>
+                        {lang === 'zh'
+                          ? `当前生效: ${resolvedBaseUrl || '未设置'}`
+                          : `Effective value: ${resolvedBaseUrl || 'Not set'}`}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         )}

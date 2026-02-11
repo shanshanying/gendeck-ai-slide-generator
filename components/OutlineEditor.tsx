@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote, Check } from 'lucide-react';
@@ -15,6 +15,7 @@ interface OutlineEditorProps {
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
   colorPalette?: string;
+  targetSlideCount?: number;
 }
 
 const OutlineEditor: React.FC<OutlineEditorProps> = ({ 
@@ -25,8 +26,18 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   lang,
   t,
   theme,
-  colorPalette: initialPalette
+  colorPalette: initialPalette,
+  targetSlideCount
 }) => {
+  const ALLOWED_LAYOUTS = ['Cover', 'Ending', 'Standard', 'Compare', 'Grid', 'Timeline', 'Data', 'Center', 'Quote', 'Image-Heavy'] as const;
+  const detectLayout = (layoutSuggestion?: string): string | null => {
+    const raw = (layoutSuggestion || '').toLowerCase();
+    for (const layout of ALLOWED_LAYOUTS) {
+      if (raw.includes(layout.toLowerCase())) return layout;
+    }
+    return null;
+  };
+
   // Initialize with provided palette or default to first theme
   const [selectedPalette, setSelectedPalette] = useState(() => {
     if (initialPalette) return initialPalette;
@@ -45,7 +56,9 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   
   const handleUpdateSlide = (id: string, field: keyof SlideData, value: any) => {
     onUpdateSlides(slides.map(slide => 
-      slide.id === id ? { ...slide, [field]: value } : slide
+      slide.id === id
+        ? { ...slide, [field]: value, htmlContent: null, hasError: false, errorMessage: undefined }
+        : slide
     ));
   };
 
@@ -167,6 +180,95 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     document.body.removeChild(a);
   };
 
+  const quality = useMemo(() => {
+    const missingTitleSlides: number[] = [];
+    const missingPointsSlides: number[] = [];
+    const invalidLayoutSlides: number[] = [];
+
+    slides.forEach((slide, index) => {
+      const title = (slide.title || '').trim();
+      const points = (slide.contentPoints || []).map(p => (p || '').trim()).filter(Boolean);
+      const layout = detectLayout(slide.layoutSuggestion);
+
+      if (!title) missingTitleSlides.push(index + 1);
+      if (points.length === 0) missingPointsSlides.push(index + 1);
+      if (!layout) invalidLayoutSlides.push(index + 1);
+    });
+
+    const warnings: string[] = [];
+    if (targetSlideCount && slides.length !== targetSlideCount) {
+      warnings.push(
+        lang === 'zh'
+          ? `当前页数为 ${slides.length}，目标页数为 ${targetSlideCount}。`
+          : `Current slide count is ${slides.length}, target is ${targetSlideCount}.`
+      );
+    }
+    if (slides.length > 0 && detectLayout(slides[0].layoutSuggestion) !== 'Cover') {
+      warnings.push(lang === 'zh' ? '建议第 1 页使用 Cover 布局。' : 'Slide 1 should usually use Cover layout.');
+    }
+    if (slides.length > 1 && detectLayout(slides[slides.length - 1].layoutSuggestion) !== 'Ending') {
+      warnings.push(lang === 'zh' ? '建议最后一页使用 Ending 布局。' : 'Last slide should usually use Ending layout.');
+    }
+    if (invalidLayoutSlides.length > 0) {
+      warnings.push(
+        lang === 'zh'
+          ? `第 ${invalidLayoutSlides.join(', ')} 页布局未标准化，建议修复。`
+          : `Slides ${invalidLayoutSlides.join(', ')} use non-standard layout labels.`
+      );
+    }
+
+    const errors: string[] = [];
+    if (slides.length === 0) {
+      errors.push(lang === 'zh' ? '至少需要 1 页才能继续。' : 'At least one slide is required.');
+    }
+    if (missingTitleSlides.length > 0) {
+      errors.push(
+        lang === 'zh'
+          ? `第 ${missingTitleSlides.join(', ')} 页缺少标题。`
+          : `Slides ${missingTitleSlides.join(', ')} are missing titles.`
+      );
+    }
+    if (missingPointsSlides.length > 0) {
+      errors.push(
+        lang === 'zh'
+          ? `第 ${missingPointsSlides.join(', ')} 页缺少内容要点。`
+          : `Slides ${missingPointsSlides.join(', ')} are missing content points.`
+      );
+    }
+
+    return {
+      errors,
+      warnings,
+      invalidLayoutSlides,
+      canGenerate: errors.length === 0
+    };
+  }, [slides, lang, targetSlideCount]);
+
+  const handleAutoFixLayouts = () => {
+    const fixed = slides.map((slide, index) => {
+      const detected = detectLayout(slide.layoutSuggestion);
+      const normalized = detected || (index === 0 ? 'Cover' : index === slides.length - 1 ? 'Ending' : 'Standard');
+      return { ...slide, layoutSuggestion: normalized, htmlContent: null, hasError: false, errorMessage: undefined };
+    });
+    onUpdateSlides(fixed);
+  };
+
+  const handleAutoFixRequiredFields = () => {
+    const fixed = slides.map((slide, index) => {
+      const title = (slide.title || '').trim();
+      const contentPoints = (slide.contentPoints || []).map(p => (p || '').trim()).filter(Boolean);
+      return {
+        ...slide,
+        title: title || (lang === 'zh' ? `第 ${index + 1} 页` : `Slide ${index + 1}`),
+        contentPoints: contentPoints.length > 0 ? contentPoints : [lang === 'zh' ? '待补充内容' : 'TBD content'],
+        htmlContent: null,
+        hasError: false,
+        errorMessage: undefined
+      };
+    });
+    onUpdateSlides(fixed);
+  };
+
   return (
     <div className={cx('w-full max-w-[95%] mx-auto p-6 h-full flex flex-col', th.bg.secondary)}>
       <div className="flex justify-between items-center mb-6 shrink-0">
@@ -190,7 +292,13 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
            </button>
            <button 
              onClick={() => onConfirm(selectedPalette)}
-             className="px-6 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 flex items-center gap-2"
+             disabled={!quality.canGenerate}
+             className={cx(
+               "px-6 py-2 rounded-lg text-white font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2",
+               quality.canGenerate
+                 ? "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-purple-500/25"
+                 : "bg-gray-600/70 cursor-not-allowed shadow-none"
+             )}
            >
              {t('generateSlidesBtn')} <ArrowRight className="w-4 h-4" />
            </button>
@@ -198,6 +306,78 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-8 pb-8">
+        <div className={cx('border rounded-xl p-4 space-y-3', 'bg-slate-900/60 border-white/10')}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className={cx('text-sm font-semibold', th.text.primary)}>
+                {lang === 'zh' ? 'Outline 质量检查' : 'Outline Quality Check'}
+              </h3>
+              <p className={cx('text-xs', th.text.muted)}>
+                {lang === 'zh'
+                  ? '确保大纲结构可稳定生成 HTML 幻灯片。'
+                  : 'Validate structure before HTML slide generation.'}
+              </p>
+            </div>
+            <span className={cx(
+              'text-xs px-2 py-1 rounded-full border',
+              quality.canGenerate
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            )}>
+              {quality.canGenerate
+                ? (lang === 'zh' ? '可生成' : 'Ready')
+                : (lang === 'zh' ? '需修复' : 'Needs Fixes')}
+            </span>
+          </div>
+
+          {quality.errors.length > 0 && (
+            <div className={cx('rounded-lg border p-3', 'bg-red-500/10 border-red-500/30')}>
+              <div className="text-xs font-semibold text-red-300 mb-1">{lang === 'zh' ? '错误' : 'Errors'}</div>
+              <div className="space-y-1">
+                {quality.errors.map((msg, idx) => (
+                  <p key={`err-${idx}`} className="text-xs text-red-200">{msg}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {quality.warnings.length > 0 && (
+            <div className={cx('rounded-lg border p-3', 'bg-amber-500/10 border-amber-500/30')}>
+              <div className="text-xs font-semibold text-amber-300 mb-1">{lang === 'zh' ? '建议' : 'Warnings'}</div>
+              <div className="space-y-1">
+                {quality.warnings.map((msg, idx) => (
+                  <p key={`warn-${idx}`} className="text-xs text-amber-200">{msg}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {quality.errors.length === 0 && quality.warnings.length === 0 && (
+            <div className={cx('rounded-lg border p-3 text-xs', 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200')}>
+              {lang === 'zh'
+                ? '检查通过：可直接进入 HTML 幻灯片生成。'
+                : 'Checks passed: ready for HTML slide generation.'}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAutoFixRequiredFields}
+              className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
+            >
+              {lang === 'zh' ? '自动补全必填项' : 'Auto-fix Required Fields'}
+            </button>
+            <button
+              type="button"
+              onClick={handleAutoFixLayouts}
+              className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
+            >
+              {lang === 'zh' ? '标准化布局标签' : 'Normalize Layout Labels'}
+            </button>
+          </div>
+        </div>
+
         {slides.map((slide, index) => {
           const isCover = index === 0;
           const isEnding = index === slides.length - 1 && slides.length > 1;

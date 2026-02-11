@@ -88,6 +88,15 @@ export const PROVIDERS: {
       { id: 'claude-haiku-4.5-20251101', name: 'Claude Haiku 4.5', inputPrice: 1.0, outputPrice: 5.0 },
     ]
   },
+  {
+    id: 'custom',
+    name: 'Custom (OpenAI-compatible)',
+    defaultBaseUrl: 'http://localhost:11434/v1',
+    placeholderKey: 'Optional (for local/open endpoints)',
+    models: [
+      { id: 'custom-model', name: 'Custom Model', inputPrice: 0, outputPrice: 0 },
+    ]
+  },
 ];
 
 // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
@@ -1237,18 +1246,19 @@ export const PURPOSE_CATEGORIES: PurposeCategory[] = [
 // Purpose-driven layout recommendations
 export interface PurposeLayoutGuide {
   purpose: string;
+  keywords?: string[];
   layouts: string[];
   contentFocus: string;
 }
 
 export const PURPOSE_LAYOUT_GUIDES: PurposeLayoutGuide[] = [
-  { purpose: 'pitch', layouts: ['Data', 'Compare', 'Grid', 'Standard'], contentFocus: 'Value proposition, differentiation, traction' },
-  { purpose: 'report', layouts: ['Data', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Key metrics, status, trends' },
-  { purpose: 'proposal', layouts: ['Compare', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Problem, solution, plan, ROI' },
-  { purpose: 'review', layouts: ['Timeline', 'Data', 'Standard'], contentFocus: 'Achievements, metrics, learnings' },
-  { purpose: 'training', layouts: ['Grid', 'Standard', 'Image-Heavy', 'Quote'], contentFocus: 'Concepts, examples, exercises' },
-  { purpose: 'roadshow', layouts: ['Data', 'Compare', 'Center', 'Standard'], contentFocus: 'Vision, opportunity, team, traction' },
-  { purpose: 'launch', layouts: ['Grid', 'Image-Heavy', 'Data', 'Standard'], contentFocus: 'Features, benefits, demo, availability' },
+  { purpose: 'pitch', keywords: ['pitch', 'investment', 'sales', '融资', '路演', '推介'], layouts: ['Data', 'Compare', 'Grid', 'Standard'], contentFocus: 'Value proposition, differentiation, traction' },
+  { purpose: 'report', keywords: ['report', 'status', 'progress', 'audit', '汇报', '报告', '审计'], layouts: ['Data', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Key metrics, status, trends' },
+  { purpose: 'proposal', keywords: ['proposal', 'partnership', 'plan', '提案', '方案', '合作'], layouts: ['Compare', 'Timeline', 'Standard', 'Grid'], contentFocus: 'Problem, solution, plan, ROI' },
+  { purpose: 'review', keywords: ['review', 'performance', 'summary', '复盘', '审查', '总结'], layouts: ['Timeline', 'Data', 'Standard'], contentFocus: 'Achievements, metrics, learnings' },
+  { purpose: 'training', keywords: ['training', 'workshop', 'onboarding', '培训', '研讨会', '入职'], layouts: ['Grid', 'Standard', 'Image-Heavy', 'Quote'], contentFocus: 'Concepts, examples, exercises' },
+  { purpose: 'roadshow', keywords: ['roadshow', 'vision', 'keynote', '路演', '愿景', '演讲'], layouts: ['Data', 'Compare', 'Center', 'Standard'], contentFocus: 'Vision, opportunity, team, traction' },
+  { purpose: 'launch', keywords: ['launch', 'update', 'innovation', '发布', '更新', '创新'], layouts: ['Grid', 'Image-Heavy', 'Data', 'Standard'], contentFocus: 'Features, benefits, demo, availability' },
 ];
 
 // ============================================

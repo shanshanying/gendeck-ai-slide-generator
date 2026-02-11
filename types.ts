@@ -17,9 +17,11 @@ export interface SlideData {
   layoutSuggestion?: string;
   isRegenerating: boolean;
   cost?: number;
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
-export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot';
+export type ApiProvider = 'google' | 'openai' | 'deepseek' | 'anthropic' | 'moonshot' | 'custom';
 
 export interface ModelSelection {
   provider: ApiProvider;

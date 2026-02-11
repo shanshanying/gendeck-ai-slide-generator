@@ -92,7 +92,12 @@ const App: React.FC = () => {
 
   // Ref for aborting outline generation
   const abortControllerRef = useRef<AbortController | null>(null);
+  const slideAbortControllerRef = useRef<AbortController | null>(null);
   const openProjectInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isAbortError = (error: unknown): boolean => {
+    return error instanceof DOMException && error.name === 'AbortError';
+  };
 
   // Helper function for translations
   const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[language][key];
@@ -160,9 +165,11 @@ const App: React.FC = () => {
     const slideToProcess = currentSlides[pendingSlideIndex];
 
     // Optimistic update to show regeneration state
-    setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: true } : s));
+    setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: true, hasError: false, errorMessage: undefined } : s));
 
     try {
+      const controller = new AbortController();
+      slideAbortControllerRef.current = controller;
       const outlineItem: OutlineItem = {
         title: slideToProcess.title,
         contentPoints: slideToProcess.contentPoints,
@@ -179,19 +186,27 @@ const App: React.FC = () => {
         pendingSlideIndex + 1,
         currentSlides.length,
         undefined,
-        currentConfig.stylePresetId
+        currentConfig.stylePresetId,
+        controller.signal
       );
+      slideAbortControllerRef.current = null;
+
+      const htmlContent = (result.data || '').trim();
+      if (!htmlContent) {
+        throw new Error('Slide generation returned empty output');
+      }
 
       setTotalCost(prev => prev + result.cost);
       slideRetryCountRef.current[slideToProcess.id] = 0;
 
       setSlides(prev => {
-        const htmlContent = (result.data || '').trim();
         const next = prev.map(s => s.id === slideToProcess.id
           ? {
               ...s,
-              htmlContent: htmlContent || `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Slide generation returned empty output</div></div></section>`,
-              isRegenerating: false
+              htmlContent,
+              isRegenerating: false,
+              hasError: false,
+              errorMessage: undefined
             }
           : s
         );
@@ -202,7 +217,12 @@ const App: React.FC = () => {
         }
         return next;
       });
-    } catch (e) {
+    } catch (e: any) {
+      slideAbortControllerRef.current = null;
+      if (isAbortError(e)) {
+        setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s));
+        return;
+      }
       // Failed to generate slide - retry with cap to avoid infinite loop.
       setSlides(prev => {
          const attempts = (slideRetryCountRef.current[slideToProcess.id] || 0) + 1;
@@ -214,7 +234,9 @@ const App: React.FC = () => {
              return {
                ...s,
                isRegenerating: false,
-               htmlContent: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Slide failed after ${MAX_SLIDE_RETRIES} retries</div></div></section>`
+               htmlContent: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Slide failed after ${MAX_SLIDE_RETRIES} retries</div></div></section>`,
+               hasError: true,
+               errorMessage: e?.message || 'Slide generation failed'
              };
            }
            return { ...s, isRegenerating: false };
@@ -236,6 +258,10 @@ const App: React.FC = () => {
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
     }
+    if (slideAbortControllerRef.current) {
+      slideAbortControllerRef.current.abort();
+      slideAbortControllerRef.current = null;
+    }
   };
 
   const handleResumeGeneration = () => {
@@ -251,6 +277,10 @@ const App: React.FC = () => {
     setIsPaused(false);
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
+    }
+    if (slideAbortControllerRef.current) {
+      slideAbortControllerRef.current.abort();
+      slideAbortControllerRef.current = null;
     }
     // Return to outline view to allow editing or restarting
     setStatus(GenerationStatus.REVIEWING_OUTLINE);
@@ -342,6 +372,10 @@ const App: React.FC = () => {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    if (slideAbortControllerRef.current) {
+      slideAbortControllerRef.current.abort();
+      slideAbortControllerRef.current = null;
+    }
 
     // 2. Reset UI State
     setIsPaused(false);
@@ -406,7 +440,9 @@ const App: React.FC = () => {
         notes: item.notes || "",
         layoutSuggestion: item.layoutSuggestion,
         htmlContent: null, // Will be generated later
-        isRegenerating: false
+        isRegenerating: false,
+        hasError: false,
+        errorMessage: undefined
       }));
 
       setSlides(initialSlides);
@@ -502,19 +538,40 @@ const App: React.FC = () => {
   const handleConfirmOutline = (selectedColorPalette: string) => {
     if (!config || slides.length === 0) return;
 
+    const slidesToGenerate = slides.map((s) => ({
+      ...s,
+      isRegenerating: false,
+      ...(s.hasError ? { htmlContent: null, hasError: false, errorMessage: undefined } : {})
+    }));
+
+    setSlides(slidesToGenerate);
     setColorPalette(selectedColorPalette);
     setStatus(GenerationStatus.GENERATING_SLIDES);
 
     // Reset stop flags
     shouldStopRef.current = false;
     setIsPaused(false);
+    slideRetryCountRef.current = {};
 
     // processSlideQueue will handle the rest
-    processSlideQueue(slides, config, selectedColorPalette);
+    processSlideQueue(slidesToGenerate, config, selectedColorPalette);
   };
 
   const handleUpdateSlides = (updatedSlides: SlideData[]) => {
     setSlides(updatedSlides);
+  };
+
+  const handleRetryFailedSlides = () => {
+    if (!config) return;
+    const retrySet = slides.map((s) =>
+      s.hasError ? { ...s, htmlContent: null, hasError: false, errorMessage: undefined, isRegenerating: false } : s
+    );
+    setSlides(retrySet);
+    setStatus(GenerationStatus.GENERATING_SLIDES);
+    shouldStopRef.current = false;
+    setIsPaused(false);
+    slideRetryCountRef.current = {};
+    processSlideQueue(retrySet, config, colorPalette);
   };
 
   const handleCancelOutline = () => {
@@ -526,7 +583,7 @@ const App: React.FC = () => {
   const handleRegenerateSlide = async (id: string, customInstruction?: string) => {
     if (!config) return;
 
-    setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: true } : s));
+    setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: true, hasError: false, errorMessage: undefined } : s));
 
     const slide = slides.find(s => s.id === id);
     const slideIndex = slides.findIndex(s => s.id === id);
@@ -534,6 +591,8 @@ const App: React.FC = () => {
     if (!slide) return;
 
     try {
+      const controller = new AbortController();
+      slideAbortControllerRef.current = controller;
       const outlineItem: OutlineItem = {
         title: slide.title,
         contentPoints: slide.contentPoints,
@@ -550,14 +609,21 @@ const App: React.FC = () => {
         slideIndex + 1,
         slides.length,
         customInstruction,
-        config.stylePresetId
+        config.stylePresetId,
+        controller.signal
       );
+      slideAbortControllerRef.current = null;
 
       setTotalCost(prev => prev + result.cost);
 
-      setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: result.data, isRegenerating: false } : s));
-    } catch (e) {
-      setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false } : s));
+      setSlides(prev => prev.map(s => s.id === id ? { ...s, htmlContent: result.data, isRegenerating: false, hasError: false, errorMessage: undefined } : s));
+    } catch (e: any) {
+      slideAbortControllerRef.current = null;
+      if (isAbortError(e)) {
+        setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false } : s));
+        return;
+      }
+      setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false, hasError: true, errorMessage: e?.message || 'Slide regeneration failed' } : s));
     }
   };
 
@@ -895,6 +961,15 @@ const App: React.FC = () => {
       });
     }
 
+    const failedSlidesCount = slides.filter((s) => s.hasError).length;
+    if (failedSlidesCount > 0) {
+      issues.push({
+        level: 'error',
+        messageEn: `${failedSlidesCount} slide(s) failed to render successfully. Regenerate failed slides before export.`,
+        messageZh: `${failedSlidesCount} 页渲染失败，请先重新生成失败页面再导出。`,
+      });
+    }
+
     const missingNotesCount = slides.filter((s) => !s.notes || !s.notes.trim()).length;
     if (missingNotesCount > 0) {
       issues.push({
@@ -999,6 +1074,8 @@ const App: React.FC = () => {
         layoutSuggestion: typeof s.layoutSuggestion === 'string' ? s.layoutSuggestion : 'Standard',
         isRegenerating: false,
         cost: typeof s.cost === 'number' ? s.cost : 0,
+        hasError: Boolean(s.hasError),
+        errorMessage: typeof s.errorMessage === 'string' ? s.errorMessage : undefined,
       }));
 
     const resolvedStatus = Object.values(GenerationStatus).includes(candidate.status as GenerationStatus)
@@ -1091,8 +1168,9 @@ const App: React.FC = () => {
   const hasNotes = slides.some(s => s.notes && s.notes.trim().length > 0);
 
   // Calculate generation progress
-  const generatedCount = slides.filter(s => s.htmlContent).length;
-  const progressPercent = slides.length > 0 ? (generatedCount / slides.length) * 100 : 0;
+  const failedCount = slides.filter(s => s.hasError).length;
+  const generatedCount = slides.filter(s => s.htmlContent && !s.hasError).length;
+  const progressPercent = slides.length > 0 ? ((generatedCount + failedCount) / slides.length) * 100 : 0;
   const stageInfo = (() => {
     switch (status) {
       case GenerationStatus.GENERATING_OUTLINE:
@@ -1108,14 +1186,18 @@ const App: React.FC = () => {
       case GenerationStatus.GENERATING_SLIDES:
         return {
           label: language === 'zh'
-            ? `阶段 2/2：渲染页面 ${generatedCount}/${slides.length}`
-            : `Stage 2/2: Rendering ${generatedCount}/${slides.length}`,
+            ? `阶段 2/2：渲染页面 ${generatedCount}/${slides.length}${failedCount > 0 ? `（失败 ${failedCount}）` : ''}`
+            : `Stage 2/2: Rendering ${generatedCount}/${slides.length}${failedCount > 0 ? ` (Failed ${failedCount})` : ''}`,
           hint: language === 'zh' ? '可以暂停、恢复或取消生成' : 'You can pause, resume, or cancel generation'
         };
       case GenerationStatus.COMPLETE:
         return {
-          label: language === 'zh' ? '已完成：可以预览和导出' : 'Complete: Ready to export',
-          hint: language === 'zh' ? '建议先快速预览后导出 PDF/HTML' : 'Preview once, then export PDF/HTML'
+          label: language === 'zh'
+            ? (failedCount > 0 ? `已完成（含 ${failedCount} 页失败）` : '已完成：可以预览和导出')
+            : (failedCount > 0 ? `Complete with ${failedCount} failed slide(s)` : 'Complete: Ready to export'),
+          hint: language === 'zh'
+            ? (failedCount > 0 ? '请优先重试失败页面后再导出' : '建议先快速预览后导出 PDF/HTML')
+            : (failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then export PDF/HTML')
         };
       default:
         return null;
@@ -1148,6 +1230,24 @@ const App: React.FC = () => {
               className="underline decoration-dotted underline-offset-2 hover:opacity-80"
             >
               {language === 'zh' ? '关闭' : 'Dismiss'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {failedCount > 0 && (status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[90]">
+          <div className={cx('px-4 py-2 rounded-lg border text-xs flex items-center gap-3', 'bg-red-900/70 border-red-500/30 text-red-100')}>
+            <span>
+              {language === 'zh'
+                ? `有 ${failedCount} 页渲染失败。建议重试后再导出。`
+                : `${failedCount} slide(s) failed to render. Retry before export.`}
+            </span>
+            <button
+              onClick={handleRetryFailedSlides}
+              className={cx('px-2.5 py-1 rounded-md border text-[11px] font-medium transition-all', 'bg-red-500/20 border-red-400/30 text-red-100 hover:bg-red-500/30')}
+            >
+              {language === 'zh' ? '重试失败页' : 'Retry Failed Slides'}
             </button>
           </div>
         </div>
@@ -1352,6 +1452,7 @@ const App: React.FC = () => {
             t={t}
             theme={theme}
             colorPalette={colorPalette}
+            targetSlideCount={config?.slideCount}
           />
         )}
 
