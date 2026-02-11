@@ -54,6 +54,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [strictMode, setStrictMode] = useState(() => loadJson('gendeck_strict_mode', false));
+  const [inputMode, setInputMode] = useState<'quick' | 'advanced'>(() =>
+    loadStr('gendeck_input_mode', 'quick') === 'advanced' ? 'advanced' : 'quick'
+  );
 
   // ========== AUDIENCE SELECTION STATE ==========
   const [audienceCategoryId, setAudienceCategoryId] = useState<string>(() => 
@@ -92,6 +95,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   );
 
   // ========== COMPUTED VALUES ==========
+  const quickAudience = lang === 'zh' ? '通用业务团队与管理层' : 'General business team and stakeholders';
+  const quickPurpose = lang === 'zh' ? '清晰传达信息并推动决策' : 'Clearly communicate and drive decisions';
   
   // Final audience string (custom or from selection)
   const finalAudience = useMemo(() => {
@@ -127,6 +132,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     const preset = getStylePreset(rec.presetId);
     return { ...rec, preset };
   }, [audienceCategoryId, purposeCategoryId, useStyleOverride, overrideStyleId, lang]);
+
+  const effectiveAudience = inputMode === 'quick' ? quickAudience : finalAudience;
+  const effectivePurpose = inputMode === 'quick' ? quickPurpose : finalPurpose;
 
   // ========== SETTINGS STATE ==========
   const [apiKeys, setApiKeys] = useState<Partial<Record<ApiProvider, string>>>(() =>
@@ -202,6 +210,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   // Style persistence
   useEffect(() => localStorage.setItem('gendeck_override_style', overrideStyleId), [overrideStyleId]);
   useEffect(() => localStorage.setItem('gendeck_use_style_override', JSON.stringify(useStyleOverride)), [useStyleOverride]);
+  useEffect(() => localStorage.setItem('gendeck_input_mode', inputMode), [inputMode]);
 
   // ========== HTML IMPORT ==========
   const handleHtmlImport = (e: ChangeEvent<HTMLInputElement>) => {
@@ -343,12 +352,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
 
-    if (!finalAudience.trim()) {
+    if (inputMode === 'advanced' && !finalAudience.trim()) {
       setErrorMsg(lang === 'zh' ? '请选择或输入目标受众' : 'Please select or enter target audience');
       return;
     }
 
-    if (!finalPurpose.trim()) {
+    if (inputMode === 'advanced' && !finalPurpose.trim()) {
       setErrorMsg(lang === 'zh' ? '请选择或输入演示目标' : 'Please select or enter presentation purpose');
       return;
     }
@@ -366,8 +375,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
     onGenerate({ 
       topic: topic || (lang === 'zh' ? '未命名演示' : 'Untitled Presentation'), 
-      audience: finalAudience, 
-      purpose: finalPurpose, 
+      audience: effectiveAudience,
+      purpose: effectivePurpose,
       slideCount, 
       apiSettings, 
       documentContent: content, 
@@ -390,18 +399,42 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           <Sparkles className="w-6 h-6 text-purple-400" />
           {t('createNewDeck')}
         </h2>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className={cx(
-            'transition-all flex items-center gap-2 px-3 py-1.5 rounded-lg border',
-            showSettings
-              ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10'
-              : cx('hover:border-white/20', th.button.ghost)
-          )}
-        >
-          <Settings className="w-4 h-4" />
-          <span className="text-xs font-medium">{t('modelSettings')}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
+            <button
+              type="button"
+              onClick={() => setInputMode('quick')}
+              className={cx(
+                'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
+                inputMode === 'quick' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
+              )}
+            >
+              {lang === 'zh' ? '快速模式' : 'Quick'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setInputMode('advanced')}
+              className={cx(
+                'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
+                inputMode === 'advanced' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
+              )}
+            >
+              {lang === 'zh' ? '高级模式' : 'Advanced'}
+            </button>
+          </div>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={cx(
+              'transition-all flex items-center gap-2 px-3 py-1.5 rounded-lg border',
+              showSettings
+                ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10'
+                : cx('hover:border-white/20', th.button.ghost)
+            )}
+          >
+            <Settings className="w-4 h-4" />
+            <span className="text-xs font-medium">{t('modelSettings')}</span>
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -499,6 +532,14 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           </div>
         )}
 
+        {inputMode === 'quick' && (
+          <div className={cx('p-3 rounded-lg border text-sm', 'bg-blue-500/10 border-blue-500/20 text-blue-200')}>
+            {lang === 'zh'
+              ? '快速模式：只需输入内容与页数，系统将自动推断受众与目标。需要精细控制时切换到高级模式。'
+              : 'Quick mode: provide content and slide count only. Audience and purpose are auto-selected. Switch to Advanced for full control.'}
+          </div>
+        )}
+
         {/* Form Fields */}
         <div className="space-y-6">
           {/* Topic */}
@@ -542,72 +583,78 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             </div>
           </div>
 
-          {/* AI Auto Analysis Button */}
-          <div className={cx(
-            'p-4 rounded-lg border flex items-center justify-between',
-            'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30'
-          )}>
-            <div className="flex items-center gap-3">
+          {inputMode === 'advanced' && (
+            <>
+              {/* AI Auto Analysis Button */}
               <div className={cx(
-                'w-10 h-10 rounded-full flex items-center justify-center',
-                'bg-purple-500/20'
+                'p-4 rounded-lg border flex items-center justify-between',
+                'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500/30'
               )}>
-                <Wand2 className="w-5 h-5 text-purple-500" />
-              </div>
-              <div>
-                <div className={cx('text-sm font-medium', th.text.primary)}>
-                  {lang === 'zh' ? 'AI 智能分析' : 'AI Auto Analysis'}
+                <div className="flex items-center gap-3">
+                  <div className={cx(
+                    'w-10 h-10 rounded-full flex items-center justify-center',
+                    'bg-purple-500/20'
+                  )}>
+                    <Wand2 className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <div className={cx('text-sm font-medium', th.text.primary)}>
+                      {lang === 'zh' ? 'AI 智能分析' : 'AI Auto Analysis'}
+                    </div>
+                    <div className={cx('text-xs', th.text.muted)}>
+                      {lang === 'zh' ? '分析内容推荐最佳受众和演示目标' : 'Analyze content to recommend audience and purpose'}
+                    </div>
+                  </div>
                 </div>
-                <div className={cx('text-xs', th.text.muted)}>
-                  {lang === 'zh' ? '分析内容推荐最佳受众和演示目标' : 'Analyze content to recommend audience and purpose'}
-                </div>
+                <button
+                  type="button"
+                  onClick={handleFeelingLucky}
+                  disabled={isAnalyzing || isGenerating || !content.trim()}
+                  className={cx(
+                    'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                    isAnalyzing || isGenerating
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:shadow-lg hover:scale-105',
+                    'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/25'
+                  )}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {lang === 'zh' ? '分析中...' : 'Analyzing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      {lang === 'zh' ? '试试手气' : "I'm Feeling Lucky"}
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleFeelingLucky}
-              disabled={isAnalyzing || isGenerating || !content.trim()}
-              className={cx(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
-                isAnalyzing || isGenerating
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:shadow-lg hover:scale-105',
-                'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-purple-500/25'
-              )}
-            >
-              {isAnalyzing ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {lang === 'zh' ? '分析中...' : 'Analyzing...'}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  {lang === 'zh' ? '试试手气' : "I'm Feeling Lucky"}
-                </>
-              )}
-            </button>
-          </div>
 
-          {/* Analysis Result */}
-          {analysisResult && (
-            <div className={cx(
-              'p-3 rounded-lg border text-sm animate-in fade-in slide-in-from-top-2',
-              'bg-green-900/20 border-green-500/30 text-green-200'
-            )}>
-              <div className="flex items-center gap-2 font-medium mb-1">
-                <Sparkles className="w-4 h-4" />
-                {lang === 'zh' ? 'AI 分析结果：' : 'AI Analysis Result:'}
-              </div>
-              <div className={cx('text-xs opacity-80', 'text-green-300')}>
-                {analysisResult.reasoning}
-              </div>
-            </div>
+              {/* Analysis Result */}
+              {analysisResult && (
+                <div className={cx(
+                  'p-3 rounded-lg border text-sm animate-in fade-in slide-in-from-top-2',
+                  'bg-green-900/20 border-green-500/30 text-green-200'
+                )}>
+                  <div className="flex items-center gap-2 font-medium mb-1">
+                    <Sparkles className="w-4 h-4" />
+                    {lang === 'zh' ? 'AI 分析结果：' : 'AI Analysis Result:'}
+                  </div>
+                  <div className={cx('text-xs opacity-80', 'text-green-300')}>
+                    {analysisResult.reasoning}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
+          {inputMode === 'advanced' && (
+          <>
           {/* TWO COLUMN LAYOUT: Audience & Purpose */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* AUDIENCE SELECTION */}
@@ -925,6 +972,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               </div>
             </div>
           </div>
+          </>
+          )}
 
           {/* Source Content */}
           <div>

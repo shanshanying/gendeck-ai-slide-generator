@@ -25,6 +25,41 @@ const DESIGN_CONSTRAINTS = [
   "Layout: Unique styles for Cover/Ending"
 ];
 
+const QUICK_ACTIONS = [
+  {
+    id: 'executive',
+    label: { en: 'More executive', zh: '更高管化' },
+    instruction: {
+      en: 'Rewrite with executive tone: concise, outcome-first, and decision-oriented wording.',
+      zh: '改写为高管风格：更精炼、结论先行、强调决策价值。'
+    }
+  },
+  {
+    id: 'concise',
+    label: { en: 'More concise', zh: '更精炼' },
+    instruction: {
+      en: 'Reduce text density. Keep only core message and shortest supporting points.',
+      zh: '降低文字密度，仅保留核心结论与最关键支持点。'
+    }
+  },
+  {
+    id: 'data',
+    label: { en: 'More data-focused', zh: '更数据化' },
+    instruction: {
+      en: 'Emphasize metrics and quantitative evidence. Use data cards/charts where applicable.',
+      zh: '强化指标与量化证据，优先使用数据卡片或图表示意。'
+    }
+  },
+  {
+    id: 'story',
+    label: { en: 'More storytelling', zh: '更叙事化' },
+    instruction: {
+      en: 'Restructure into story flow: context, tension, and resolution with clearer narrative progression.',
+      zh: '改为叙事结构：背景、问题张力、解决方案，增强故事推进感。'
+    }
+  }
+];
+
 // Group themes by category
 const THEME_CATEGORIES = [
   { id: 'business', label: 'Business', labelZh: '商务', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
@@ -52,6 +87,48 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   }, [colorPalette]);
 
   const th = getThemeClasses(theme);
+
+  const sanitizeSlideHtml = (unsafeHtml: string): string => {
+    if (!unsafeHtml) return '';
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(unsafeHtml, 'text/html');
+
+      doc.querySelectorAll('script, iframe, object, embed, link[rel="import"], meta[http-equiv], base, form').forEach((el) => el.remove());
+
+      const allNodes = doc.querySelectorAll('*');
+      allNodes.forEach((el) => {
+        const attrs = Array.from(el.attributes);
+        attrs.forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          const value = attr.value.trim();
+
+          if (name.startsWith('on')) {
+            el.removeAttribute(attr.name);
+            return;
+          }
+
+          if ((name === 'href' || name === 'src' || name === 'xlink:href') && /^javascript:/i.test(value)) {
+            el.removeAttribute(attr.name);
+            return;
+          }
+
+          if (name === 'style' && /expression\s*\(|javascript:/i.test(value)) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+
+      return doc.body.innerHTML;
+    } catch {
+      return unsafeHtml
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+        .replace(/\son\w+="[^"]*"/gi, '')
+        .replace(/\son\w+='[^']*'/gi, '')
+        .replace(/javascript:/gi, '');
+    }
+  };
   
   // Parse palette to CSS variables
   // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
@@ -87,6 +164,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
   // Helper to ensure slide HTML has proper container styling with actual color values
   const processSlideHtml = (html: string) => {
     if (!html) return html;
+    html = sanitizeSlideHtml(html);
     
     // Replace CSS variables with actual color values for preview reliability
     html = html
@@ -186,6 +264,13 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
     setIsEditing(false);
     setShowConfirmation(false);
     setCustomInstruction('');
+  };
+
+  const applyQuickAction = (actionId: string) => {
+    const action = QUICK_ACTIONS.find((a) => a.id === actionId);
+    if (!action) return;
+    const addition = action.instruction[lang];
+    setCustomInstruction((prev) => (prev.trim() ? `${prev.trim()} ${addition}` : addition));
   };
 
   return (
@@ -524,6 +609,21 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, onRegenerate, colorP
       {isEditing && (
         <div className={cx('absolute top-14 left-0 right-0 z-30 backdrop-blur border-b p-4 shadow-xl animate-in fade-in slide-in-from-top-2', 'bg-slate-900/95 border-white/5 shadow-black/20')}>
           <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('instructions')}</label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => applyQuickAction(action.id)}
+                className={cx(
+                  'px-2.5 py-1.5 rounded-full text-[11px] border transition-all',
+                  'bg-slate-800/80 border-white/10 text-slate-200 hover:border-violet-400/50 hover:text-white'
+                )}
+              >
+                {action.label[lang]}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-2 mb-4">
             <input
               type="text"

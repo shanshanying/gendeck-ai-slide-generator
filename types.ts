@@ -60,6 +60,17 @@ export interface ServiceResponse<T> {
 
 export type Language = 'en' | 'zh';
 
+export interface LocalProjectFile {
+  version: number;
+  savedAt: string;
+  status: GenerationStatus;
+  config: PresentationConfig | null;
+  colorPalette: string;
+  slides: SlideData[];
+  currentSlideId: string | null;
+  totalCost: number;
+}
+
 // Audience-Driven Style Preferences
 export interface StylePreferences {
   // Visual theme
