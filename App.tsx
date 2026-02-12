@@ -718,6 +718,10 @@ Task:
     setSlideChatInput(prev => prev.trim() ? `${prev.trim()}\n${text}` : text);
   };
 
+  const handleSlideCodeChange = (slideId: string, html: string) => {
+    setSlides(prev => prev.map((s) => (s.id === slideId ? { ...s, htmlContent: html } : s)));
+  };
+
   const getFullHtml = () => {
     const colors = colorPalette.split(',').map(c => c.trim());
     // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
@@ -1522,6 +1526,10 @@ Task:
                    colorPalette={colorPalette}
                    onColorPaletteChange={setColorPalette}
                    liveCodeOutput={currentSlideLiveOutput}
+                   onCodeChange={(html) => {
+                     if (!currentSlide) return;
+                     handleSlideCodeChange(currentSlide.id, html);
+                   }}
                    t={t}
                    theme={theme}
                  />

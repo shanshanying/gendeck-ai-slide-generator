@@ -13,6 +13,7 @@ interface SlidePreviewProps {
   colorPalette: string;
   onColorPaletteChange?: (palette: string) => void;
   liveCodeOutput?: string;
+  onCodeChange?: (html: string) => void;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
 }
@@ -29,18 +30,23 @@ const THEME_CATEGORIES = [
   { id: 'feminine', label: 'Feminine Power', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, onCodeChange, t, theme }) => {
   const [showCode, setShowCode] = useState(() => localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'code');
   const [scale, setScale] = useState(0.5);
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['corporate', 'tech', 'creative']);
   const [localPalette, setLocalPalette] = useState(colorPalette);
+  const [editableCode, setEditableCode] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Update local palette when prop changes
   useEffect(() => {
     setLocalPalette(colorPalette);
   }, [colorPalette]);
+
+  useEffect(() => {
+    setEditableCode(slide?.htmlContent || '');
+  }, [slide?.id, slide?.htmlContent]);
 
   const th = getThemeClasses(theme);
 
@@ -529,10 +535,24 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
       <div ref={containerRef} className="flex-1 overflow-hidden relative bg-black/10 w-full h-full">
         {slide.htmlContent ? (
            showCode ? (
-             <div className={cx('w-full h-full p-4 overflow-auto', 'bg-slate-950')}>
-               <pre className={cx('text-xs font-mono whitespace-pre-wrap font-medium', 'text-emerald-400')}>
-                 {liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : slide.htmlContent}
-               </pre>
+             <div className={cx('w-full h-full p-4 overflow-auto flex flex-col gap-2', 'bg-slate-950')}>
+               <div className="flex items-center justify-between">
+                 <span className={cx('text-[11px] uppercase tracking-wide', th.text.muted)}>HTML Code</span>
+               </div>
+               <textarea
+                 value={liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : editableCode}
+                 readOnly={Boolean(liveCodeOutput && liveCodeOutput.trim().length > 0)}
+                 onChange={(e) => {
+                   const next = e.target.value;
+                   setEditableCode(next);
+                   onCodeChange?.(next);
+                 }}
+                 className={cx(
+                   'w-full flex-1 rounded-lg border p-3 text-xs font-mono whitespace-pre focus:outline-none resize-none',
+                   'bg-slate-950 text-emerald-300 border-white/10 focus:border-indigo-400/40'
+                 )}
+                 spellCheck={false}
+               />
              </div>
            ) : (
               <div
