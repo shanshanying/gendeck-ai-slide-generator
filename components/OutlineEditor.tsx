@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { SlideData, Language } from '../types';
+import { SlideData } from '../types';
 import type { Theme } from '../styles/theme';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote, Check } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES } from '../constants';
@@ -11,7 +11,6 @@ interface OutlineEditorProps {
   onUpdateSlides: (slides: SlideData[]) => void;
   onConfirm: (colorPalette: string) => void;
   onCancel: () => void;
-  lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
   colorPalette?: string;
@@ -23,7 +22,6 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   onUpdateSlides, 
   onConfirm, 
   onCancel,
-  lang,
   t,
   theme,
   colorPalette: initialPalette,
@@ -139,8 +137,8 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   const handleAddSlide = () => {
     const newSlide: SlideData = {
       id: Math.random().toString(36).substr(2, 9),
-      title: lang === 'zh' ? "新幻灯片" : "New Slide",
-      contentPoints: [lang === 'zh' ? "在此添加内容" : "Add your content here"],
+      title: "New Slide",
+      contentPoints: ["Add your content here"],
       htmlContent: null,
       notes: "",
       layoutSuggestion: "Layout: Standard. Title and Body.",
@@ -198,41 +196,33 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     const warnings: string[] = [];
     if (targetSlideCount && slides.length !== targetSlideCount) {
       warnings.push(
-        lang === 'zh'
-          ? `当前页数为 ${slides.length}，目标页数为 ${targetSlideCount}。`
-          : `Current slide count is ${slides.length}, target is ${targetSlideCount}.`
+        `Current slide count is ${slides.length}, target is ${targetSlideCount}.`
       );
     }
     if (slides.length > 0 && detectLayout(slides[0].layoutSuggestion) !== 'Cover') {
-      warnings.push(lang === 'zh' ? '建议第 1 页使用 Cover 布局。' : 'Slide 1 should usually use Cover layout.');
+      warnings.push('Slide 1 should usually use Cover layout.');
     }
     if (slides.length > 1 && detectLayout(slides[slides.length - 1].layoutSuggestion) !== 'Ending') {
-      warnings.push(lang === 'zh' ? '建议最后一页使用 Ending 布局。' : 'Last slide should usually use Ending layout.');
+      warnings.push('Last slide should usually use Ending layout.');
     }
     if (invalidLayoutSlides.length > 0) {
       warnings.push(
-        lang === 'zh'
-          ? `第 ${invalidLayoutSlides.join(', ')} 页布局未标准化，建议修复。`
-          : `Slides ${invalidLayoutSlides.join(', ')} use non-standard layout labels.`
+        `Slides ${invalidLayoutSlides.join(', ')} use non-standard layout labels.`
       );
     }
 
     const errors: string[] = [];
     if (slides.length === 0) {
-      errors.push(lang === 'zh' ? '至少需要 1 页才能继续。' : 'At least one slide is required.');
+      errors.push('At least one slide is required.');
     }
     if (missingTitleSlides.length > 0) {
       errors.push(
-        lang === 'zh'
-          ? `第 ${missingTitleSlides.join(', ')} 页缺少标题。`
-          : `Slides ${missingTitleSlides.join(', ')} are missing titles.`
+        `Slides ${missingTitleSlides.join(', ')} are missing titles.`
       );
     }
     if (missingPointsSlides.length > 0) {
       errors.push(
-        lang === 'zh'
-          ? `第 ${missingPointsSlides.join(', ')} 页缺少内容要点。`
-          : `Slides ${missingPointsSlides.join(', ')} are missing content points.`
+        `Slides ${missingPointsSlides.join(', ')} are missing content points.`
       );
     }
 
@@ -242,7 +232,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       invalidLayoutSlides,
       canGenerate: errors.length === 0
     };
-  }, [slides, lang, targetSlideCount]);
+  }, [slides, targetSlideCount]);
 
   const handleAutoFixLayouts = () => {
     const fixed = slides.map((slide, index) => {
@@ -259,8 +249,8 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       const contentPoints = (slide.contentPoints || []).map(p => (p || '').trim()).filter(Boolean);
       return {
         ...slide,
-        title: title || (lang === 'zh' ? `第 ${index + 1} 页` : `Slide ${index + 1}`),
-        contentPoints: contentPoints.length > 0 ? contentPoints : [lang === 'zh' ? '待补充内容' : 'TBD content'],
+        title: title || (`Slide ${index + 1}`),
+        contentPoints: contentPoints.length > 0 ? contentPoints : ['TBD content'],
         htmlContent: null,
         hasError: false,
         errorMessage: undefined
@@ -310,12 +300,10 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                {lang === 'zh' ? 'Outline 质量检查' : 'Outline Quality Check'}
+                {'Outline Quality Check'}
               </h3>
               <p className={cx('text-xs', th.text.muted)}>
-                {lang === 'zh'
-                  ? '确保大纲结构可稳定生成 HTML 幻灯片。'
-                  : 'Validate structure before HTML slide generation.'}
+                {'Validate structure before HTML slide generation.'}
               </p>
             </div>
             <span className={cx(
@@ -325,14 +313,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                 : 'bg-red-500/10 border-red-500/30 text-red-300'
             )}>
               {quality.canGenerate
-                ? (lang === 'zh' ? '可生成' : 'Ready')
-                : (lang === 'zh' ? '需修复' : 'Needs Fixes')}
+                ? ('Ready')
+                : ('Needs Fixes')}
             </span>
           </div>
 
           {quality.errors.length > 0 && (
             <div className={cx('rounded-lg border p-3', 'bg-red-500/10 border-red-500/30')}>
-              <div className="text-xs font-semibold text-red-300 mb-1">{lang === 'zh' ? '错误' : 'Errors'}</div>
+              <div className="text-xs font-semibold text-red-300 mb-1">{'Errors'}</div>
               <div className="space-y-1">
                 {quality.errors.map((msg, idx) => (
                   <p key={`err-${idx}`} className="text-xs text-red-200">{msg}</p>
@@ -343,7 +331,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
           {quality.warnings.length > 0 && (
             <div className={cx('rounded-lg border p-3', 'bg-amber-500/10 border-amber-500/30')}>
-              <div className="text-xs font-semibold text-amber-300 mb-1">{lang === 'zh' ? '建议' : 'Warnings'}</div>
+              <div className="text-xs font-semibold text-amber-300 mb-1">{'Warnings'}</div>
               <div className="space-y-1">
                 {quality.warnings.map((msg, idx) => (
                   <p key={`warn-${idx}`} className="text-xs text-amber-200">{msg}</p>
@@ -354,9 +342,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
           {quality.errors.length === 0 && quality.warnings.length === 0 && (
             <div className={cx('rounded-lg border p-3 text-xs', 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200')}>
-              {lang === 'zh'
-                ? '检查通过：可直接进入 HTML 幻灯片生成。'
-                : 'Checks passed: ready for HTML slide generation.'}
+              {'Checks passed: ready for HTML slide generation.'}
             </div>
           )}
 
@@ -366,14 +352,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
               onClick={handleAutoFixRequiredFields}
               className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
             >
-              {lang === 'zh' ? '自动补全必填项' : 'Auto-fix Required Fields'}
+              {'Auto-fix Required Fields'}
             </button>
             <button
               type="button"
               onClick={handleAutoFixLayouts}
               className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
             >
-              {lang === 'zh' ? '标准化布局标签' : 'Normalize Layout Labels'}
+              {'Normalize Layout Labels'}
             </button>
           </div>
         </div>

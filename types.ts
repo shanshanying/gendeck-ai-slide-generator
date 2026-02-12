@@ -60,7 +60,7 @@ export interface ServiceResponse<T> {
   cost: number;
 }
 
-export type Language = 'en' | 'zh';
+export type Language = 'en';
 
 export interface LocalProjectFile {
   version: number;

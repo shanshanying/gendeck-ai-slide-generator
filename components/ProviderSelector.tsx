@@ -9,7 +9,6 @@ interface ProviderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (provider: ApiProvider, modelId: string) => void;
-  lang: 'en' | 'zh';
   theme: Theme;
 }
 
@@ -17,7 +16,6 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   isOpen,
   onClose,
   onSelect,
-  lang,
   theme,
 }) => {
   const [selectedProvider, setSelectedProvider] = useState<ApiProvider>('google');
@@ -61,12 +59,10 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           </div>
           <div>
             <h3 className={cx('text-lg font-semibold', th.text.primary)}>
-              {lang === 'zh' ? '选择AI模型' : 'Select AI Model'}
+              {'Select AI Model'}
             </h3>
             <p className={cx('text-xs', th.text.muted)}>
-              {lang === 'zh' 
-                ? '此演示文稿未保存模型信息，请选择用于重新生成的模型' 
-                : 'No model info saved with this deck. Select a model for regeneration.'}
+              {'No model info saved with this deck. Select a model for regeneration.'}
             </p>
           </div>
         </div>
@@ -76,7 +72,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {/* Provider Selection */}
           <div>
             <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>
-              {lang === 'zh' ? 'AI提供商' : 'AI Provider'}
+              {'AI Provider'}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {PROVIDERS.map(provider => (
@@ -99,7 +95,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {/* Model Selection */}
           <div>
             <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>
-              {lang === 'zh' ? '模型' : 'Model'}
+              {'Model'}
             </label>
             <select
               value={selectedModel}
@@ -124,7 +120,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             onClick={onClose}
             className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
           >
-            {lang === 'zh' ? '取消' : 'Cancel'}
+            {'Cancel'}
           </button>
           <button
             onClick={handleConfirm}
@@ -136,7 +132,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           >
             <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              {lang === 'zh' ? '继续' : 'Continue'}
+              {'Continue'}
             </span>
           </button>
         </div>

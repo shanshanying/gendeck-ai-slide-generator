@@ -3,7 +3,7 @@ import React, { useState, ChangeEvent, useEffect, useMemo, useCallback } from 'r
 import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp, Wand2, CheckSquare, Square } from 'lucide-react';
 import { parseExportedHtml, ImportResult } from '../services/importService';
 import { analyzeContent, ContentAnalysis } from '../services/geminiService';
-import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
+import { PresentationConfig, ApiSettings, ApiProvider } from '../types';
 import type { Theme } from '../styles/theme';
 import { 
   PROVIDERS, 
@@ -24,7 +24,6 @@ interface InputFormProps {
   onGenerate: (config: PresentationConfig) => void;
   onCancel: () => void;
   isGenerating: boolean;
-  lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
   onImportHtml?: (result: ImportResult) => void;
@@ -45,7 +44,7 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, lang, t, theme, onImportHtml }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, t, theme, onImportHtml }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', ""));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
@@ -96,8 +95,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   );
 
   // ========== COMPUTED VALUES ==========
-  const quickAudience = lang === 'zh' ? '通用业务团队与管理层' : 'General business team and stakeholders';
-  const quickPurpose = lang === 'zh' ? '清晰传达信息并推动决策' : 'Clearly communicate and drive decisions';
+  const quickAudience = 'General business team and stakeholders';
+  const quickPurpose = 'Clearly communicate and drive decisions';
   
   // Final audience string (custom or from selection)
   const finalAudience = useMemo(() => {
@@ -106,8 +105,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     }
     const category = AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId);
     const sub = category?.audiences.find(a => a.id === audienceSubcategoryId);
-    return sub?.label[lang] || category?.label[lang] || '';
-  }, [useCustomAudience, customAudience, audienceCategoryId, audienceSubcategoryId, lang]);
+    return sub?.label || category?.label || '';
+  }, [useCustomAudience, customAudience, audienceCategoryId, audienceSubcategoryId]);
 
   // Final purpose string (custom or from selection)
   const finalPurpose = useMemo(() => {
@@ -116,8 +115,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     }
     const category = PURPOSE_CATEGORIES.find(c => c.id === purposeCategoryId);
     const sub = category?.purposes.find(p => p.id === purposeSubcategoryId);
-    return sub?.label[lang] || category?.label[lang] || '';
-  }, [useCustomPurpose, customPurpose, purposeCategoryId, purposeSubcategoryId, lang]);
+    return sub?.label || category?.label || '';
+  }, [useCustomPurpose, customPurpose, purposeCategoryId, purposeSubcategoryId]);
 
   // Computed style recommendation based on audience + purpose
   const styleRecommendation = useMemo(() => {
@@ -126,13 +125,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return {
         presetId: overrideStyleId,
         preset,
-        reason: { en: 'User selected style', zh: '用户选择的风格' }
+        reason: 'User selected style'
       };
     }
-    const rec = resolveStyleRecommendation(audienceCategoryId, purposeCategoryId, lang);
+    const rec = resolveStyleRecommendation(audienceCategoryId, purposeCategoryId);
     const preset = getStylePreset(rec.presetId);
     return { ...rec, preset };
-  }, [audienceCategoryId, purposeCategoryId, useStyleOverride, overrideStyleId, lang]);
+  }, [audienceCategoryId, purposeCategoryId, useStyleOverride, overrideStyleId]);
 
   const effectiveAudience = inputMode === 'quick' ? quickAudience : finalAudience;
   const effectivePurpose = inputMode === 'quick' ? quickPurpose : finalPurpose;
@@ -239,7 +238,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         const result = parseExportedHtml(htmlContent);
         onImportHtml(result);
       } catch (error) {
-        alert(lang === 'zh' ? '导入失败：无法解析HTML文件' : 'Import failed: Could not parse HTML file');
+        alert('Import failed: Could not parse HTML file');
       }
     };
     reader.readAsText(file);
@@ -265,7 +264,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   // ========== ANALYSIS FUNCTION (试试手气) ==========
   const handleFeelingLucky = async () => {
     if (!content.trim()) {
-      setErrorMsg(lang === 'zh' ? '请输入内容以进行分析' : 'Please enter content to analyze');
+      setErrorMsg('Please enter content to analyze');
       return;
     }
 
@@ -276,13 +275,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     }
     if (!resolvedModelId) {
       setShowSettings(true);
-      setErrorMsg(lang === 'zh' ? '请填写模型 ID。' : 'Please set a model ID.');
+      setErrorMsg('Please set a model ID.');
       return;
     }
     if (provider !== 'google' && !resolvedBaseUrl) {
       setShowSettings(true);
       setShowAdvancedModelOptions(true);
-      setErrorMsg(lang === 'zh' ? '请设置 Base URL。' : 'Please set a Base URL.');
+      setErrorMsg('Please set a Base URL.');
       return;
     }
 
@@ -300,7 +299,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         }
       };
 
-      const result = await analyzeContent(content, lang, apiSettings);
+      const result = await analyzeContent(content, apiSettings);
       const { audience: suggestedAudience, purpose: suggestedPurpose, reasoning } = result.data;
       
       // Find best matching audience category and subcategory
@@ -313,10 +312,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       const audLower = suggestedAudience.toLowerCase();
       for (const cat of AUDIENCE_CATEGORIES) {
         for (const aud of cat.audiences) {
-          if (audLower.includes(aud.label.en.toLowerCase()) ||
-              audLower.includes(aud.label.zh.toLowerCase()) ||
-              aud.label.en.toLowerCase().includes(audLower) ||
-              aud.label.zh.toLowerCase().includes(audLower)) {
+          if (audLower.includes(aud.label.toLowerCase()) ||
+              aud.label.toLowerCase().includes(audLower)) {
             matchedAudienceCat = cat.id;
             matchedAudienceSub = aud.id;
             break;
@@ -329,10 +326,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       const purLower = suggestedPurpose.toLowerCase();
       for (const cat of PURPOSE_CATEGORIES) {
         for (const pur of cat.purposes) {
-          if (purLower.includes(pur.label.en.toLowerCase()) ||
-              purLower.includes(pur.label.zh.toLowerCase()) ||
-              pur.label.en.toLowerCase().includes(purLower) ||
-              pur.label.zh.toLowerCase().includes(purLower)) {
+          if (purLower.includes(pur.label.toLowerCase()) ||
+              pur.label.toLowerCase().includes(purLower)) {
             matchedPurposeCat = cat.id;
             matchedPurposeSub = pur.id;
             break;
@@ -369,7 +364,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       
     } catch (error: any) {
       if (error?.name !== 'AbortError') {
-        setErrorMsg(error?.message || (lang === 'zh' ? '分析失败，请重试' : 'Analysis failed, please try again'));
+        setErrorMsg(error?.message || ('Analysis failed, please try again'));
       }
     } finally {
       setIsAnalyzing(false);
@@ -388,23 +383,23 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     }
     if (!resolvedModelId) {
       setShowSettings(true);
-      setErrorMsg(lang === 'zh' ? '请填写模型 ID。' : 'Please set a model ID.');
+      setErrorMsg('Please set a model ID.');
       return;
     }
     if (provider !== 'google' && !resolvedBaseUrl) {
       setShowSettings(true);
       setShowAdvancedModelOptions(true);
-      setErrorMsg(lang === 'zh' ? '请设置 Base URL。' : 'Please set a Base URL.');
+      setErrorMsg('Please set a Base URL.');
       return;
     }
 
     if (inputMode === 'advanced' && !finalAudience.trim()) {
-      setErrorMsg(lang === 'zh' ? '请选择或输入目标受众' : 'Please select or enter target audience');
+      setErrorMsg('Please select or enter target audience');
       return;
     }
 
     if (inputMode === 'advanced' && !finalPurpose.trim()) {
-      setErrorMsg(lang === 'zh' ? '请选择或输入演示目标' : 'Please select or enter presentation purpose');
+      setErrorMsg('Please select or enter presentation purpose');
       return;
     }
 
@@ -418,7 +413,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     };
 
     onGenerate({ 
-      topic: topic || (lang === 'zh' ? '未命名演示' : 'Untitled Presentation'), 
+      topic: topic || ('Untitled Presentation'), 
       audience: effectiveAudience,
       purpose: effectivePurpose,
       slideCount, 
@@ -453,7 +448,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 inputMode === 'quick' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
               )}
             >
-              {lang === 'zh' ? '快速模式' : 'Quick'}
+              {'Quick'}
             </button>
             <button
               type="button"
@@ -463,7 +458,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 inputMode === 'advanced' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
               )}
             >
-              {lang === 'zh' ? '高级模式' : 'Advanced'}
+              {'Advanced'}
             </button>
           </div>
           <button
@@ -531,7 +526,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     type="text"
                     value={customModelId}
                     onChange={(e) => setCustomModelId(e.target.value)}
-                    placeholder={lang === 'zh' ? '例如：qwen2.5:14b 或 gpt-4o-mini' : 'e.g. qwen2.5:14b or gpt-4o-mini'}
+                    placeholder={'e.g. qwen2.5:14b or gpt-4o-mini'}
                     className={cx(
                       'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                       th.input.bg, th.input.border, th.input.text, th.input.focusBorder
@@ -573,7 +568,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 />
                 {requiresApiKey && !apiKeys[provider] && (
                   <p className="text-[11px] mt-1 text-orange-300">
-                    {lang === 'zh' ? '当前提供商缺少 API Key。' : 'API key is required for the selected provider.'}
+                    {'API key is required for the selected provider.'}
                   </p>
                 )}
               </div>
@@ -585,20 +580,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className={cx('text-xs underline decoration-dotted underline-offset-2', th.text.muted)}
                 >
                   {showAdvancedModelOptions
-                    ? (lang === 'zh' ? '隐藏高级选项' : 'Hide advanced options')
-                    : (lang === 'zh' ? '高级选项' : 'Advanced options')}
+                    ? ('Hide advanced options')
+                    : ('Advanced options')}
                 </button>
 
                 {showAdvancedModelOptions && (
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.tertiary)}>
-                      Base URL {provider === 'google' ? `(${lang === 'zh' ? 'Google 不需要' : 'Not required for Google'})` : ''}
+                      Base URL {provider === 'google' ? `(${'Not required for Google'})` : ''}
                     </label>
                     <input
                       type="text"
                       value={baseUrls[provider] ?? selectedProvider?.defaultBaseUrl ?? ''}
                       onChange={(e) => setBaseUrls(prev => ({ ...prev, [provider]: e.target.value }))}
-                      placeholder={selectedProvider?.defaultBaseUrl || (lang === 'zh' ? '输入 API Base URL' : 'Enter API Base URL')}
+                      placeholder={selectedProvider?.defaultBaseUrl || ('Enter API Base URL')}
                       disabled={provider === 'google'}
                       className={cx(
                         'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
@@ -608,9 +603,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     />
                     {provider !== 'google' && (
                       <p className={cx('text-[11px] mt-1', th.text.muted)}>
-                        {lang === 'zh'
-                          ? `当前生效: ${resolvedBaseUrl || '未设置'}`
-                          : `Effective value: ${resolvedBaseUrl || 'Not set'}`}
+                        {`Effective value: ${resolvedBaseUrl || 'Not set'}`}
                       </p>
                     )}
                   </div>
@@ -623,9 +616,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {inputMode === 'quick' && (
           <div className={cx('p-3 rounded-lg border text-sm', 'bg-blue-500/10 border-blue-500/20 text-blue-200')}>
-            {lang === 'zh'
-              ? '快速模式：只需输入内容与页数，系统将自动推断受众与目标。需要精细控制时切换到高级模式。'
-              : 'Quick mode: provide content and slide count only. Audience and purpose are auto-selected. Switch to Advanced for full control.'}
+            {'Quick mode: provide content and slide count only. Audience and purpose are auto-selected. Switch to Advanced for full control.'}
           </div>
         )}
 
@@ -688,10 +679,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   </div>
                   <div>
                     <div className={cx('text-sm font-medium', th.text.primary)}>
-                      {lang === 'zh' ? 'AI 智能分析' : 'AI Auto Analysis'}
+                      {'AI Auto Analysis'}
                     </div>
                     <div className={cx('text-xs', th.text.muted)}>
-                      {lang === 'zh' ? '分析内容推荐最佳受众和演示目标' : 'Analyze content to recommend audience and purpose'}
+                      {'Analyze content to recommend audience and purpose'}
                     </div>
                   </div>
                 </div>
@@ -713,12 +704,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {lang === 'zh' ? '分析中...' : 'Analyzing...'}
+                      {'Analyzing...'}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      {lang === 'zh' ? '试试手气' : "I'm Feeling Lucky"}
+                      {"I'm Feeling Lucky"}
                     </>
                   )}
                 </button>
@@ -732,7 +723,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 )}>
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Sparkles className="w-4 h-4" />
-                    {lang === 'zh' ? 'AI 分析结果：' : 'AI Analysis Result:'}
+                    {'AI Analysis Result:'}
                   </div>
                   <div className={cx('text-xs opacity-80', 'text-green-300')}>
                     {analysisResult.reasoning}
@@ -754,7 +745,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-purple-500" />
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {lang === 'zh' ? '目标受众' : 'Target Audience'}
+                  {'Target Audience'}
                 </h3>
               </div>
 
@@ -767,7 +758,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
                 <span className={cx('text-xs', th.text.secondary)}>
-                  {lang === 'zh' ? '自定义受众' : 'Custom Audience'}
+                  {'Custom Audience'}
                 </span>
               </label>
 
@@ -780,14 +771,14 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                     th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
                   )}
-                  placeholder={lang === 'zh' ? '输入自定义受众...' : 'Enter custom audience...'}
+                  placeholder={'Enter custom audience...'}
                 />
               ) : (
                 <>
                   {/* Category Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {lang === 'zh' ? '受众分类' : 'Category'}
+                      {'Category'}
                     </label>
                     <select
                       value={audienceCategoryId}
@@ -799,19 +790,19 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     >
                       {AUDIENCE_CATEGORIES.map((cat) => (
                         <option key={cat.id} value={cat.id}>
-                          {cat.label[lang]}
+                          {cat.label}
                         </option>
                       ))}
                     </select>
                     <p className={cx('text-[10px] mt-1', th.text.muted)}>
-                      {AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId)?.description[lang]}
+                      {AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId)?.description}
                     </p>
                   </div>
 
                   {/* Subcategory Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {lang === 'zh' ? '具体受众' : 'Specific Audience'}
+                      {'Specific Audience'}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId)?.audiences.map((aud) => (
@@ -826,7 +817,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                               : cx('bg-white/5 border-white/10 text-gray-400', 'hover:border-purple-500/50')
                           )}
                         >
-                          {aud.label[lang]}
+                          {aud.label}
                         </button>
                       ))}
                     </div>
@@ -839,7 +830,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'p-2 rounded-lg text-xs',
                 'bg-purple-500/10 text-purple-300'
               )}>
-                <span className="opacity-70">{lang === 'zh' ? '当前:' : 'Current:'}</span>{' '}
+                <span className="opacity-70">{'Current:'}</span>{' '}
                 <span className="font-medium">{finalAudience}</span>
               </div>
             </div>
@@ -852,7 +843,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-5 h-5 text-blue-500" />
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {lang === 'zh' ? '演示目标' : 'Presentation Purpose'}
+                  {'Presentation Purpose'}
                 </h3>
               </div>
 
@@ -865,7 +856,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className={cx('text-xs', th.text.secondary)}>
-                  {lang === 'zh' ? '自定义目标' : 'Custom Purpose'}
+                  {'Custom Purpose'}
                 </span>
               </label>
 
@@ -878,14 +869,14 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
                     th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
                   )}
-                  placeholder={lang === 'zh' ? '输入自定义目标...' : 'Enter custom purpose...'}
+                  placeholder={'Enter custom purpose...'}
                 />
               ) : (
                 <>
                   {/* Category Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {lang === 'zh' ? '目标分类' : 'Category'}
+                      {'Category'}
                     </label>
                     <select
                       value={purposeCategoryId}
@@ -897,19 +888,19 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     >
                       {PURPOSE_CATEGORIES.map((cat) => (
                         <option key={cat.id} value={cat.id}>
-                          {cat.label[lang]}
+                          {cat.label}
                         </option>
                       ))}
                     </select>
                     <p className={cx('text-[10px] mt-1', th.text.muted)}>
-                      {PURPOSE_CATEGORIES.find(c => c.id === purposeCategoryId)?.description[lang]}
+                      {PURPOSE_CATEGORIES.find(c => c.id === purposeCategoryId)?.description}
                     </p>
                   </div>
 
                   {/* Subcategory Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {lang === 'zh' ? '具体目标' : 'Specific Purpose'}
+                      {'Specific Purpose'}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {PURPOSE_CATEGORIES.find(c => c.id === purposeCategoryId)?.purposes.map((pur) => (
@@ -924,7 +915,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                               : cx('bg-white/5 border-white/10 text-gray-400', 'hover:border-blue-500/50')
                           )}
                         >
-                          {pur.label[lang]}
+                          {pur.label}
                         </button>
                       ))}
                     </div>
@@ -937,7 +928,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'p-2 rounded-lg text-xs',
                 'bg-blue-500/10 text-blue-300'
               )}>
-                <span className="opacity-70">{lang === 'zh' ? '当前:' : 'Current:'}</span>{' '}
+                <span className="opacity-70">{'Current:'}</span>{' '}
                 <span className="font-medium">{finalPurpose}</span>
               </div>
             </div>
@@ -952,10 +943,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500" />
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {lang === 'zh' ? '风格配置' : 'Style Configuration'}
+                  {'Style Configuration'}
                 </h3>
                 <span className={cx('text-xs px-2 py-0.5 rounded-full', 'bg-amber-500/20 text-amber-400')}>
-                  {lang === 'zh' ? '自动推荐' : 'Auto-recommended'}
+                  {'Auto-recommended'}
                 </span>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -966,7 +957,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                 />
                 <span className={cx('text-xs', th.text.secondary)}>
-                  {lang === 'zh' ? '覆盖推荐' : 'Override'}
+                  {'Override'}
                 </span>
               </label>
             </div>
@@ -982,10 +973,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     th.input.bg, th.input.border, th.input.text, th.input.focusBorder
                   )}
                 >
-                  <option value="">{lang === 'zh' ? '选择风格...' : 'Select style...'}</option>
+                  <option value="">{'Select style...'}</option>
                   {STYLE_PRESETS.map((preset) => (
                     <option key={preset.id} value={preset.id}>
-                      {preset.label[lang]} — {preset.description[lang]}
+                      {preset.label} — {preset.description}
                     </option>
                   ))}
                 </select>
@@ -1000,13 +991,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1', th.text.muted)}>
-                  {lang === 'zh' ? '推荐风格' : 'Recommended Style'}
+                  {'Recommended Style'}
                 </div>
                 <div className={cx('font-semibold text-sm', th.text.primary)}>
-                  {styleRecommendation.preset?.label[lang]}
+                  {styleRecommendation.preset?.label}
                 </div>
                 <div className={cx('text-[10px] mt-1 opacity-70', th.text.muted)}>
-                  {styleRecommendation.reason[lang]}
+                  {styleRecommendation.reason}
                 </div>
               </div>
 
@@ -1017,7 +1008,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   'bg-black/20 border-white/10'
                 )}>
                   <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                    {lang === 'zh' ? '主题' : 'Theme'}
+                    {'Theme'}
                   </div>
                   <div className="flex items-center gap-2">
                     <div 
@@ -1037,7 +1028,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                  {lang === 'zh' ? '字体' : 'Typography'}
+                  {'Typography'}
                 </div>
                 <div className={cx('font-medium', th.text.secondary)}>
                   {styleRecommendation.preset?.typography.titleCase === 'uppercase' ? 'UPPERCASE' : 
@@ -1051,12 +1042,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'bg-black/20 border-white/10'
               )}>
                 <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                  {lang === 'zh' ? '密度' : 'Density'}
+                  {'Density'}
                 </div>
                 <div className={cx('font-medium', th.text.secondary)}>
-                  {styleRecommendation.preset?.visualDensity === 'minimal' ? (lang === 'zh' ? '简洁' : 'Minimal') :
-                   styleRecommendation.preset?.visualDensity === 'dense' ? (lang === 'zh' ? '密集' : 'Dense') :
-                   (lang === 'zh' ? '平衡' : 'Balanced')}
+                  {styleRecommendation.preset?.visualDensity === 'minimal' ? ('Minimal') :
+                   styleRecommendation.preset?.visualDensity === 'dense' ? ('Dense') :
+                   ('Balanced')}
                 </div>
               </div>
             </div>
@@ -1076,9 +1067,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   <label className={cx(
                     'cursor-pointer text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all border',
                     'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border-purple-500/30 hover:border-purple-500/50'
-                  )} title={lang === 'zh' ? '导入之前生成的HTML演示文稿' : 'Import previously generated HTML deck'}>
+                  )} title={'Import previously generated HTML deck'}>
                     <FileUp className="w-3 h-3" />
-                    {lang === 'zh' ? '导入HTML' : 'Import HTML'}
+                    {'Import HTML'}
                     <input type="file" accept=".html,.htm" onChange={handleHtmlImport} className="hidden" />
                   </label>
                 )}
@@ -1093,7 +1084,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   )}
                 >
                   {strictMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                  {lang === 'zh' ? '严格模式' : 'Strict Mode'}
+                  {'Strict Mode'}
                 </button>
                 <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
                   <button

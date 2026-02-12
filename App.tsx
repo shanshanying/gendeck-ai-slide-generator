@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, Language, LocalProjectFile, ApiProvider } from './types';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, LocalProjectFile, ApiProvider } from './types';
 import type { Theme } from './styles/theme';
 import { useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
@@ -11,7 +11,7 @@ import SlidePreview from './components/SlidePreview';
 import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
 import { ImportResult, parseExportedHtml } from './services/importService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Languages, Play, Pause, XCircle, Plus, Moon, FolderOpen, Save, MessageCircle, SendHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Play, Pause, XCircle, Plus, FolderOpen, Save, MessageCircle, SendHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES, findAudienceProfile, getStylePreset } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -30,7 +30,6 @@ interface AutosaveData {
 interface ExportQaIssue {
   level: 'error' | 'warning' | 'pass';
   messageEn: string;
-  messageZh: string;
 }
 
 interface SlideChatMessage {
@@ -42,47 +41,31 @@ interface SlideChatMessage {
 const SLIDE_CHAT_QUICK_REFERENCES = [
   {
     id: 'executive',
-    label: { en: 'More executive', zh: '更高管化' },
-    text: {
-      en: 'Rewrite with executive tone: concise, decision-oriented, and outcome-first.',
-      zh: '改为高管风格：更精炼、面向决策、结论先行。'
-    }
+    label: 'More executive',
+    text: 'Rewrite with executive tone: concise, decision-oriented, and outcome-first.',
   },
   {
     id: 'concise',
-    label: { en: 'More concise', zh: '更精炼' },
-    text: {
-      en: 'Reduce text density and keep only the top 3 most important points.',
-      zh: '降低文字密度，只保留最重要的 3 个要点。'
-    }
+    label: 'More concise',
+    text: 'Reduce text density and keep only the top 3 most important points.',
   },
   {
     id: 'data',
-    label: { en: 'Data-focused', zh: '更数据化' },
-    text: {
-      en: 'Emphasize metrics, quantitative evidence, and clearer data hierarchy.',
-      zh: '强化指标和量化证据，提升数据层次。'
-    }
+    label: 'Data-focused',
+    text: 'Emphasize metrics, quantitative evidence, and clearer data hierarchy.',
   },
   {
     id: 'story',
-    label: { en: 'Story flow', zh: '叙事结构' },
-    text: {
-      en: 'Restructure into story flow: context, challenge, approach, and result.',
-      zh: '改为叙事结构：背景、挑战、方法、结果。'
-    }
+    label: 'Story flow',
+    text: 'Restructure into story flow: context, challenge, approach, and result.',
   },
 ];
 
 const AUTOSAVE_KEY = 'gendeck_autosave';
 const PROJECT_FILE_VERSION = 1;
+const LANGUAGE = 'en' as const;
 
 const App: React.FC = () => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('gendeck_lang');
-    return (saved === 'en' || saved === 'zh') ? saved : 'en';
-  });
-
   // Restore from autosave on initial load
   const getInitialState = (): { data: Partial<AutosaveData>; recovered: boolean } => {
     try {
@@ -144,7 +127,7 @@ const App: React.FC = () => {
   };
 
   // Helper function for translations
-  const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[language][key];
+  const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[LANGUAGE][key];
 
   const getBaseUrl = (providerId: ApiProvider): string | undefined => {
     return providerId === 'openai' ? 'https://api.openai.com/v1'
@@ -153,10 +136,6 @@ const App: React.FC = () => {
       : providerId === 'anthropic' ? 'https://api.anthropic.com/v1'
       : undefined;
   };
-
-  useEffect(() => {
-    localStorage.setItem('gendeck_lang', language);
-  }, [language]);
 
   // Auto-save state to localStorage whenever important state changes
   useEffect(() => {
@@ -728,8 +707,8 @@ Task:
       id: `a-${Date.now()}`,
       role: 'assistant',
       content: ok
-        ? (language === 'zh' ? '已根据你的请求更新当前页面。' : 'Updated the selected slide based on your request.')
-        : (language === 'zh' ? '更新失败，请调整描述后重试。' : 'Update failed. Please refine your request and try again.')
+        ? ('Updated the selected slide based on your request.')
+        : ('Update failed. Please refine your request and try again.')
     });
 
     setSlideChatSending(false);
@@ -1059,7 +1038,6 @@ Task:
       issues.push({
         level: 'error',
         messageEn: 'No slides available to export.',
-        messageZh: '当前没有可导出的幻灯片。',
       });
       return issues;
     }
@@ -1069,7 +1047,6 @@ Task:
       issues.push({
         level: 'error',
         messageEn: `${missingHtmlCount} slide(s) are missing rendered HTML.`,
-        messageZh: `${missingHtmlCount} 页尚未生成 HTML 内容。`,
       });
     }
 
@@ -1078,7 +1055,6 @@ Task:
       issues.push({
         level: 'error',
         messageEn: `${failedSlidesCount} slide(s) failed to render successfully. Regenerate failed slides before export.`,
-        messageZh: `${failedSlidesCount} 页渲染失败，请先重新生成失败页面再导出。`,
       });
     }
 
@@ -1087,7 +1063,6 @@ Task:
       issues.push({
         level: 'warning',
         messageEn: `${missingNotesCount} slide(s) have no speaker notes.`,
-        messageZh: `${missingNotesCount} 页缺少演讲备注。`,
       });
     }
 
@@ -1096,7 +1071,6 @@ Task:
       issues.push({
         level: 'warning',
         messageEn: `${overflowRiskCount} slide(s) may overflow in print (contains overflow:auto/scroll).`,
-        messageZh: `${overflowRiskCount} 页可能在打印时溢出（含 overflow:auto/scroll）。`,
       });
     }
 
@@ -1106,7 +1080,6 @@ Task:
       issues.push({
         level: 'warning',
         messageEn: `Theme contrast ratio is ${ratio.toFixed(2)} (< 4.5). Readability risk on some displays/print.`,
-        messageZh: `主题对比度为 ${ratio.toFixed(2)}（低于 4.5），在部分屏幕/打印场景可能影响可读性。`,
       });
     }
 
@@ -1114,7 +1087,6 @@ Task:
       issues.push({
         level: 'pass',
         messageEn: 'All export checks passed.',
-        messageZh: '导出检查全部通过。',
       });
     }
 
@@ -1221,7 +1193,7 @@ Task:
         }
         applyProjectFile(project);
       } catch {
-        alert(language === 'zh' ? '项目文件无效，无法打开。' : 'Invalid project file. Could not open.');
+        alert('Invalid project file. Could not open.');
       } finally {
         event.target.value = '';
       }
@@ -1244,7 +1216,7 @@ Task:
   const handlePreview = () => {
     const hasRenderedSlides = slides.some(s => !!s.htmlContent && s.htmlContent.trim().length > 0);
     if (!hasRenderedSlides) {
-      alert(language === 'zh' ? '暂无可预览的已渲染页面。请先生成页面。' : 'No rendered slides to preview yet. Generate slides first.');
+      alert('No rendered slides to preview yet. Generate slides first.');
       return;
     }
     const fullHtml = getFullHtml();
@@ -1253,7 +1225,7 @@ Task:
     const win = window.open(url, '_blank');
     if (!win) {
       URL.revokeObjectURL(url);
-      alert(language === 'zh' ? '浏览器阻止了预览窗口，请允许弹窗后重试。' : 'Preview window was blocked by the browser. Please allow pop-ups and try again.');
+      alert('Preview window was blocked by the browser. Please allow pop-ups and try again.');
       return;
     }
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -1274,29 +1246,23 @@ Task:
     switch (status) {
       case GenerationStatus.GENERATING_OUTLINE:
         return {
-          label: language === 'zh' ? '阶段 1/2：生成大纲' : 'Stage 1/2: Outline',
-          hint: language === 'zh' ? '正在分析内容并建立演示结构' : 'Analyzing content and structuring slides'
+          label: 'Stage 1/2: Outline',
+          hint: 'Analyzing content and structuring slides'
         };
       case GenerationStatus.REVIEWING_OUTLINE:
         return {
-          label: language === 'zh' ? '阶段 1/2：请确认大纲' : 'Stage 1/2: Review',
-          hint: language === 'zh' ? '编辑大纲后继续生成页面' : 'Refine the outline before rendering slides'
+          label: 'Stage 1/2: Review',
+          hint: 'Refine the outline before rendering slides'
         };
       case GenerationStatus.GENERATING_SLIDES:
         return {
-          label: language === 'zh'
-            ? `阶段 2/2：渲染页面 ${generatedCount}/${slides.length}${failedCount > 0 ? `（失败 ${failedCount}）` : ''}`
-            : `Stage 2/2: Rendering ${generatedCount}/${slides.length}${failedCount > 0 ? ` (Failed ${failedCount})` : ''}`,
-          hint: language === 'zh' ? '可以暂停、恢复或取消生成' : 'You can pause, resume, or cancel generation'
+          label: `Stage 2/2: Rendering ${generatedCount}/${slides.length}${failedCount > 0 ? ` (Failed ${failedCount})` : ''}`,
+          hint: 'You can pause, resume, or cancel generation'
         };
       case GenerationStatus.COMPLETE:
         return {
-          label: language === 'zh'
-            ? (failedCount > 0 ? `已完成（含 ${failedCount} 页失败）` : '已完成：可以预览和导出')
-            : (failedCount > 0 ? `Complete with ${failedCount} failed slide(s)` : 'Complete: Ready to export'),
-          hint: language === 'zh'
-            ? (failedCount > 0 ? '请优先重试失败页面后再导出' : '建议先快速预览后导出 PDF/HTML')
-            : (failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then export PDF/HTML')
+          label: failedCount > 0 ? `Complete with ${failedCount} failed slide(s)` : 'Complete: Ready to export',
+          hint: failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then export PDF/HTML'
         };
       default:
         return null;
@@ -1327,12 +1293,12 @@ Task:
       {showRecoveredBanner && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[90]">
           <div className={cx('px-4 py-2 rounded-lg border text-xs flex items-center gap-3', 'bg-emerald-900/60 border-emerald-500/30 text-emerald-100')}>
-            <span>{language === 'zh' ? '已恢复上次未完成项目。' : 'Recovered your last in-progress project.'}</span>
+            <span>{'Recovered your last in-progress project.'}</span>
             <button
               onClick={() => setShowRecoveredBanner(false)}
               className="underline decoration-dotted underline-offset-2 hover:opacity-80"
             >
-              {language === 'zh' ? '关闭' : 'Dismiss'}
+              {'Dismiss'}
             </button>
           </div>
         </div>
@@ -1342,15 +1308,13 @@ Task:
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[90]">
           <div className={cx('px-4 py-2 rounded-lg border text-xs flex items-center gap-3', 'bg-red-900/70 border-red-500/30 text-red-100')}>
             <span>
-              {language === 'zh'
-                ? `有 ${failedCount} 页渲染失败。建议重试后再导出。`
-                : `${failedCount} slide(s) failed to render. Retry before export.`}
+              {`${failedCount} slide(s) failed to render. Retry before export.`}
             </span>
             <button
               onClick={handleRetryFailedSlides}
               className={cx('px-2.5 py-1 rounded-md border text-[11px] font-medium transition-all', 'bg-red-500/20 border-red-400/30 text-red-100 hover:bg-red-500/30')}
             >
-              {language === 'zh' ? '重试失败页' : 'Retry Failed Slides'}
+              {'Retry Failed Slides'}
             </button>
           </div>
         </div>
@@ -1380,32 +1344,22 @@ Task:
         </div>
 
         <div className="flex items-center gap-3">
-            {/* Language Switcher -->
-            <button
-                onClick={() => setLanguage(l => l === 'en' ? 'zh' : 'en')}
-                className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
-                title="Switch Language"
-            >
-                <Languages className="w-3.5 h-3.5" />
-                <span className="font-medium">{language === 'en' ? 'EN' : '中文'}</span>
-            </button>
-
             <button
               onClick={handleOpenProjectClick}
               className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
-              title={language === 'zh' ? '打开项目文件' : 'Open project file'}
+              title={'Open project file'}
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{language === 'zh' ? '打开项目' : 'Open Project'}</span>
+              <span className="hidden sm:inline">{'Open Project'}</span>
             </button>
 
             <button
               onClick={handleSaveProject}
               className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
-              title={language === 'zh' ? '保存项目文件' : 'Save project file'}
+              title={'Save project file'}
             >
               <Save className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{language === 'zh' ? '保存项目' : 'Save Project'}</span>
+              <span className="hidden sm:inline">{'Save Project'}</span>
             </button>
 
             {/* Cost Display */}
@@ -1420,9 +1374,9 @@ Task:
 
             {/* Auto-save indicator */}
             {slides.length > 0 && (
-              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={language === 'zh' ? '已自动保存' : 'Auto-saved'}>
+              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={'Auto-saved'}>
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={cx('text-[10px] font-medium', th.text.muted)}>{language === 'zh' ? '已保存' : 'Saved'}</span>
+                <span className={cx('text-[10px] font-medium', th.text.muted)}>{'Saved'}</span>
               </div>
             )}
 
@@ -1530,7 +1484,6 @@ Task:
               onGenerate={handleGenerateOutline}
               onCancel={handleCancelOutlineGeneration}
               isGenerating={status === GenerationStatus.GENERATING_OUTLINE}
-              lang={language}
               t={t}
               theme={theme}
               onImportHtml={handleImportHtml}
@@ -1544,7 +1497,6 @@ Task:
             onUpdateSlides={handleUpdateSlides}
             onConfirm={handleConfirmOutline}
             onCancel={handleCancelOutline}
-            lang={language}
             t={t}
             theme={theme}
             colorPalette={colorPalette}
@@ -1559,7 +1511,7 @@ Task:
               currentSlideId={currentSlideId}
               onSelectSlide={setCurrentSlideId}
               isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES && !isPaused}
-              lang={language}
+              lang={LANGUAGE}
               t={t}
               theme={theme}
             />
@@ -1570,7 +1522,6 @@ Task:
                    colorPalette={colorPalette}
                    onColorPaletteChange={setColorPalette}
                    liveCodeOutput={currentSlideLiveOutput}
-                   lang={language}
                    t={t}
                    theme={theme}
                  />
@@ -1609,7 +1560,7 @@ Task:
                   type="button"
                   onClick={() => setIsSlideChatOpen(v => !v)}
                   className={cx('h-12 w-full border-b flex items-center justify-center transition-colors', 'border-white/10 text-slate-300 hover:bg-white/5')}
-                  title={isSlideChatOpen ? (language === 'zh' ? '收起侧边聊天' : 'Collapse slide chat') : (language === 'zh' ? '展开侧边聊天' : 'Expand slide chat')}
+                  title={isSlideChatOpen ? ('Collapse slide chat') : ('Expand slide chat')}
                 >
                   {isSlideChatOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
                 </button>
@@ -1619,21 +1570,19 @@ Task:
                     <div className="px-3 py-2 border-b border-white/10">
                       <div className="flex items-center gap-2 text-sm text-slate-200 font-medium">
                         <MessageCircle className="w-4 h-4 text-indigo-300" />
-                        {language === 'zh' ? '页面更新聊天' : 'Slide Update Chat'}
+                        {'Slide Update Chat'}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         {currentSlide
-                          ? (language === 'zh' ? `当前页面：${currentSlide.title}` : `Current slide: ${currentSlide.title}`)
-                          : (language === 'zh' ? '请选择一个页面' : 'Select a slide')}
+                          ? (`Current slide: ${currentSlide.title}`)
+                          : ('Select a slide')}
                       </p>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-3 space-y-2">
                       {currentSlideChat.length === 0 && (
                         <div className="text-xs text-slate-400 rounded-lg border border-dashed border-white/10 p-3">
-                          {language === 'zh'
-                            ? '输入需求，例如：将这页改成更简洁的 3 点结构。'
-                            : 'Describe the change, e.g. "Make this slide a concise 3-point structure."'}
+                          {'Describe the change, e.g. "Make this slide a concise 3-point structure."'}
                         </div>
                       )}
                       {currentSlideChat.map((msg) => (
@@ -1648,8 +1597,8 @@ Task:
                         >
                           <div className="text-[10px] opacity-70 mb-1">
                             {msg.role === 'user'
-                              ? (language === 'zh' ? '你' : 'You')
-                              : (language === 'zh' ? '助手' : 'Assistant')}
+                              ? ('You')
+                              : ('Assistant')}
                           </div>
                           {msg.content}
                         </div>
@@ -1659,7 +1608,7 @@ Task:
                     <div className="p-3 border-t border-white/10 space-y-2">
                       {isBulkGenerating && (
                         <p className="text-[11px] text-amber-300">
-                          {language === 'zh' ? '批量生成中，暂停后可通过聊天更新单页。' : 'Bulk generation in progress. Pause to update a single slide via chat.'}
+                          {'Bulk generation in progress. Pause to update a single slide via chat.'}
                         </p>
                       )}
                       <div className="flex flex-wrap gap-1.5">
@@ -1667,7 +1616,7 @@ Task:
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => handleApplySlideChatQuickReference(item.text[language])}
+                            onClick={() => handleApplySlideChatQuickReference(item.text)}
                             disabled={!currentSlide || slideChatSending || isBulkGenerating}
                             className={cx(
                               'px-2 py-1 rounded-full text-[10px] border transition-all',
@@ -1676,7 +1625,7 @@ Task:
                                 : 'bg-slate-800 border-white/10 text-slate-200 hover:border-indigo-400/50 hover:text-white'
                             )}
                           >
-                            {item.label[language]}
+                            {item.label}
                           </button>
                         ))}
                       </div>
@@ -1691,7 +1640,7 @@ Task:
                         }}
                         rows={3}
                         className={cx('w-full rounded-lg border px-3 py-2 text-xs focus:outline-none', 'bg-slate-900 border-white/10 text-slate-100 placeholder:text-slate-500')}
-                        placeholder={language === 'zh' ? '描述你希望如何修改当前页面…' : 'Describe how to update the selected slide...'}
+                        placeholder={'Describe how to update the selected slide...'}
                         disabled={!currentSlide || slideChatSending || isBulkGenerating}
                       />
                       <button
@@ -1707,8 +1656,8 @@ Task:
                       >
                         {slideChatSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
                         {slideChatSending
-                          ? (language === 'zh' ? '更新中...' : 'Updating...')
-                          : (language === 'zh' ? '发送并更新页面' : 'Send & Update Slide')}
+                          ? ('Updating...')
+                          : ('Send & Update Slide')}
                       </button>
                     </div>
                   </>
@@ -1749,7 +1698,7 @@ Task:
                 <div className={cx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1', 'bg-red-500/10 ring-red-500/20')}>
                   <span className={cx('font-bold text-xs', 'text-red-400')}>!</span>
                 </div>
-                <p>{language === 'zh' ? '当前演示文稿的所有进度都将被清除，包括已生成的幻灯片和设置。此操作无法撤销。' : 'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
+                <p>{'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
               </div>
             </div>
 
@@ -1759,13 +1708,13 @@ Task:
                 onClick={cancelNewDeck}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
               >
-                {language === 'zh' ? '取消' : 'Cancel'}
+                {'Cancel'}
               </button>
               <button
                 onClick={confirmNewDeck}
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
               >
-                {language === 'zh' ? '确认新建' : 'Confirm New'}
+                {'Confirm New'}
               </button>
             </div>
           </div>
@@ -1789,10 +1738,10 @@ Task:
               </div>
               <div>
                 <h3 className={cx('text-lg font-semibold', th.text.primary)}>
-                  {language === 'zh' ? '导出前检查' : 'Pre-export Check'}
+                  {'Pre-export Check'}
                 </h3>
                 <p className={cx('text-sm', th.text.muted)}>
-                  {language === 'zh' ? '目标格式：HTML' : 'Target format: HTML'}
+                  {'Target format: HTML'}
                 </p>
               </div>
             </div>
@@ -1807,7 +1756,7 @@ Task:
                     issue.level === 'pass' && 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                   )}
                 >
-                  {language === 'zh' ? issue.messageZh : issue.messageEn}
+                  {issue.messageEn}
                 </div>
               ))}
             </div>
@@ -1818,7 +1767,7 @@ Task:
                 }}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
               >
-                {language === 'zh' ? '取消' : 'Cancel'}
+                {'Cancel'}
               </button>
               <button
                 onClick={executePendingExport}
@@ -1831,8 +1780,8 @@ Task:
                 )}
               >
                 {hasBlockingExportIssue
-                  ? (language === 'zh' ? '请先修复阻断问题' : 'Resolve blocking issues first')
-                  : (language === 'zh' ? '继续导出' : 'Export anyway')}
+                  ? ('Resolve blocking issues first')
+                  : ('Export anyway')}
               </button>
             </div>
           </div>

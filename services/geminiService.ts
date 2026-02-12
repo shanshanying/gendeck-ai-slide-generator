@@ -274,34 +274,11 @@ export interface ContentAnalysis {
 
 export const analyzeContent = async (
   content: string,
-  lang: 'en' | 'zh',
   apiSettings: ApiSettings,
   signal?: AbortSignal
 ): Promise<ServiceResponse<ContentAnalysis>> => {
   try {
-    const prompt = lang === 'zh' ? `
-      角色定义:
-      你是一位专业的演示文稿策略顾问。你擅长分析内容并确定最适合的目标受众和演示目标。
-
-      任务:
-      分析用户提供的内容，推荐最适合的目标受众和演示目标。
-
-      输入内容:
-      ${content.substring(0, 15000)}
-
-      输出要求:
-      1. audience: 最适合的目标受众群体（简洁描述，如"技术高管/CTO"、"产品团队"、"投资者"等）
-      2. purpose: 演示的核心目标（简洁描述，如"说服投资"、"技术方案评审"、"产品发布"等）
-      3. reasoning: 简要解释为什么推荐这个受众和目标（1-2句话）
-
-      输出格式:
-      返回一个 JSON 对象，格式如下:
-      {
-        "audience": "推荐的目标受众",
-        "purpose": "演示目标",
-        "reasoning": "推荐理由"
-      }
-    ` : `
+    const prompt = `
       Role Definition:
       You are a professional presentation strategy consultant. You excel at analyzing content and determining the most suitable target audience and presentation purpose.
 
@@ -334,9 +311,9 @@ export const analyzeContent = async (
     } catch (e) {
       // Fallback parsing
       parsed = {
-        audience: lang === 'zh' ? '技术高管/CTO' : 'Tech Executives/CTO',
-        purpose: lang === 'zh' ? '方案评审' : 'Technical Review',
-        reasoning: lang === 'zh' ? '基于内容类型自动推断' : 'Auto-inferred based on content type'
+        audience: 'Tech Executives/CTO',
+        purpose: 'Technical Review',
+        reasoning: 'Auto-inferred based on content type'
       };
     }
 

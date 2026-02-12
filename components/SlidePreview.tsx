@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SlideData, Language } from '../types';
+import { SlideData } from '../types';
 import type { Theme } from '../styles/theme';
 import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, PaintBucket, ChevronRight } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES } from '../constants';
@@ -13,7 +13,6 @@ interface SlidePreviewProps {
   colorPalette: string;
   onColorPaletteChange?: (palette: string) => void;
   liveCodeOutput?: string;
-  lang: Language;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
 }
@@ -22,15 +21,15 @@ const VIEW_MODE_STORAGE_KEY = 'gendeck_slide_view_mode';
 
 // Group themes by category
 const THEME_CATEGORIES = [
-  { id: 'business', label: 'Business', labelZh: '商务', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
-  { id: 'government', label: 'Government', labelZh: '政企', themeIds: ['government-red', 'government-red-light', 'soe-navy', 'soe-navy-light', 'executive-gray', 'executive-gray-light'] },
-  { id: 'tech', label: 'Tech Internet', labelZh: '科技互联网', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
-  { id: 'minimalist', label: 'Minimalist', labelZh: '极简', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
-  { id: 'artistic', label: 'Artistic', labelZh: '艺术', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
-  { id: 'feminine', label: 'Feminine Power', labelZh: '女性力量', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
+  { id: 'business', label: 'Business', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
+  { id: 'government', label: 'Government', themeIds: ['government-red', 'government-red-light', 'soe-navy', 'soe-navy-light', 'executive-gray', 'executive-gray-light'] },
+  { id: 'tech', label: 'Tech Internet', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
+  { id: 'minimalist', label: 'Minimalist', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
+  { id: 'artistic', label: 'Artistic', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
+  { id: 'feminine', label: 'Feminine Power', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, lang, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, t, theme }) => {
   const [showCode, setShowCode] = useState(() => localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'code');
   const [scale, setScale] = useState(0.5);
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -276,7 +275,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                 }}
                 className={cx('text-[11px] px-2 py-1 rounded border transition-all', th.button.primary)}
               >
-                {expandedCategories.length === THEME_CATEGORIES.length ? (lang === 'zh' ? '折叠' : 'Collapse') : (lang === 'zh' ? '展开' : 'Expand')}
+                {expandedCategories.length === THEME_CATEGORIES.length ? ('Collapse') : ('Expand')}
               </button>
               <button 
                 onClick={() => setShowThemePanel(false)}
@@ -311,7 +310,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                   >
                     <div className="flex items-center gap-2">
                       <span className={cx('text-xs font-semibold', hasActiveTheme ? ('text-indigo-300') : th.text.secondary)}>
-                        {lang === 'zh' ? category.labelZh : category.label}
+                        {category.label}
                       </span>
                       <span className={cx('text-[10px] px-1.5 py-0.5 rounded-full', 'bg-slate-800 text-slate-400')}>
                         {categoryThemes.length}
