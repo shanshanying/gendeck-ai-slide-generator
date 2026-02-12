@@ -674,7 +674,7 @@ export const STYLE_PRESETS: StylePreset[] = [
     },
     layoutPreferences: {
       primary: ['Standard', 'Timeline', 'Grid'],
-      avoid: ['Neon', 'Comic', 'Pop'],
+      avoid: ['Image-Heavy', 'Center', 'Quote'],
     },
     contentStyle: {
       tone: 'Formal, policy-oriented, consensus-building, respectful',
@@ -692,8 +692,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Precise, detailed, architecture-focused. Perfect for engineering and technical teams.',
     recommendedThemes: ['cyber-electric', 'aurora-violet', 'neuron-orange', 'concrete-gray', 'paper-white'],
     typography: {
-      fontFamily: '"SF Mono", Monaco, "Cascadia Code", monospace',
-      fontCharacteristics: 'Monospace or technical sans-serif. Precise, clean. Code snippets use monospace.',
+      fontFamily: '"IBM Plex Sans", "Inter", system-ui, sans-serif',
+      fontCharacteristics: 'Technical sans-serif for readability; reserve monospace for code snippets only.',
       titleCase: 'sentence',
     },
     layoutPreferences: {
@@ -764,8 +764,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Persuasive, benefit-driven, attention-grabbing. Best for marketing and sales teams.',
     recommendedThemes: ['cyber-electric', 'neuron-orange', 'aurora-violet', 'bauhaus', 'vintage-film'],
     typography: {
-      fontFamily: '"Impact", "Arial Black", sans-serif',
-      fontCharacteristics: 'Bold, attention-grabbing, high energy. Strong contrasts and vibrant accents.',
+      fontFamily: '"Montserrat", "Avenir Next", "Segoe UI", sans-serif',
+      fontCharacteristics: 'High-energy but readable geometric sans. Strong hierarchy without poster-style heaviness.',
       titleCase: 'title',
     },
     layoutPreferences: {

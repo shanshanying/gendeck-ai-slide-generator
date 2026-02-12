@@ -37,6 +37,7 @@ const calculateEstimatedCost = (
 
 const ALLOWED_LAYOUTS = ['Cover', 'Ending', 'Standard', 'Compare', 'Grid', 'Timeline', 'Data', 'Center', 'Quote', 'Image-Heavy'] as const;
 type AllowedLayout = (typeof ALLOWED_LAYOUTS)[number];
+type JsonTask = 'outline' | 'analysis' | 'notes';
 
 const normalizePurposeText = (text: string): string => text.toLowerCase().trim();
 
@@ -99,6 +100,52 @@ const ensureOutlineShape = (items: OutlineItem[], slideCount: number): OutlineIt
   });
 };
 
+const getGeminiResponseSchema = (task: JsonTask) => {
+  if (task === 'analysis') {
+    return {
+      type: Type.OBJECT,
+      properties: {
+        audience: { type: Type.STRING },
+        purpose: { type: Type.STRING },
+        reasoning: { type: Type.STRING },
+      },
+      required: ['audience', 'purpose', 'reasoning'],
+    };
+  }
+
+  if (task === 'notes') {
+    return {
+      type: Type.OBJECT,
+      properties: {
+        notes: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+      },
+      required: ['notes'],
+    };
+  }
+
+  return {
+    type: Type.OBJECT,
+    properties: {
+      slides: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            contentPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+            layoutSuggestion: { type: Type.STRING },
+          },
+          required: ['title', 'contentPoints', 'layoutSuggestion'],
+        },
+      },
+    },
+    required: ['slides'],
+  };
+};
+
 // --- Generic LLM Caller ---
 const callLLM = async (
   prompt: string,
@@ -106,7 +153,8 @@ const callLLM = async (
   apiKeys: Partial<Record<ApiProvider, string>>,
   jsonMode: boolean = false,
   signal?: AbortSignal,
-  onProgress?: (partialText: string) => void
+  onProgress?: (partialText: string) => void,
+  jsonTask: JsonTask = 'outline'
 ): Promise<{ text: string; cost: number }> => {
 
   const { provider, modelId, baseUrl } = modelSelection;
@@ -133,22 +181,10 @@ const callLLM = async (
         contents: prompt,
         config: {
           responseMimeType: "application/json",
-           responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                contentPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                layoutSuggestion: { type: Type.STRING },
-                // notes removed from strict schema to save tokens/time
-              },
-              required: ["title", "contentPoints", "layoutSuggestion"],
-            },
-          },
+          responseSchema: getGeminiResponseSchema(jsonTask),
         },
       });
-      outputText = response.text || "[]";
+      outputText = response.text || "{}";
     } else {
       response = await ai.models.generateContent({
         model: modelId,
@@ -181,7 +217,7 @@ const callLLM = async (
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         ...(useStreaming ? { stream: true } : {}),
-        ...(jsonMode && provider === 'openai' ? { response_format: { type: "json_object" } } : {})
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {})
       }),
       signal
     });
@@ -302,7 +338,7 @@ export const analyzeContent = async (
       }
     `;
 
-    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal);
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal, undefined, 'analysis');
     const jsonString = cleanJson(text);
 
     let parsed: ContentAnalysis;
@@ -462,21 +498,23 @@ export const generateOutline = async (
       ${structureRequirements}
 
       Output Format:
-      - Return a RAW JSON array of slides.
-      - slide array length MUST equal ${expectedSlideCount}.
+      - Return ONLY a JSON object with one key: "slides".
+      - slides array length MUST equal ${expectedSlideCount}.
       - layoutSuggestion MUST be exactly one of: ${ALLOWED_LAYOUTS.join(', ')}.
       - JSON Structure:
-        [
-          {
-            "title": "Slide Title",
-            "contentPoints": ["Point 1", "Point 2"],
-            "layoutSuggestion": "Standard"
-          }
-        ]
+        {
+          "slides": [
+            {
+              "title": "Slide Title",
+              "contentPoints": ["Point 1", "Point 2"],
+              "layoutSuggestion": "Standard"
+            }
+          ]
+        }
     `;
 
     // Use model settings
-    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal);
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, signal, undefined, 'outline');
     const jsonString = cleanJson(text);
 
     let parsed: any;
@@ -532,15 +570,14 @@ export const generateSpeakerNotes = async (
       ${JSON.stringify(slides.map((s, i) => ({ index: i, title: s.title, points: s.contentPoints })))}
 
       Output:
-      - Return ONLY a JSON array of strings
-      - Each string is the speaker notes for the corresponding slide
-      - Array length MUST match the number of slides exactly
+      - Return ONLY a JSON object in this shape: { "notes": ["...", "..."] }
+      - "notes" length MUST match the number of slides exactly
       - Ensure smooth transitions between slides
-      - Example format: ["Notes for slide 1", "Notes for slide 2", ...]
+      - Each notes string corresponds to its slide index
     `;
 
     // Use model settings for speaker notes generation
-    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true);
+    const { text, cost } = await callLLM(prompt, apiSettings.model, apiSettings.apiKeys, true, undefined, undefined, 'notes');
     const jsonString = cleanJson(text);
 
     let notes: string[] = [];
@@ -604,14 +641,27 @@ export const generateSlideHtml = async (
       **Content Emphasis:** Focus on ${profile.contentStyle.emphasis.join(', ')}
     ` : '';
 
+    const commonStyleSettings = `
+      ## 🧩 COMMON STYLE SETTINGS (REUSE THESE DEFAULTS)
+      Use these as the baseline style tokens so your output stays concise and consistent:
+      - sectionBase: \`background-color: var(--c-bg); color: var(--c-text); width: 1920px; height: 1080px; position: relative; overflow: hidden; print-color-adjust: exact;\`
+      - headerBase: \`position: absolute; top: 0; left: 0; width: 100%; padding: 48px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;\`
+      - headerBadge: \`display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: var(--c-bg-soft); color: var(--c-primary); font-size: 12px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 8px; text-transform: uppercase; opacity: 0.8;\`
+      - headerTitle: \`font-size: 56px; font-weight: 800; line-height: 1.1; color: var(--c-text);\`
+      - mainBase: \`position: absolute; top: 200px; left: 0; width: 100%; height: 780px; padding: 0 48px; z-index: 0;\`
+      - footerBase: \`position: absolute; bottom: 0; left: 48px; right: 48px; padding: 32px 0; display: flex; align-items: flex-end; color: var(--c-text-muted); z-index: 10; border-top: 1px solid var(--c-border);\`
+      - footerMeta: \`font-size: 14px; opacity: 0.5;\`
+      You may deviate for Cover/Ending or layout-specific needs, but keep the same visual system and spacing scale.
+    `;
+
     const prompt = `
       Role: Enterprise HTML Presentation Deck Renderer.
       Goal: Create a SINGLE, modern, print-ready HTML slide fragment using Tailwind CSS based on the provided content.
 
       ## 🔴 HARD RULES (NON-NEGOTIABLE)
-      1. **Container**: strictly \`<section class="slide" style="background-color: var(--c-bg); color: var(--c-text);">...</section>\`.
+      1. **Container**: strictly \`<section class="slide" style="background-color: var(--c-bg); color: var(--c-text); width: 1920px; height: 1080px; position: relative; overflow: hidden; print-color-adjust: exact;">...</section>\`.
       2. **Dimensions**: Strictly width: 1920px; height: 1080px.
-      3. **Units**: Use ABSOLUTE UNITS (px) only for layout stability. NO rem, vh, vw.
+      3. **Units**: Use ABSOLUTE UNITS (px) only for layout/typography sizing. NO rem, vh, vw.
       4. **Scrolling**: \`overflow: hidden\`. Content MUST fit.
       5. **Images**: NO external images (jpg/png). Use ONLY SVG icons (inline <svg>).
       6. **Backgrounds**:
@@ -652,34 +702,30 @@ export const generateSlideHtml = async (
          - \`var(--c-info)\`: Information
       
       ${styleGuidance}
+      ${commonStyleSettings}
 
-      ## 📐 DOM STRUCTURE (MANDATORY)
-      Inside the \`<section class="slide" style="background-color: var(--c-bg); color: var(--c-text); width: 1920px; height: 1080px; position: relative; overflow: hidden;">\`, you must follow this structure:
+      ## 📐 DOM STRUCTURE (DEFAULT, CONCISE)
+      Use this semantic skeleton and apply the common style settings above.
 
       \`\`\`html
-      <!-- 1. Header (Except Cover/Ending) -->
-      <header style="position: absolute; top: 0; left: 0; width: 100%; padding: 48px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;">
+      <!-- Header (except Cover/Ending) -->
+      <header style="/* headerBase */">
          <div>
-            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: var(--c-bg-soft); color: var(--c-primary); font-size: 12px; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 8px; text-transform: uppercase; opacity: 0.8;">
-               GenDeck AI
-            </span>
-            <h2 class="text-5xl font-bold leading-tight text-[var(--c-text)]">
-               ${slide.title}
-            </h2>
+           <span style="/* headerBadge */">GenDeck AI</span>
+           <h2 style="/* headerTitle */">${slide.title}</h2>
          </div>
-         <!-- Optional: Top right icon or element -->
       </header>
 
-      <!-- 2. Main Content -->
-      <main style="position: absolute; top: 200px; left: 0; width: 100%; height: 780px; padding: 0 48px; z-index: 0;">
-         <!-- YOUR GENERATED LAYOUT CONTENT HERE - Use CSS variables for colors: style="color: var(--c-text);" or style="background-color: var(--c-bg-soft);" -->
+      <!-- Main -->
+      <main style="/* mainBase */">
+         <!-- layout-specific content -->
       </main>
 
-      <!-- 3. Footer -->
-      <footer style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 32px; display: flex; align-items: flex-end; color: var(--c-text-muted); z-index: 10; border-top: 1px solid var(--c-border); margin: 0 48px; width: calc(100% - 96px);">
-         <div style="flex: 1; text-align: left; font-size: 14px; font-weight: 500; opacity: 0.5;">GenDeck</div>
-         <div style="flex: 1; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.8; letter-spacing: 0.05em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 16px;">${deckTitle}</div>
-         <div style="flex: 1; text-align: right; font-size: 14px; font-family: monospace; opacity: 0.5;">${pageNumber} / ${totalPages}</div>
+      <!-- Footer (except Cover/Ending) -->
+      <footer style="/* footerBase */">
+         <div style="flex:1; text-align:left; /* footerMeta */">GenDeck</div>
+         <div style="flex:1; text-align:center; font-size:14px; font-weight:600; opacity:0.8; letter-spacing:0.05em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 16px;">${deckTitle}</div>
+         <div style="flex:1; text-align:right; font-size:14px; font-family:monospace; opacity:0.5;">${pageNumber} / ${totalPages}</div>
       </footer>
       \`\`\`
 
@@ -700,8 +746,9 @@ export const generateSlideHtml = async (
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
       If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant styles.
       - Use inline styles for colors: \`style="color: var(--c-text);"\`, \`style="background-color: var(--c-bg-soft);"\`, etc.
-      - Use Tailwind for layout: \`flex\`, \`grid\`, \`absolute\`, \`relative\`, etc.
-      - Typography: \`font-serif\`, \`uppercase\`, \`font-bold\`, \`text-center\`, etc.
+      - Use Tailwind utilities mainly for layout: \`flex\`, \`grid\`, \`absolute\`, \`relative\`, etc.
+      - Prefer inline px typography styles for title/body sizing to ensure 1080p print consistency.
+      - Do NOT render every slide with the same visual chrome; express the chosen style profile (tone, density, typography).
 
       ## 🧿 ICONOGRAPHY
       - Use high-quality inline SVGs (Lucide/Feather style).
