@@ -1,7 +1,6 @@
 
-import React, { useState, ChangeEvent, useEffect, useMemo, useCallback } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Eye, Edit3, FileUp, Wand2, CheckSquare, Square } from 'lucide-react';
-import { parseExportedHtml, ImportResult } from '../services/importService';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Wand2, CheckSquare, Square } from 'lucide-react';
 import { analyzeContent, ContentAnalysis } from '../services/geminiService';
 import { PresentationConfig, ApiSettings, ApiProvider } from '../types';
 import type { Theme } from '../styles/theme';
@@ -9,11 +8,8 @@ import {
   PROVIDERS, 
   SAMPLE_CONTENT, 
   TRANSLATIONS, 
-  COLOR_THEMES,
   AUDIENCE_CATEGORIES,
   PURPOSE_CATEGORIES,
-  STYLE_PRESETS,
-  getStylePreset,
   resolveStyleRecommendation,
   type AudienceCategory,
   type PurposeCategory
@@ -26,7 +22,6 @@ interface InputFormProps {
   isGenerating: boolean;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
-  onImportHtml?: (result: ImportResult) => void;
 }
 
 // Helper to safely load from local storage
@@ -44,14 +39,13 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, t, theme, onImportHtml }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, t, theme }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', ""));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
   const [showSettings, setShowSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
   const [strictMode, setStrictMode] = useState(() => loadJson('gendeck_strict_mode', false));
   const [inputMode, setInputMode] = useState<'quick' | 'advanced'>(() =>
     loadStr('gendeck_input_mode', 'quick') === 'advanced' ? 'advanced' : 'quick'
@@ -86,14 +80,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     loadJson('gendeck_use_custom_purpose', false)
   );
 
-  // ========== STYLE OVERRIDE STATE ==========
-  const [overrideStyleId, setOverrideStyleId] = useState<string>(() => 
-    loadStr('gendeck_override_style', '')
-  );
-  const [useStyleOverride, setUseStyleOverride] = useState(() => 
-    loadJson('gendeck_use_style_override', false)
-  );
-
   // ========== COMPUTED VALUES ==========
   const quickAudience = 'General business team and stakeholders';
   const quickPurpose = 'Clearly communicate and drive decisions';
@@ -120,18 +106,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
   // Computed style recommendation based on audience + purpose
   const styleRecommendation = useMemo(() => {
-    if (useStyleOverride && overrideStyleId) {
-      const preset = getStylePreset(overrideStyleId);
-      return {
-        presetId: overrideStyleId,
-        preset,
-        reason: 'User selected style'
-      };
-    }
-    const rec = resolveStyleRecommendation(audienceCategoryId, purposeCategoryId);
-    const preset = getStylePreset(rec.presetId);
-    return { ...rec, preset };
-  }, [audienceCategoryId, purposeCategoryId, useStyleOverride, overrideStyleId]);
+    return resolveStyleRecommendation(audienceCategoryId, purposeCategoryId);
+  }, [audienceCategoryId, purposeCategoryId]);
 
   const effectiveAudience = inputMode === 'quick' ? quickAudience : finalAudience;
   const effectivePurpose = inputMode === 'quick' ? quickPurpose : finalPurpose;
@@ -221,28 +197,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_custom_purpose', customPurpose), [customPurpose]);
   useEffect(() => localStorage.setItem('gendeck_use_custom_purpose', JSON.stringify(useCustomPurpose)), [useCustomPurpose]);
 
-  // Style persistence
-  useEffect(() => localStorage.setItem('gendeck_override_style', overrideStyleId), [overrideStyleId]);
-  useEffect(() => localStorage.setItem('gendeck_use_style_override', JSON.stringify(useStyleOverride)), [useStyleOverride]);
   useEffect(() => localStorage.setItem('gendeck_input_mode', inputMode), [inputMode]);
-
-  // ========== HTML IMPORT ==========
-  const handleHtmlImport = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onImportHtml) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const htmlContent = event.target?.result as string;
-        const result = parseExportedHtml(htmlContent);
-        onImportHtml(result);
-      } catch (error) {
-        alert('Import failed: Could not parse HTML file');
-      }
-    };
-    reader.readAsText(file);
-  };
 
   // ========== HELPERS ==========
   const handleCategoryChange = useCallback((newCategoryId: string) => {
@@ -425,7 +380,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   };
 
   // ========== RENDER ==========
-  const recommendedTheme = COLOR_THEMES.find(t => t.id === styleRecommendation.preset?.recommendedThemes[0]);
 
   return (
     <div className={cx(
@@ -934,124 +888,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             </div>
           </div>
 
-          {/* STYLE CONFIGURATION (Derived from Audience + Purpose) */}
-          <div className={cx(
-            'p-5 rounded-xl border',
-            'bg-gradient-to-r from-amber-900/20 to-orange-900/20 border-amber-500/30'
-          )}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {'Style Configuration'}
-                </h3>
-                <span className={cx('text-xs px-2 py-0.5 rounded-full', 'bg-amber-500/20 text-amber-400')}>
-                  {'Auto-recommended'}
-                </span>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useStyleOverride}
-                  onChange={(e) => setUseStyleOverride(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                />
-                <span className={cx('text-xs', th.text.secondary)}>
-                  {'Override'}
-                </span>
-              </label>
-            </div>
-
-            {/* Style Override Dropdown */}
-            {useStyleOverride && (
-              <div className="mb-4">
-                <select
-                  value={overrideStyleId}
-                  onChange={(e) => setOverrideStyleId(e.target.value)}
-                  className={cx(
-                    'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all',
-                    th.input.bg, th.input.border, th.input.text, th.input.focusBorder
-                  )}
-                >
-                  <option value="">{'Select style...'}</option>
-                  {STYLE_PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label} — {preset.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Style Preview Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-              {/* Style Name */}
-              <div className={cx(
-                'p-3 rounded-lg border col-span-2',
-                'bg-black/20 border-white/10'
-              )}>
-                <div className={cx('text-[10px] uppercase tracking-wider mb-1', th.text.muted)}>
-                  {'Recommended Style'}
-                </div>
-                <div className={cx('font-semibold text-sm', th.text.primary)}>
-                  {styleRecommendation.preset?.label}
-                </div>
-                <div className={cx('text-[10px] mt-1 opacity-70', th.text.muted)}>
-                  {styleRecommendation.reason}
-                </div>
-              </div>
-
-              {/* Theme */}
-              {recommendedTheme && (
-                <div className={cx(
-                  'p-3 rounded-lg border',
-                  'bg-black/20 border-white/10'
-                )}>
-                  <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                    {'Theme'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-5 h-5 rounded border border-white/20"
-                      style={{ backgroundColor: recommendedTheme.colors[0] }}
-                    />
-                    <span className={cx('font-medium truncate', th.text.secondary)}>
-                      {recommendedTheme.label}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Typography */}
-              <div className={cx(
-                'p-3 rounded-lg border',
-                'bg-black/20 border-white/10'
-              )}>
-                <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                  {'Typography'}
-                </div>
-                <div className={cx('font-medium', th.text.secondary)}>
-                  {styleRecommendation.preset?.typography.titleCase === 'uppercase' ? 'UPPERCASE' : 
-                   styleRecommendation.preset?.typography.titleCase === 'title' ? 'Title Case' : 'Sentence'}
-                </div>
-              </div>
-
-              {/* Density */}
-              <div className={cx(
-                'p-3 rounded-lg border',
-                'bg-black/20 border-white/10'
-              )}>
-                <div className={cx('text-[10px] uppercase tracking-wider mb-1.5', th.text.muted)}>
-                  {'Density'}
-                </div>
-                <div className={cx('font-medium', th.text.secondary)}>
-                  {styleRecommendation.preset?.visualDensity === 'minimal' ? ('Minimal') :
-                   styleRecommendation.preset?.visualDensity === 'dense' ? ('Dense') :
-                   ('Balanced')}
-                </div>
-              </div>
-            </div>
-          </div>
           </>
           )}
 
@@ -1062,17 +898,6 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 {t('sourceLabel')}
               </label>
               <div className="flex items-center gap-2">
-                {/* Import HTML Button */}
-                {onImportHtml && (
-                  <label className={cx(
-                    'cursor-pointer text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all border',
-                    'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border-purple-500/30 hover:border-purple-500/50'
-                  )} title={'Import previously generated HTML deck'}>
-                    <FileUp className="w-3 h-3" />
-                    {'Import HTML'}
-                    <input type="file" accept=".html,.htm" onChange={handleHtmlImport} className="hidden" />
-                  </label>
-                )}
                 <button
                   type="button"
                   onClick={() => setStrictMode(!strictMode)}
@@ -1086,87 +911,19 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   {strictMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
                   {'Strict Mode'}
                 </button>
-                <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
-                  <button
-                    type="button"
-                    onClick={() => setShowPreview(false)}
-                    className={cx(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all',
-                      !showPreview 
-                        ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') 
-                        : cx(th.text.muted, 'hover:text-current')
-                    )}
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPreview(true)}
-                    className={cx(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all',
-                      showPreview 
-                        ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') 
-                        : cx(th.text.muted, 'hover:text-current')
-                    )}
-                  >
-                    <Eye className="w-3 h-3" />
-                    Preview
-                  </button>
-                </div>
               </div>
             </div>
             <div className="relative">
-              {showPreview ? (
-                <div
-                  className={cx(
-                    'w-full border rounded-lg px-4 py-3 text-sm overflow-y-auto resize-y min-h-[300px] max-h-[500px] prose prose-invert prose-sm max-w-none',
-                    th.input.bg, th.input.border
-                  )}
-                  dangerouslySetInnerHTML={{ 
-                    __html: content
-                      // Headers
-                      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-slate-200 mt-4 mb-2">$1</h3>')
-                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-slate-200 mt-5 mb-3">$1</h2>')
-                      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-slate-100 mt-6 mb-4">$1</h1>')
-                      // Bold and Italic
-                      .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-200">$1</strong>')
-                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      .replace(/__(.*?)__/g, '<strong class="text-slate-200">$1</strong>')
-                      .replace(/_(.*?)_/g, '<em>$1</em>')
-                      // Code
-                      .replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-purple-300 text-xs">$1</code>')
-                      // Lists
-                      .replace(/^\s*[-*+]\s+(.*$)/gim, '<li class="ml-4 text-slate-300">$1</li>')
-                      .replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="ml-4 text-slate-300 list-decimal">$1</li>')
-                      // Blockquotes
-                      .replace(/^>\s*(.*$)/gim, '<blockquote class="border-l-4 border-purple-500 pl-4 py-1 my-2 text-slate-400 italic">$1</blockquote>')
-                      // Links
-                      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:underline" target="_blank">$1</a>')
-                      // Line breaks and paragraphs
-                      .replace(/\n\n/g, '</p><p class="mb-3 text-slate-300">')
-                      .replace(/\n/g, '<br/>')
-                      // Wrap in paragraph if not already wrapped
-                      .replace(/^(.+)$/gim, '<p class="mb-3 text-slate-300">$1</p>')
-                      // Clean up empty paragraphs
-                      .replace(/<p class="mb-3 text-slate-300"><\/p>/g, '')
-                      // Fix nested paragraphs in lists
-                      .replace(/<li class="ml-4 text-slate-300"><p class="mb-3 text-slate-300">(.*?)<\/p><\/li>/g, '<li class="ml-4 text-slate-300">$1</li>')
-                  }}
-                />
-              ) : (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={12}
-                  className={cx(
-                    'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y',
-                    th.input.bg, th.input.border, 'text-slate-300', th.input.placeholder, th.input.focusBorder
-                  )}
-                  placeholder={t('pastePlaceholder')}
-                />
-              )}
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={12}
+                className={cx(
+                  'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y',
+                  th.input.bg, th.input.border, 'text-slate-300', th.input.placeholder, th.input.focusBorder
+                )}
+                placeholder={t('pastePlaceholder')}
+              />
             </div>
           </div>
         </div>

@@ -531,6 +531,73 @@ export const COLOR_THEMES = [
   },
 ];
 
+export type ThemeBadge = 'Safe' | 'Bold' | 'Experimental' | 'Brand';
+
+export const SAFE_THEME_IDS = [
+  'classic-navy',
+  'classic-navy-light',
+  'modern-graphite',
+  'modern-graphite-light',
+  'finance-emerald',
+  'finance-emerald-light',
+  'soe-navy',
+  'soe-navy-light',
+  'executive-gray',
+  'executive-gray-light',
+  'paper-white-light',
+  'concrete-gray-light',
+] as const;
+
+export const THEME_BADGES: Partial<Record<string, ThemeBadge>> = {
+  // Safe defaults
+  'classic-navy': 'Safe',
+  'classic-navy-light': 'Safe',
+  'modern-graphite': 'Safe',
+  'modern-graphite-light': 'Safe',
+  'finance-emerald': 'Safe',
+  'finance-emerald-light': 'Safe',
+  'soe-navy': 'Safe',
+  'soe-navy-light': 'Safe',
+  'executive-gray': 'Safe',
+  'executive-gray-light': 'Safe',
+  'paper-white-light': 'Safe',
+  'concrete-gray-light': 'Safe',
+
+  // Brand-inspired
+  'google': 'Brand',
+  'google-light': 'Brand',
+  'tesla': 'Brand',
+  'tesla-light': 'Brand',
+  'alibaba': 'Brand',
+  'alibaba-light': 'Brand',
+  'huawei': 'Brand',
+  'huawei-light': 'Brand',
+  'apple': 'Brand',
+  'apple-light': 'Brand',
+  'microsoft': 'Brand',
+  'microsoft-light': 'Brand',
+  'meta': 'Brand',
+  'meta-light': 'Brand',
+  'netflix': 'Brand',
+  'netflix-light': 'Brand',
+  'bytedance': 'Brand',
+  'bytedance-light': 'Brand',
+  'tencent': 'Brand',
+  'tencent-light': 'Brand',
+
+  // Experimental
+  'marvel': 'Experimental',
+  'marvel-light': 'Experimental',
+  'cyber-femme': 'Experimental',
+  'cyber-femme-light': 'Experimental',
+};
+
+export const getThemeBadge = (themeId: string): ThemeBadge => {
+  if (THEME_BADGES[themeId]) return THEME_BADGES[themeId] as ThemeBadge;
+  if (SAFE_THEME_IDS.includes(themeId as (typeof SAFE_THEME_IDS)[number])) return 'Safe';
+  return 'Bold';
+};
+
 export const AUDIENCE_PRESETS = {
   en: [
     "General Public",
@@ -1313,6 +1380,20 @@ export const findAudienceProfile = (audience: string): StylePreset | undefined =
 // Helper to get style preset by ID
 export const getStylePreset = (presetId: string): StylePreset | undefined => {
   return STYLE_PRESETS.find(p => p.id === presetId);
+};
+
+export const getRecommendedThemesForDeck = (
+  stylePresetId?: string,
+  audience?: string
+): string[] => {
+  const preset = stylePresetId
+    ? getStylePreset(stylePresetId)
+    : (audience ? findAudienceProfile(audience) : undefined) || getStylePreset('general');
+
+  const candidates = preset?.recommendedThemes || [];
+  const safeCandidates = candidates.filter((id) => SAFE_THEME_IDS.includes(id as (typeof SAFE_THEME_IDS)[number]));
+  const ranked = Array.from(new Set([...safeCandidates, ...candidates]));
+  return ranked.slice(0, 3);
 };
 
 // Legacy export for backward compatibility - maps to STYLE_PRESETS

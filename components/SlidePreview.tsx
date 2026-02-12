@@ -1,9 +1,9 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { SlideData } from '../types';
 import type { Theme } from '../styles/theme';
 import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, PaintBucket, ChevronRight } from 'lucide-react';
-import { TRANSLATIONS, COLOR_THEMES } from '../constants';
+import { TRANSLATIONS, COLOR_THEMES, SAFE_THEME_IDS, getThemeBadge } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
 
@@ -13,6 +13,7 @@ interface SlidePreviewProps {
   colorPalette: string;
   onColorPaletteChange?: (palette: string) => void;
   liveCodeOutput?: string;
+  recommendedThemeIds?: string[];
   onCodeChange?: (html: string) => void;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
   theme: Theme;
@@ -30,7 +31,7 @@ const THEME_CATEGORIES = [
   { id: 'feminine', label: 'Feminine Power', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
 ];
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, onCodeChange, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, recommendedThemeIds, onCodeChange, t, theme }) => {
   const [showCode, setShowCode] = useState(() => localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'code');
   const [scale, setScale] = useState(0.5);
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -49,6 +50,14 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
   }, [slide?.id, slide?.htmlContent]);
 
   const th = getThemeClasses(theme);
+  const recommendedThemes = useMemo(
+    () => COLOR_THEMES.filter((theme) => (recommendedThemeIds || []).includes(theme.id)).slice(0, 3),
+    [recommendedThemeIds]
+  );
+  const safeThemes = useMemo(
+    () => COLOR_THEMES.filter((theme) => SAFE_THEME_IDS.includes(theme.id as (typeof SAFE_THEME_IDS)[number])).slice(0, 8),
+    []
+  );
 
   const sanitizeSlideHtml = (unsafeHtml: string): string => {
     if (!unsafeHtml) return '';
@@ -291,6 +300,68 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
               </button>
             </div>
           </div>
+
+          {(recommendedThemes.length > 0 || safeThemes.length > 0) && (
+            <div className={cx('p-3 rounded-xl border mb-4', 'bg-slate-900/60 border-white/10')}>
+              {recommendedThemes.length > 0 && (
+                <div className="mb-3">
+                  <div className={cx('text-[11px] font-semibold mb-2', 'text-indigo-300')}>{'Recommended for this deck'}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {recommendedThemes.map((colorTheme) => {
+                      const isActive = localPalette === colorTheme.colors.join(', ');
+                      return (
+                        <button
+                          key={`recommended-${colorTheme.id}`}
+                          type="button"
+                          onClick={() => {
+                            setLocalPalette(colorTheme.colors.join(', '));
+                            onColorPaletteChange?.(colorTheme.colors.join(', '));
+                          }}
+                          className={cx(
+                            'px-2.5 py-1.5 rounded-lg border text-[11px] flex items-center gap-2 transition-all',
+                            isActive
+                              ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-100'
+                              : 'bg-slate-800 border-white/10 text-slate-200 hover:border-indigo-400/40'
+                          )}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full border border-white/20" style={{ backgroundColor: colorTheme.colors[0] }} />
+                          <span>{colorTheme.label}</span>
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
+                            {getThemeBadge(colorTheme.id)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {safeThemes.length > 0 && (
+                <div>
+                  <div className={cx('text-[11px] font-semibold mb-2', th.text.muted)}>{'Safe defaults'}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {safeThemes.map((colorTheme) => (
+                      <button
+                        key={`safe-${colorTheme.id}`}
+                        type="button"
+                        onClick={() => {
+                          setLocalPalette(colorTheme.colors.join(', '));
+                          onColorPaletteChange?.(colorTheme.colors.join(', '));
+                        }}
+                        className={cx(
+                          'px-2 py-1 rounded-md border text-[10px] transition-all',
+                          localPalette === colorTheme.colors.join(', ')
+                            ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
+                            : 'bg-slate-800 border-white/10 text-slate-300 hover:border-white/20'
+                        )}
+                      >
+                        {colorTheme.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Theme Categories - Compact Layout */}
           <div className="space-y-2 mb-4">
@@ -362,6 +433,18 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                               'text-[9px] block truncate text-center',
                               isActive ? ('text-indigo-300') : th.text.secondary
                             )}>{colorTheme.label}</span>
+                            <span className={cx(
+                              'absolute top-1 right-1 px-1 py-0.5 rounded text-[8px] border',
+                              getThemeBadge(colorTheme.id) === 'Safe'
+                                ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                                : getThemeBadge(colorTheme.id) === 'Brand'
+                                  ? 'bg-sky-500/20 border-sky-500/30 text-sky-300'
+                                  : getThemeBadge(colorTheme.id) === 'Experimental'
+                                    ? 'bg-amber-500/20 border-amber-500/30 text-amber-300'
+                                    : 'bg-violet-500/20 border-violet-500/30 text-violet-300'
+                            )}>
+                              {getThemeBadge(colorTheme.id)}
+                            </span>
                           </button>
                         );
                       })}
