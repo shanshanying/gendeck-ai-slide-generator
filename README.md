@@ -1,7 +1,7 @@
 # GenDeck (Frontend-Only)
 
 GenDeck is an AI-powered HTML slide deck generator built with React + Vite.
-It turns unstructured text into a slide outline, then renders each slide as HTML and exports to HTML/PDF.
+It turns unstructured text into a slide outline, then renders each slide as HTML and exports a standalone HTML deck.
 
 ## Tech Stack
 
@@ -12,11 +12,11 @@ It turns unstructured text into a slide outline, then renders each slide as HTML
 
 ## Features
 
-- Two-step generation workflow: outline -> slide rendering
+- Guided workflow: Input -> Outline -> Render HTML -> Download HTML
 - Quick/Advanced input modes
-- Theme/palette system
+- Theme/palette system with safe defaults, badges, and deck-aware recommendations
 - Slide-by-slide regeneration with quick improvement actions
-- Export formats: HTML, PDF, Markdown outline, speaker notes
+- Export formats: HTML deck, Markdown outline, speaker notes
 - Local project save/open (`.gendeck.json`)
 - Local autosave recovery
 - Pre-export QA checks
@@ -61,3 +61,5 @@ npm run preview
 - This is a frontend-only app.
 - No backend/database is required.
 - API keys are managed client-side via model settings.
+- Source document input is plain edit mode (no markdown preview mode).
+- HTML import is intentionally removed from the input flow to keep deck creation focused.
