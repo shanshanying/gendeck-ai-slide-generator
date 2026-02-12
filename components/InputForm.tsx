@@ -179,15 +179,15 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
     
-    // Step 1/2: Outline Generation
-    setProgressMessage(`Step 1/2: ${t('analyzingContent')}`);
+    // Step 1/3: Outline Generation
+    setProgressMessage(`Step 1/3: ${t('analyzingContent')}`);
     
     const timeout1 = setTimeout(() => {
-      setProgressMessage(`Step 1/2: ${t('generatingOutline')}`);
+      setProgressMessage(`Step 1/3: ${t('generatingOutline')}`);
     }, 2000);
     
     const timeout2 = setTimeout(() => {
-      setProgressMessage(`Step 1/2: ${t('generating')}`);
+      setProgressMessage(`Step 1/3: ${t('generating')}`);
     }, 4000);
     
     return () => {
@@ -616,7 +616,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {inputMode === 'quick' && (
           <div className={cx('p-3 rounded-lg border text-sm', 'bg-blue-500/10 border-blue-500/20 text-blue-200')}>
-            {'Quick mode: provide content and slide count only. Audience and purpose are auto-selected. Switch to Advanced for full control.'}
+            {'Quick mode flow: 1) Generate outline, 2) Review outline/layout, 3) Render and download HTML deck.'}
           </div>
         )}
 

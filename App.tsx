@@ -1266,10 +1266,33 @@ Task:
       case GenerationStatus.COMPLETE:
         return {
           label: failedCount > 0 ? `Complete with ${failedCount} failed slide(s)` : 'Complete: Ready to export',
-          hint: failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then export PDF/HTML'
+          hint: failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then download HTML deck'
         };
       default:
         return null;
+    }
+  })();
+
+  const workflowSteps = [
+    { id: 'input', label: '1. Input' },
+    { id: 'outline', label: '2. Outline' },
+    { id: 'render', label: '3. Render HTML' },
+    { id: 'export', label: '4. Download HTML' },
+  ] as const;
+
+  const currentWorkflowStep = (() => {
+    switch (status) {
+      case GenerationStatus.IDLE:
+      case GenerationStatus.GENERATING_OUTLINE:
+        return 0;
+      case GenerationStatus.REVIEWING_OUTLINE:
+        return 1;
+      case GenerationStatus.GENERATING_SLIDES:
+        return 2;
+      case GenerationStatus.COMPLETE:
+        return 3;
+      default:
+        return 0;
     }
   })();
 
@@ -1413,6 +1436,20 @@ Task:
                    </div>
                  )}
 
+                 <button
+                    onClick={requestExport}
+                    disabled={!hasRenderedSlides}
+                    className={cx(
+                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all border',
+                      hasRenderedSlides
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40'
+                        : 'bg-slate-800/70 text-slate-500 border-white/10 cursor-not-allowed'
+                    )}
+                 >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('downloadHtml')}</span>
+                 </button>
+
                  {/* Export Dropdown */}
                  <div className="relative">
                     <button
@@ -1479,6 +1516,28 @@ Task:
             )}
         </div>
       </header>
+
+      <div className={cx('h-11 border-b px-6 flex items-center gap-2 overflow-x-auto', 'bg-slate-950/70 border-white/5')}>
+        {workflowSteps.map((step, index) => {
+          const isDone = index < currentWorkflowStep;
+          const isActive = index === currentWorkflowStep;
+          return (
+            <div
+              key={step.id}
+              className={cx(
+                'px-2.5 py-1 rounded-full text-[11px] border whitespace-nowrap transition-all',
+                isDone
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-200'
+                  : isActive
+                    ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-200'
+                    : 'bg-slate-900 border-white/10 text-slate-400'
+              )}
+            >
+              {step.label}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Main Content Area */}
       <main className={cx('flex-1 overflow-hidden relative', )}>

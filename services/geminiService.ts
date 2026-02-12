@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { OutlineItem, ApiSettings, ServiceResponse, ModelSelection, ApiProvider } from "../types";
-import { PROVIDERS, findAudienceProfile, PURPOSE_LAYOUT_GUIDES, getStylePreset } from "../constants";
+import { PROVIDERS, findAudienceProfile, PURPOSE_LAYOUT_GUIDES, getStylePreset, getDeckDesignSystemPrompt, getLayoutArchetypeGuideline } from "../constants";
 
 // Helper to clean JSON string from Markdown
 const cleanJson = (text: string): string => {
@@ -377,6 +377,7 @@ export const generateOutline = async (
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
     const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
     const purposeGuide = selectPurposeGuide(purpose);
+    const designSystemGuidance = getDeckDesignSystemPrompt(audience, purpose, stylePresetId);
     const structuredInputDetected = strictMode && hasSlideMarkers(content);
     const markerSlideCount = structuredInputDetected ? countSlideMarkers(content) : 0;
     const expectedSlideCount = structuredInputDetected && markerSlideCount > 0 ? markerSlideCount : slideCount;
@@ -492,6 +493,8 @@ export const generateOutline = async (
       ${styleGuidance}
 
       ${layoutGuidance}
+
+      ${designSystemGuidance}
 
       **Language:** The output language MUST match the language of the 'User Input'.
 
@@ -617,6 +620,8 @@ export const generateSlideHtml = async (
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
     const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
+    const designSystemGuidance = getDeckDesignSystemPrompt(audience, deckTitle, stylePresetId);
+    const archetypeGuidance = getLayoutArchetypeGuideline(slide.layoutSuggestion || 'Standard');
     
     // Build style-specific guidance for the renderer
     const styleGuidance = profile ? `
@@ -703,6 +708,8 @@ export const generateSlideHtml = async (
       
       ${styleGuidance}
       ${commonStyleSettings}
+      ${designSystemGuidance}
+      ${archetypeGuidance ? `\n      ## 📏 THIS SLIDE ARCHETYPE CONSTRAINT\n      ${archetypeGuidance}\n` : ''}
 
       ## 📐 DOM STRUCTURE (DEFAULT, CONCISE)
       Use this semantic skeleton and apply the common style settings above.

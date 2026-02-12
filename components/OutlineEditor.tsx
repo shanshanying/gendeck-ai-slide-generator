@@ -303,7 +303,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                 {'Outline Quality Check'}
               </h3>
               <p className={cx('text-xs', th.text.muted)}>
-                {'Validate structure before HTML slide generation.'}
+                {'Validate structure before rendering your downloadable HTML deck.'}
               </p>
             </div>
             <span className={cx(

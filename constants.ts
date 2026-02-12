@@ -856,6 +856,269 @@ export const STYLE_PRESETS: StylePreset[] = [
 ];
 
 // ============================================
+// DESIGN SYSTEM SCHEMA (Theme + Layout + Product Presets)
+// ============================================
+
+export interface ThemeFamily {
+  id: string;
+  label: string;
+  description: string;
+  moodKeywords: string[];
+  recommendedThemeIds: string[];
+  recommendedStylePresetIds: string[];
+}
+
+export interface LayoutArchetype {
+  id: string;
+  label: string;
+  intent: string;
+  whenToUse: string;
+  maxPoints: number;
+  maxWordsPerPoint: number;
+}
+
+export interface ProductPresentationPreset {
+  id: string;
+  label: string;
+  description: string;
+  audienceKeywords: string[];
+  purposeKeywords: string[];
+  stylePresetId: string;
+  themeFamilyId: string;
+  defaultArchetypeFlow: string[];
+  density: 'compact' | 'balanced' | 'spacious';
+}
+
+export const THEME_FAMILIES: ThemeFamily[] = [
+  {
+    id: 'corporate-minimal',
+    label: 'Corporate Minimal',
+    description: 'High-trust executive style, restrained contrast, and clean hierarchy.',
+    moodKeywords: ['executive', 'board', 'trust', 'formal', 'enterprise'],
+    recommendedThemeIds: ['classic-navy', 'modern-graphite', 'executive-gray', 'finance-emerald'],
+    recommendedStylePresetIds: ['corporate-formal', 'corporate-trust'],
+  },
+  {
+    id: 'editorial-contrast',
+    label: 'Editorial Contrast',
+    description: 'Statement-driven storytelling with strong typographic hierarchy.',
+    moodKeywords: ['story', 'vision', 'keynote', 'narrative', 'impact'],
+    recommendedThemeIds: ['paper-white-light', 'cream-minimal-light', 'bauhaus-light', 'morandi-light'],
+    recommendedStylePresetIds: ['general', 'consumer'],
+  },
+  {
+    id: 'data-dashboard',
+    label: 'Data Dashboard',
+    description: 'Metric-first visual language optimized for KPI and status decks.',
+    moodKeywords: ['kpi', 'metrics', 'dashboard', 'review', 'status'],
+    recommendedThemeIds: ['modern-graphite', 'soe-navy', 'classic-navy', 'microsoft'],
+    recommendedStylePresetIds: ['corporate-formal', 'technical'],
+  },
+  {
+    id: 'product-launch',
+    label: 'Product Launch',
+    description: 'Bold accent usage with demo, value, and differentiation focus.',
+    moodKeywords: ['launch', 'feature', 'product', 'go-to-market', 'growth'],
+    recommendedThemeIds: ['cyber-electric', 'neuron-orange', 'google', 'apple'],
+    recommendedStylePresetIds: ['product-ux', 'marketing-sales', 'entrepreneur'],
+  },
+  {
+    id: 'research-academic',
+    label: 'Research Academic',
+    description: 'Neutral and evidence-led for method/result/insight communication.',
+    moodKeywords: ['research', 'education', 'analysis', 'method', 'evidence'],
+    recommendedThemeIds: ['morandi', 'vintage-film', 'cream-minimal', 'paper-white'],
+    recommendedStylePresetIds: ['education', 'technical'],
+  },
+  {
+    id: 'creative-studio',
+    label: 'Creative Studio',
+    description: 'Expressive visual identity for campaign, brand, and ideation decks.',
+    moodKeywords: ['creative', 'brand', 'campaign', 'concept', 'design'],
+    recommendedThemeIds: ['aurora-violet', 'lotus-pink', 'cyber-femme', 'marvel'],
+    recommendedStylePresetIds: ['marketing-sales', 'consumer'],
+  },
+];
+
+export const LAYOUT_ARCHETYPES: LayoutArchetype[] = [
+  { id: 'Cover', label: 'Cover', intent: 'Open with a clear headline and context.', whenToUse: 'First slide only.', maxPoints: 1, maxWordsPerPoint: 12 },
+  { id: 'Ending', label: 'Ending', intent: 'Close with summary and next action.', whenToUse: 'Last slide only.', maxPoints: 2, maxWordsPerPoint: 12 },
+  { id: 'Standard', label: 'Standard', intent: 'Explain one idea with structured bullets.', whenToUse: 'General narrative content.', maxPoints: 5, maxWordsPerPoint: 14 },
+  { id: 'Compare', label: 'Compare', intent: 'Contrast two options or states.', whenToUse: 'Before/after, pros/cons, choice framing.', maxPoints: 4, maxWordsPerPoint: 12 },
+  { id: 'Grid', label: 'Grid', intent: 'Present parallel pillars or feature sets.', whenToUse: '2-6 equal-weight items.', maxPoints: 6, maxWordsPerPoint: 10 },
+  { id: 'Timeline', label: 'Timeline', intent: 'Show sequence and progression.', whenToUse: 'Roadmap, milestones, process flow.', maxPoints: 6, maxWordsPerPoint: 10 },
+  { id: 'Data', label: 'Data', intent: 'Lead with KPI and evidence.', whenToUse: 'Metrics, impact, performance reporting.', maxPoints: 4, maxWordsPerPoint: 10 },
+  { id: 'Center', label: 'Center', intent: 'Deliver a single high-impact message.', whenToUse: 'Key statement or positioning anchor.', maxPoints: 2, maxWordsPerPoint: 14 },
+  { id: 'Quote', label: 'Quote', intent: 'Highlight testimonial or principle.', whenToUse: 'Authority quote or core insight.', maxPoints: 2, maxWordsPerPoint: 18 },
+  { id: 'Image-Heavy', label: 'Image-Heavy', intent: 'Visual-first storytelling with concise annotation.', whenToUse: 'Demo, architecture, concept illustration.', maxPoints: 3, maxWordsPerPoint: 10 },
+];
+
+export const PRODUCT_PRESENTATION_PRESETS: ProductPresentationPreset[] = [
+  {
+    id: 'board-update',
+    label: 'Board Update',
+    description: 'Executive decision deck with KPI, risk, and action clarity.',
+    audienceKeywords: ['board', 'executive', 'c-level', 'leadership', 'director'],
+    purposeKeywords: ['report', 'status', 'review', 'strategy'],
+    stylePresetId: 'corporate-formal',
+    themeFamilyId: 'corporate-minimal',
+    defaultArchetypeFlow: ['Cover', 'Data', 'Compare', 'Timeline', 'Data', 'Ending'],
+    density: 'balanced',
+  },
+  {
+    id: 'sales-pitch',
+    label: 'Sales Pitch',
+    description: 'Persuasive deck focused on customer pain, value, and proof.',
+    audienceKeywords: ['client', 'customer', 'sales', 'prospect', 'partner'],
+    purposeKeywords: ['pitch', 'proposal', 'deal', 'roadshow'],
+    stylePresetId: 'marketing-sales',
+    themeFamilyId: 'product-launch',
+    defaultArchetypeFlow: ['Cover', 'Compare', 'Grid', 'Data', 'Quote', 'Ending'],
+    density: 'balanced',
+  },
+  {
+    id: 'training-workshop',
+    label: 'Training Workshop',
+    description: 'Instructional flow with concept, steps, and recap.',
+    audienceKeywords: ['training', 'onboarding', 'team', 'student', 'learner'],
+    purposeKeywords: ['training', 'workshop', 'education', 'onboarding'],
+    stylePresetId: 'education',
+    themeFamilyId: 'research-academic',
+    defaultArchetypeFlow: ['Cover', 'Standard', 'Grid', 'Timeline', 'Standard', 'Ending'],
+    density: 'spacious',
+  },
+  {
+    id: 'project-review',
+    label: 'Project Review',
+    description: 'Status-focused deck with outcomes, blockers, and next steps.',
+    audienceKeywords: ['project', 'operations', 'pm', 'management', 'stakeholder'],
+    purposeKeywords: ['status', 'review', 'summary', 'audit'],
+    stylePresetId: 'general',
+    themeFamilyId: 'data-dashboard',
+    defaultArchetypeFlow: ['Cover', 'Data', 'Timeline', 'Compare', 'Standard', 'Ending'],
+    density: 'balanced',
+  },
+  {
+    id: 'research-summary',
+    label: 'Research Summary',
+    description: 'Method, findings, implications, and recommendations.',
+    audienceKeywords: ['research', 'academic', 'analysis', 'r&d', 'scientist'],
+    purposeKeywords: ['analysis', 'findings', 'study', 'research'],
+    stylePresetId: 'education',
+    themeFamilyId: 'research-academic',
+    defaultArchetypeFlow: ['Cover', 'Standard', 'Data', 'Compare', 'Quote', 'Ending'],
+    density: 'compact',
+  },
+  {
+    id: 'product-launch-playbook',
+    label: 'Product Launch',
+    description: 'Narrative-driven launch with value proposition and evidence.',
+    audienceKeywords: ['product', 'market', 'user', 'launch', 'gtm'],
+    purposeKeywords: ['launch', 'innovation', 'update', 'release'],
+    stylePresetId: 'product-ux',
+    themeFamilyId: 'product-launch',
+    defaultArchetypeFlow: ['Cover', 'Compare', 'Image-Heavy', 'Grid', 'Data', 'Ending'],
+    density: 'balanced',
+  },
+  {
+    id: 'investor-roadshow',
+    label: 'Investor Roadshow',
+    description: 'Opportunity and risk framing with traction and economics.',
+    audienceKeywords: ['investor', 'vc', 'pe', 'finance', 'fund'],
+    purposeKeywords: ['investment', 'roadshow', 'fundraising', 'ipo'],
+    stylePresetId: 'corporate-trust',
+    themeFamilyId: 'corporate-minimal',
+    defaultArchetypeFlow: ['Cover', 'Data', 'Compare', 'Grid', 'Data', 'Ending'],
+    density: 'compact',
+  },
+  {
+    id: 'universal-briefing',
+    label: 'Universal Briefing',
+    description: 'Flexible baseline for mixed audiences and general updates.',
+    audienceKeywords: ['general', 'public', 'team', 'cross-functional'],
+    purposeKeywords: ['update', 'overview', 'communication', 'briefing'],
+    stylePresetId: 'general',
+    themeFamilyId: 'editorial-contrast',
+    defaultArchetypeFlow: ['Cover', 'Standard', 'Grid', 'Timeline', 'Standard', 'Ending'],
+    density: 'balanced',
+  },
+];
+
+const getLayoutArchetype = (layoutId: string): LayoutArchetype | undefined =>
+  LAYOUT_ARCHETYPES.find((item) => item.id.toLowerCase() === layoutId.toLowerCase());
+
+const includesAnyKeyword = (text: string, keywords: string[]): boolean =>
+  keywords.some((kw) => text.includes(kw));
+
+export const inferProductPresentationPreset = (
+  audience: string,
+  purpose: string,
+  stylePresetId?: string
+): ProductPresentationPreset => {
+  if (stylePresetId) {
+    const styleMapped = PRODUCT_PRESENTATION_PRESETS.find((preset) => preset.stylePresetId === stylePresetId);
+    if (styleMapped) return styleMapped;
+  }
+
+  const normalizedAudience = audience.toLowerCase();
+  const normalizedPurpose = purpose.toLowerCase();
+
+  let best: ProductPresentationPreset | null = null;
+  let bestScore = -1;
+
+  for (const preset of PRODUCT_PRESENTATION_PRESETS) {
+    const audienceScore = includesAnyKeyword(normalizedAudience, preset.audienceKeywords) ? 1 : 0;
+    const purposeScore = includesAnyKeyword(normalizedPurpose, preset.purposeKeywords) ? 1 : 0;
+    const score = audienceScore + purposeScore;
+    if (score > bestScore) {
+      best = preset;
+      bestScore = score;
+    }
+  }
+
+  return best || PRODUCT_PRESENTATION_PRESETS.find((preset) => preset.id === 'universal-briefing')!;
+};
+
+export const getLayoutArchetypeGuideline = (layoutId: string): string => {
+  const archetype = getLayoutArchetype(layoutId);
+  if (!archetype) return '';
+
+  return [
+    `Layout Archetype: ${archetype.label}`,
+    `- Intent: ${archetype.intent}`,
+    `- When to use: ${archetype.whenToUse}`,
+    `- Content cap: max ${archetype.maxPoints} points, max ${archetype.maxWordsPerPoint} words per point.`,
+  ].join('\n');
+};
+
+export const getDeckDesignSystemPrompt = (
+  audience: string,
+  purpose: string,
+  stylePresetId?: string
+): string => {
+  const productPreset = inferProductPresentationPreset(audience, purpose, stylePresetId);
+  const themeFamily = THEME_FAMILIES.find((family) => family.id === productPreset.themeFamilyId);
+  const flow = productPreset.defaultArchetypeFlow.join(' -> ');
+  const flowCaps = productPreset.defaultArchetypeFlow
+    .map((id) => getLayoutArchetype(id))
+    .filter(Boolean)
+    .map((item) => `${item!.id}: <= ${item!.maxPoints} points, <= ${item!.maxWordsPerPoint} words/point`)
+    .join('; ');
+
+  return `
+    ## 🧭 DESIGN SYSTEM (DECK-LEVEL)
+    - Product preset: ${productPreset.label} (${productPreset.description})
+    - Density target: ${productPreset.density}
+    - Preferred archetype rhythm: ${flow}
+    - Archetype caps: ${flowCaps}
+    - Theme family: ${themeFamily?.label || productPreset.themeFamilyId}
+    - Theme direction: ${themeFamily?.description || 'Consistent contrast and hierarchy'}
+    - Recommended themes: ${(themeFamily?.recommendedThemeIds || []).join(', ')}
+    - Rule: Do not repeat the same layout more than 2 slides in a row.
+  `;
+};
+
+// ============================================
 // AUDIENCE CATEGORIES & PROFILES
 // Organizes audiences by category with default style presets
 // ============================================
@@ -1293,13 +1556,13 @@ export const TRANSLATIONS = {
     outlineEditor: "Outline Editor",
     generating: "Generating...",
     analyzingContent: "Analyzing content...",
-    generatingOutline: "Generating outline...",
+    generatingOutline: "Generating outline (Step 1/3)...",
     presentationReady: "Presentation Ready",
     generateNotes: "Generate Notes",
     regenerateNotes: "Regenerate Notes",
-    preview: "Preview",
-    downloadHtml: "Download HTML",
-    otherFormats: "Other Formats",
+    preview: "Preview Deck",
+    downloadHtml: "Download HTML Deck",
+    otherFormats: "More Export Options",
     exportOutline: "Outline (Markdown)",
     exportNotes: "Speaker Notes (Txt)",
     new: "New",
@@ -1309,8 +1572,8 @@ export const TRANSLATIONS = {
     createNewDeck: "Create New Deck",
     modelSettings: "Model Settings",
     apiCredentials: "API Credentials",
-    step1Outline: "Step 1: Outline Generation",
-    step2Slides: "Step 2: Slide Code Generation",
+    step1Outline: "Step 1: Generate Outline",
+    step2Slides: "Step 2: Render HTML Slides",
     aiModel: "AI Model",
     provider: "Provider",
     model: "Model",
@@ -1325,7 +1588,7 @@ export const TRANSLATIONS = {
     sourcePlaceholder: "Paste text or upload .txt/.md",
     pastePlaceholder: "Paste your document content here...",
     uploadFile: "Upload File",
-    generateBtn: "Generate Outline",
+    generateBtn: "Generate Outline (Step 1/3)",
     thinking: "Thinking...",
     googleApiKeyNote: "Managed via system environment",
     cancel: "Cancel",
@@ -1340,10 +1603,10 @@ export const TRANSLATIONS = {
     analysisError: "Failed to analyze content. Please try again.",
 
     // OutlineEditor
-    reviewStyle: "Review & Style",
-    refineStructure: "Refine your structure, choose layouts, and pick a theme.",
+    reviewStyle: "Review Outline (Step 2/3)",
+    refineStructure: "Refine slide structure and layouts, then render the HTML deck.",
     back: "Back",
-    generateSlidesBtn: "Generate Slides",
+    generateSlidesBtn: "Render HTML Deck (Step 3/3)",
     selectPalette: "Select Color Palette",
     customPalette: "Custom Palette:",
     colorPreview: "Preview",
