@@ -41,6 +41,7 @@ export interface PresentationConfig {
   topic: string;
   audience: string;
   purpose: string;
+  language: Language;
   slideCount: number;
   apiSettings: ApiSettings;
   documentContent: string;
@@ -60,7 +61,7 @@ export interface ServiceResponse<T> {
   cost: number;
 }
 
-export type Language = 'en';
+export type Language = 'en' | 'zh';
 
 export interface LocalProjectFile {
   version: number;

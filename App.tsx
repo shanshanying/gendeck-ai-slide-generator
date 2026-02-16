@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, LocalProjectFile, ApiProvider } from './types';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, LocalProjectFile, ApiProvider, Language } from './types';
 import type { Theme } from './styles/theme';
 import { useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
@@ -28,7 +28,7 @@ interface AutosaveData {
 
 interface ExportQaIssue {
   level: 'error' | 'warning' | 'pass';
-  messageEn: string;
+  message: string;
 }
 
 interface SlideChatMessage {
@@ -37,32 +37,9 @@ interface SlideChatMessage {
   content: string;
 }
 
-const SLIDE_CHAT_QUICK_REFERENCES = [
-  {
-    id: 'executive',
-    label: 'More executive',
-    text: 'Rewrite with executive tone: concise, decision-oriented, and outcome-first.',
-  },
-  {
-    id: 'concise',
-    label: 'More concise',
-    text: 'Reduce text density and keep only the top 3 most important points.',
-  },
-  {
-    id: 'data',
-    label: 'Data-focused',
-    text: 'Emphasize metrics, quantitative evidence, and clearer data hierarchy.',
-  },
-  {
-    id: 'story',
-    label: 'Story flow',
-    text: 'Restructure into story flow: context, challenge, approach, and result.',
-  },
-];
-
 const AUTOSAVE_KEY = 'gendeck_autosave';
+const LANGUAGE_KEY = 'gendeck_lang';
 const PROJECT_FILE_VERSION = 1;
-const LANGUAGE = 'en' as const;
 
 const App: React.FC = () => {
   // Restore from autosave on initial load
@@ -90,6 +67,10 @@ const App: React.FC = () => {
   const th = getThemeClasses();
 
   const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = localStorage.getItem(LANGUAGE_KEY);
+    return saved === 'zh' ? 'zh' : 'en';
+  });
   const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
   const [colorPalette, setColorPalette] = useState<string>(initialState.colorPalette || '');
   const [slides, setSlides] = useState<SlideData[]>(initialState.slides || []);
@@ -126,7 +107,58 @@ const App: React.FC = () => {
   };
 
   // Helper function for translations
-  const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[LANGUAGE][key];
+  const t = (key: keyof typeof TRANSLATIONS['en']) => TRANSLATIONS[lang][key];
+  const SLIDE_CHAT_QUICK_REFERENCES = useMemo(() => (lang === 'zh'
+    ? [
+      {
+        id: 'executive',
+        label: '更高管化',
+        text: '改写为高管语气：简洁、决策导向、结果优先。',
+      },
+      {
+        id: 'concise',
+        label: '更精简',
+        text: '降低文字密度，只保留最重要的 3 个要点。',
+      },
+      {
+        id: 'data',
+        label: '更数据化',
+        text: '突出指标、量化证据，并强化数据层级。',
+      },
+      {
+        id: 'story',
+        label: '故事化',
+        text: '按故事流重构：背景、挑战、方案、结果。',
+      },
+    ]
+    : [
+      {
+        id: 'executive',
+        label: 'More executive',
+        text: 'Rewrite with executive tone: concise, decision-oriented, and outcome-first.',
+      },
+      {
+        id: 'concise',
+        label: 'More concise',
+        text: 'Reduce text density and keep only the top 3 most important points.',
+      },
+      {
+        id: 'data',
+        label: 'Data-focused',
+        text: 'Emphasize metrics, quantitative evidence, and clearer data hierarchy.',
+      },
+      {
+        id: 'story',
+        label: 'Story flow',
+        text: 'Restructure into story flow: context, challenge, approach, and result.',
+      },
+    ]
+  ), [lang]);
+
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_KEY, lang);
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   const getBaseUrl = (providerId: ApiProvider): string | undefined => {
     return providerId === 'openai' ? 'https://api.openai.com/v1'
@@ -209,7 +241,9 @@ const App: React.FC = () => {
         currentSlides.length,
         undefined,
         currentConfig.stylePresetId,
-        controller.signal
+        controller.signal,
+        undefined,
+        currentConfig.language || lang
       );
       slideAbortControllerRef.current = null;
 
@@ -256,7 +290,7 @@ const App: React.FC = () => {
              return {
                ...s,
                isRegenerating: false,
-               htmlContent: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Slide failed after ${MAX_SLIDE_RETRIES} retries</div></div></section>`,
+               htmlContent: `<section class="slide flex items-center justify-center text-3xl" style="width:1920px;height:1080px;background-color:var(--c-bg);color:var(--c-accent);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>${lang === 'zh' ? `幻灯片生成失败，已重试 ${MAX_SLIDE_RETRIES} 次` : `Slide failed after ${MAX_SLIDE_RETRIES} retries`}</div></div></section>`,
                hasError: true,
                errorMessage: e?.message || 'Slide generation failed'
              };
@@ -386,7 +420,8 @@ const App: React.FC = () => {
         newConfig.apiSettings,
         controller.signal, // Pass signal
         newConfig.strictMode, // Pass strict mode flag
-        newConfig.stylePresetId // Pass user-selected style preset
+        newConfig.stylePresetId, // Pass user-selected style preset
+        newConfig.language || lang
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -444,7 +479,7 @@ const App: React.FC = () => {
       } else {
         // Error handled via alert
         setStatus(GenerationStatus.ERROR);
-        alert("Failed to generate outline. Please check your settings, API Key, or text content.");
+        alert(t('outlineGenerateFailed'));
         setStatus(GenerationStatus.IDLE);
       }
     } finally {
@@ -475,7 +510,8 @@ const App: React.FC = () => {
         outlineItems,
         config.topic,
         config.audience,
-        config.apiSettings
+        config.apiSettings,
+        config.language || lang
       );
 
       setTotalCost(prev => prev + result.cost);
@@ -483,10 +519,10 @@ const App: React.FC = () => {
       if (result.data.length === slides.length) {
         setSlides(prev => prev.map((s, i) => ({ ...s, notes: result.data[i] })));
       } else {
-        alert("Generated note count didn't match slide count. Some notes might be missing.");
+        alert(t('notesCountMismatch'));
       }
     } catch (e) {
-      alert("Failed to generate notes. Please try again.");
+      alert(t('notesGenerateFailed'));
     } finally {
       setIsGeneratingNotes(false);
     }
@@ -573,7 +609,8 @@ const App: React.FC = () => {
         customInstruction,
         config.stylePresetId,
         controller.signal,
-        onProgress
+        onProgress,
+        config.language || lang
       );
       slideAbortControllerRef.current = null;
 
@@ -587,7 +624,7 @@ const App: React.FC = () => {
         setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false } : s));
         return false;
       }
-      setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false, hasError: true, errorMessage: e?.message || 'Slide regeneration failed' } : s));
+      setSlides(prev => prev.map(s => s.id === id ? { ...s, isRegenerating: false, hasError: true, errorMessage: e?.message || t('slideRegenerateFailed') } : s));
       return false;
     }
   };
@@ -601,7 +638,19 @@ const App: React.FC = () => {
 
   const buildSlideChatInstruction = (messages: SlideChatMessage[]) => {
     const recentContext = messages.slice(-6).map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
-    return `Update the selected slide based on this conversation.
+    return lang === 'zh'
+      ? `请基于这段对话更新当前选中的幻灯片。
+仅作用于当前页。
+保持 1920x1080 布局约束，内容保持精炼。
+
+对话：
+${recentContext}
+
+任务：
+- 落实用户最新要求到当前幻灯片。
+- 保持标题与要点与需求一致。
+- 与整套演示风格保持一致。`
+      : `Update the selected slide based on this conversation.
 Apply only to the current slide.
 Keep 1920x1080 layout constraints and keep content concise.
 
@@ -642,8 +691,8 @@ Task:
       id: `a-${Date.now()}`,
       role: 'assistant',
       content: ok
-        ? ('Updated the selected slide based on your request.')
-        : ('Update failed. Please refine your request and try again.')
+        ? t('slideUpdatedByRequest')
+        : t('slideUpdateFailed')
     });
 
     setSlideChatSending(false);
@@ -691,7 +740,7 @@ Task:
 
     return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8">
   <title>${config?.topic}</title>
@@ -848,7 +897,7 @@ Task:
     <div class="nav-btn" id="prevBtn">←</div>
     <div class="page-indicator" id="pageIndicator">1 / ${slides.length}</div>
     <div class="nav-btn" id="nextBtn">→</div>
-    <div class="nav-btn" id="fullscreenBtn" title="Fullscreen">⛶</div>
+    <div class="nav-btn" id="fullscreenBtn" title="${lang === 'zh' ? '全屏' : 'Fullscreen'}">⛶</div>
   </div>
 
   <script>
@@ -976,7 +1025,7 @@ Task:
     if (slides.length === 0) {
       issues.push({
         level: 'error',
-        messageEn: 'No slides available to export.',
+        message: lang === 'zh' ? '没有可导出的幻灯片。' : 'No slides available to export.',
       });
       return issues;
     }
@@ -985,7 +1034,9 @@ Task:
     if (missingHtmlCount > 0) {
       issues.push({
         level: 'error',
-        messageEn: `${missingHtmlCount} slide(s) are missing rendered HTML.`,
+        message: lang === 'zh'
+          ? `${missingHtmlCount} 页缺少已渲染的 HTML。`
+          : `${missingHtmlCount} slide(s) are missing rendered HTML.`,
       });
     }
 
@@ -993,7 +1044,9 @@ Task:
     if (failedSlidesCount > 0) {
       issues.push({
         level: 'error',
-        messageEn: `${failedSlidesCount} slide(s) failed to render successfully. Regenerate failed slides before export.`,
+        message: lang === 'zh'
+          ? `${failedSlidesCount} 页渲染失败。请在导出前重试失败页。`
+          : `${failedSlidesCount} slide(s) failed to render successfully. Regenerate failed slides before export.`,
       });
     }
 
@@ -1001,7 +1054,9 @@ Task:
     if (missingNotesCount > 0) {
       issues.push({
         level: 'warning',
-        messageEn: `${missingNotesCount} slide(s) have no speaker notes.`,
+        message: lang === 'zh'
+          ? `${missingNotesCount} 页没有演讲备注。`
+          : `${missingNotesCount} slide(s) have no speaker notes.`,
       });
     }
 
@@ -1009,7 +1064,9 @@ Task:
     if (overflowRiskCount > 0) {
       issues.push({
         level: 'warning',
-        messageEn: `${overflowRiskCount} slide(s) may overflow in print (contains overflow:auto/scroll).`,
+        message: lang === 'zh'
+          ? `${overflowRiskCount} 页可能在打印时溢出（包含 overflow:auto/scroll）。`
+          : `${overflowRiskCount} slide(s) may overflow in print (contains overflow:auto/scroll).`,
       });
     }
 
@@ -1018,14 +1075,16 @@ Task:
     if (ratio !== null && ratio < 4.5) {
       issues.push({
         level: 'warning',
-        messageEn: `Theme contrast ratio is ${ratio.toFixed(2)} (< 4.5). Readability risk on some displays/print.`,
+        message: lang === 'zh'
+          ? `主题对比度为 ${ratio.toFixed(2)}（< 4.5），在部分屏幕/打印中可能影响可读性。`
+          : `Theme contrast ratio is ${ratio.toFixed(2)} (< 4.5). Readability risk on some displays/print.`,
       });
     }
 
     if (issues.length === 0) {
       issues.push({
         level: 'pass',
-        messageEn: 'All export checks passed.',
+        message: lang === 'zh' ? '导出检查全部通过。' : 'All export checks passed.',
       });
     }
 
@@ -1081,11 +1140,18 @@ Task:
       ? candidate.status as GenerationStatus
       : GenerationStatus.IDLE;
 
+    const normalizedConfig = candidate.config && typeof candidate.config === 'object'
+      ? {
+          ...(candidate.config as PresentationConfig),
+          language: (candidate.config as PresentationConfig).language === 'zh' ? 'zh' : 'en',
+        }
+      : null;
+
     return {
       version: typeof candidate.version === 'number' ? candidate.version : 1,
       savedAt: typeof candidate.savedAt === 'string' ? candidate.savedAt : new Date().toISOString(),
       status: resolvedStatus,
-      config: candidate.config && typeof candidate.config === 'object' ? candidate.config as PresentationConfig : null,
+      config: normalizedConfig,
       colorPalette: typeof candidate.colorPalette === 'string' ? candidate.colorPalette : '',
       slides: normalizedSlides,
       currentSlideId: typeof candidate.currentSlideId === 'string' ? candidate.currentSlideId : null,
@@ -1132,7 +1198,7 @@ Task:
         }
         applyProjectFile(project);
       } catch {
-        alert('Invalid project file. Could not open.');
+        alert(t('invalidProjectFile'));
       } finally {
         event.target.value = '';
       }
@@ -1155,7 +1221,7 @@ Task:
   const handlePreview = () => {
     const hasRenderedSlides = slides.some(s => !!s.htmlContent && s.htmlContent.trim().length > 0);
     if (!hasRenderedSlides) {
-      alert('No rendered slides to preview yet. Generate slides first.');
+      alert(t('noRenderedSlides'));
       return;
     }
     const fullHtml = getFullHtml();
@@ -1164,7 +1230,7 @@ Task:
     const win = window.open(url, '_blank');
     if (!win) {
       URL.revokeObjectURL(url);
-      alert('Preview window was blocked by the browser. Please allow pop-ups and try again.');
+      alert(t('previewBlocked'));
       return;
     }
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -1186,23 +1252,23 @@ Task:
     switch (status) {
       case GenerationStatus.GENERATING_OUTLINE:
         return {
-          label: 'Stage 1/2: Outline',
-          hint: 'Analyzing content and structuring slides'
+          label: t('stageOutlineGenerating'),
+          hint: t('stageOutlineGeneratingHint')
         };
       case GenerationStatus.REVIEWING_OUTLINE:
         return {
-          label: 'Stage 1/2: Review',
-          hint: 'Refine the outline before rendering slides'
+          label: t('stageOutlineReview'),
+          hint: t('stageOutlineReviewHint')
         };
       case GenerationStatus.GENERATING_SLIDES:
         return {
-          label: `Stage 2/2: Rendering ${generatedCount}/${slides.length}${failedCount > 0 ? ` (Failed ${failedCount})` : ''}`,
-          hint: 'You can pause, resume, or cancel generation'
+          label: `${t('stageRenderLabel')} ${generatedCount}/${slides.length}${failedCount > 0 ? ` (${lang === 'zh' ? '失败' : 'Failed'} ${failedCount})` : ''}`,
+          hint: t('stageRenderHint')
         };
       case GenerationStatus.COMPLETE:
         return {
-          label: failedCount > 0 ? `Complete with ${failedCount} failed slide(s)` : 'Complete: Ready to export',
-          hint: failedCount > 0 ? 'Retry failed slides before export.' : 'Preview once, then download HTML deck'
+          label: failedCount > 0 ? `${t('stageCompleteWithFailed')} ${failedCount}` : t('stageCompleteReady'),
+          hint: failedCount > 0 ? t('stageCompleteWithFailedHint') : t('stageCompleteReadyHint')
         };
       default:
         return null;
@@ -1210,10 +1276,10 @@ Task:
   })();
 
   const workflowSteps = [
-    { id: 'input', label: '1. Input' },
-    { id: 'outline', label: '2. Outline' },
-    { id: 'render', label: '3. Render HTML' },
-    { id: 'export', label: '4. Download HTML' },
+    { id: 'input', label: t('stageInput') },
+    { id: 'outline', label: t('stageOutline') },
+    { id: 'render', label: t('stageRender') },
+    { id: 'export', label: t('stageExport') },
   ] as const;
 
   const currentWorkflowStep = (() => {
@@ -1256,12 +1322,12 @@ Task:
       {showRecoveredBanner && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[90]">
           <div className={cx('px-4 py-2 rounded-lg border text-xs flex items-center gap-3', 'bg-emerald-900/60 border-emerald-500/30 text-emerald-100')}>
-            <span>{'Recovered your last in-progress project.'}</span>
+            <span>{t('recoveredProject')}</span>
             <button
               onClick={() => setShowRecoveredBanner(false)}
               className="underline decoration-dotted underline-offset-2 hover:opacity-80"
             >
-              {'Dismiss'}
+              {t('dismiss')}
             </button>
           </div>
         </div>
@@ -1271,13 +1337,13 @@ Task:
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[90]">
           <div className={cx('px-4 py-2 rounded-lg border text-xs flex items-center gap-3', 'bg-red-900/70 border-red-500/30 text-red-100')}>
             <span>
-              {`${failedCount} slide(s) failed to render. Retry before export.`}
+              {`${failedCount} ${t('failedSlidesBanner')}`}
             </span>
             <button
               onClick={handleRetryFailedSlides}
               className={cx('px-2.5 py-1 rounded-md border text-[11px] font-medium transition-all', 'bg-red-500/20 border-red-400/30 text-red-100 hover:bg-red-500/30')}
             >
-              {'Retry Failed Slides'}
+              {t('retryFailedSlides')}
             </button>
           </div>
         </div>
@@ -1310,19 +1376,19 @@ Task:
             <button
               onClick={handleOpenProjectClick}
               className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
-              title={'Open project file'}
+              title={t('openProjectFile')}
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{'Open Project'}</span>
+              <span className="hidden sm:inline">{t('openProject')}</span>
             </button>
 
             <button
               onClick={handleSaveProject}
               className={cx('flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all', th.button.primary)}
-              title={'Save project file'}
+              title={t('saveProjectFile')}
             >
               <Save className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{'Save Project'}</span>
+              <span className="hidden sm:inline">{t('saveProject')}</span>
             </button>
 
             {/* Cost Display */}
@@ -1337,11 +1403,35 @@ Task:
 
             {/* Auto-save indicator */}
             {slides.length > 0 && (
-              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={'Auto-saved'}>
+              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={t('autoSaved')}>
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={cx('text-[10px] font-medium', th.text.muted)}>{'Saved'}</span>
+                <span className={cx('text-[10px] font-medium', th.text.muted)}>{t('saved')}</span>
               </div>
             )}
+
+            <div className={cx('flex items-center gap-1 p-1 rounded-lg border', 'bg-slate-900/70 border-white/10')}>
+              <span className={cx('text-[10px] px-1', th.text.muted)}>{t('language')}</span>
+              <button
+                type="button"
+                onClick={() => setLang('en')}
+                className={cx(
+                  'px-2 py-1 rounded text-[10px] font-semibold transition-all',
+                  lang === 'en' ? 'bg-indigo-500 text-white' : 'text-slate-300 hover:bg-white/10'
+                )}
+              >
+                {t('langEnglish')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLang('zh')}
+                className={cx(
+                  'px-2 py-1 rounded text-[10px] font-semibold transition-all',
+                  lang === 'zh' ? 'bg-indigo-500 text-white' : 'text-slate-300 hover:bg-white/10'
+                )}
+              >
+                {t('langChinese')}
+              </button>
+            </div>
 
             {stageInfo && (
               <div className={cx('hidden lg:flex flex-col px-3 py-1.5 rounded-lg border min-w-[220px]', 'bg-slate-900/80 border-white/10')}>
@@ -1484,6 +1574,7 @@ Task:
               onCancel={handleCancelOutlineGeneration}
               isGenerating={status === GenerationStatus.GENERATING_OUTLINE}
               t={t}
+              lang={lang}
               theme={theme}
             />
           </div>
@@ -1496,6 +1587,7 @@ Task:
             onConfirm={handleConfirmOutline}
             onCancel={handleCancelOutline}
             t={t}
+            lang={lang}
             theme={theme}
             colorPalette={colorPalette}
             targetSlideCount={config?.slideCount}
@@ -1509,7 +1601,7 @@ Task:
               currentSlideId={currentSlideId}
               onSelectSlide={setCurrentSlideId}
               isGeneratingAll={status === GenerationStatus.GENERATING_SLIDES && !isPaused}
-              lang={LANGUAGE}
+              lang={lang}
               t={t}
               theme={theme}
             />
@@ -1526,6 +1618,7 @@ Task:
                      handleSlideCodeChange(currentSlide.id, html);
                    }}
                    t={t}
+                   lang={lang}
                    theme={theme}
                  />
 
@@ -1546,7 +1639,7 @@ Task:
                      <div className="absolute bottom-6 right-6 z-40">
                         <div className={cx('backdrop-blur px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium border', 'bg-slate-900/90 text-white border-white/10 shadow-black/20')}>
                            <Loader2 className={cx('w-4 h-4 animate-spin', 'text-green-400')} />
-                           Generating speaker notes...
+                           {t('generatingNotes')}
                         </div>
                      </div>
                  )}
@@ -1563,7 +1656,7 @@ Task:
                   type="button"
                   onClick={() => setIsSlideChatOpen(v => !v)}
                   className={cx('h-12 w-full border-b flex items-center justify-center transition-colors', 'border-white/10 text-slate-300 hover:bg-white/5')}
-                  title={isSlideChatOpen ? ('Collapse slide chat') : ('Expand slide chat')}
+                  title={isSlideChatOpen ? t('collapseSlideChat') : t('expandSlideChat')}
                 >
                   {isSlideChatOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
                 </button>
@@ -1573,19 +1666,19 @@ Task:
                     <div className="px-3 py-2 border-b border-white/10">
                       <div className="flex items-center gap-2 text-sm text-slate-200 font-medium">
                         <MessageCircle className="w-4 h-4 text-indigo-300" />
-                        {'Slide Update Chat'}
+                        {t('slideUpdateChat')}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         {currentSlide
-                          ? (`Current slide: ${currentSlide.title}`)
-                          : ('Select a slide')}
+                          ? `${t('currentSlide')}: ${currentSlide.title}`
+                          : t('selectSlide')}
                       </p>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-3 space-y-2">
                       {currentSlideChat.length === 0 && (
                         <div className="text-xs text-slate-400 rounded-lg border border-dashed border-white/10 p-3">
-                          {'Describe the change, e.g. "Make this slide a concise 3-point structure."'}
+                          {t('slideChatEmptyHint')}
                         </div>
                       )}
                       {currentSlideChat.map((msg) => (
@@ -1600,8 +1693,8 @@ Task:
                         >
                           <div className="text-[10px] opacity-70 mb-1">
                             {msg.role === 'user'
-                              ? ('You')
-                              : ('Assistant')}
+                              ? t('you')
+                              : t('assistant')}
                           </div>
                           {msg.content}
                         </div>
@@ -1611,7 +1704,7 @@ Task:
                     <div className="p-3 border-t border-white/10 space-y-2">
                       {isBulkGenerating && (
                         <p className="text-[11px] text-amber-300">
-                          {'Bulk generation in progress. Pause to update a single slide via chat.'}
+                          {t('bulkGenerationHint')}
                         </p>
                       )}
                       <div className="flex flex-wrap gap-1.5">
@@ -1643,7 +1736,7 @@ Task:
                         }}
                         rows={3}
                         className={cx('w-full rounded-lg border px-3 py-2 text-xs focus:outline-none', 'bg-slate-900 border-white/10 text-slate-100 placeholder:text-slate-500')}
-                        placeholder={'Describe how to update the selected slide...'}
+                        placeholder={t('slideChatPlaceholder')}
                         disabled={!currentSlide || slideChatSending || isBulkGenerating}
                       />
                       <button
@@ -1659,8 +1752,8 @@ Task:
                       >
                         {slideChatSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
                         {slideChatSending
-                          ? ('Updating...')
-                          : ('Send & Update Slide')}
+                          ? t('updatingShort')
+                          : t('sendAndUpdateSlide')}
                       </button>
                     </div>
                   </>
@@ -1701,7 +1794,7 @@ Task:
                 <div className={cx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ring-1', 'bg-red-500/10 ring-red-500/20')}>
                   <span className={cx('font-bold text-xs', 'text-red-400')}>!</span>
                 </div>
-                <p>{'All progress on the current presentation will be cleared, including generated slides and settings. This action cannot be undone.'}</p>
+                <p>{t('confirmNewBody')}</p>
               </div>
             </div>
 
@@ -1711,13 +1804,13 @@ Task:
                 onClick={cancelNewDeck}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
               >
-                {'Cancel'}
+                {t('cancel')}
               </button>
               <button
                 onClick={confirmNewDeck}
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
               >
-                {'Confirm New'}
+                {t('confirmNewBtn')}
               </button>
             </div>
           </div>
@@ -1741,10 +1834,10 @@ Task:
               </div>
               <div>
                 <h3 className={cx('text-lg font-semibold', th.text.primary)}>
-                  {'Pre-export Check'}
+                  {t('preExportCheck')}
                 </h3>
                 <p className={cx('text-sm', th.text.muted)}>
-                  {'Target format: HTML'}
+                  {t('targetFormatHtml')}
                 </p>
               </div>
             </div>
@@ -1759,7 +1852,7 @@ Task:
                     issue.level === 'pass' && 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                   )}
                 >
-                  {issue.messageEn}
+                  {issue.message}
                 </div>
               ))}
             </div>
@@ -1770,7 +1863,7 @@ Task:
                 }}
                 className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
               >
-                {'Cancel'}
+                {t('cancel')}
               </button>
               <button
                 onClick={executePendingExport}
@@ -1783,8 +1876,8 @@ Task:
                 )}
               >
                 {hasBlockingExportIssue
-                  ? ('Resolve blocking issues first')
-                  : ('Export anyway')}
+                  ? t('resolveBlockingIssues')
+                  : t('exportAnyway')}
               </button>
             </div>
           </div>

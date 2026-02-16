@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { SlideData } from '../types';
+import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { Trash2, Plus, MoveUp, MoveDown, ArrowRight, ArrowLeft, PaintBucket, Type, AlignLeft, AlignCenter, Bold, Layout, FileDown, Columns, Grip, Calendar, BarChart2, Quote, Check } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES } from '../constants';
@@ -12,6 +12,7 @@ interface OutlineEditorProps {
   onConfirm: (colorPalette: string) => void;
   onCancel: () => void;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
+  lang: Language;
   theme: Theme;
   colorPalette?: string;
   targetSlideCount?: number;
@@ -23,6 +24,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   onConfirm, 
   onCancel,
   t,
+  lang,
   theme,
   colorPalette: initialPalette,
   targetSlideCount
@@ -74,13 +76,19 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     let suggestion = "Layout: Cover. ";
     switch (type) {
         case 'modern':
-            suggestion += "Style: Modern, Clean, Sans-Serif. Align: Left. High contrast.";
+            suggestion += lang === 'zh'
+              ? "Style: Modern, Clean, Sans-Serif. Align: Left. 现代、简洁、无衬线，高对比。"
+              : "Style: Modern, Clean, Sans-Serif. Align: Left. High contrast.";
             break;
         case 'elegant':
-            suggestion += "Style: Elegant, Serif Font for Title. Align: Centered. Italic subtitle.";
+            suggestion += lang === 'zh'
+              ? "Style: Elegant, Serif Font for Title. Align: Centered. 优雅风格，标题用衬线体，副标题可斜体。"
+              : "Style: Elegant, Serif Font for Title. Align: Centered. Italic subtitle.";
             break;
         case 'bold':
-            suggestion += "Style: Impactful, Massive Typography, All Caps. Align: Left or Center.";
+            suggestion += lang === 'zh'
+              ? "Style: Impactful, Massive Typography, All Caps. 强冲击力大字号，可左对齐或居中。"
+              : "Style: Impactful, Massive Typography, All Caps. Align: Left or Center.";
             break;
     }
     handleUpdateSlide(id, 'layoutSuggestion', suggestion);
@@ -90,13 +98,19 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     let suggestion = "Layout: Ending. ";
     switch (type) {
         case 'minimal':
-            suggestion += "Style: Minimalist. Centered 'Thank You'. Clean background.";
+            suggestion += lang === 'zh'
+              ? "Style: Minimalist. Centered 'Thank You'. 极简风格，居中感谢语，背景干净。"
+              : "Style: Minimalist. Centered 'Thank You'. Clean background.";
             break;
         case 'contact':
-            suggestion += "Style: Professional. Include placeholder contact details (email, phone, website) below thank you.";
+            suggestion += lang === 'zh'
+              ? "Style: Professional. Include placeholder contact details (email, phone, website) below thank you. 专业风格，补充联系方式占位。"
+              : "Style: Professional. Include placeholder contact details (email, phone, website) below thank you.";
             break;
         case 'brand':
-            suggestion += "Style: Brand Focused. Massive Logo Placeholder in center, company slogan.";
+            suggestion += lang === 'zh'
+              ? "Style: Brand Focused. Massive Logo Placeholder in center, company slogan. 品牌聚焦，中心大 Logo 占位与口号。"
+              : "Style: Brand Focused. Massive Logo Placeholder in center, company slogan.";
             break;
     }
     handleUpdateSlide(id, 'layoutSuggestion', suggestion);
@@ -137,11 +151,13 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   const handleAddSlide = () => {
     const newSlide: SlideData = {
       id: Math.random().toString(36).substr(2, 9),
-      title: "New Slide",
-      contentPoints: ["Add your content here"],
+      title: lang === 'zh' ? '新幻灯片' : 'New Slide',
+      contentPoints: [lang === 'zh' ? '在此添加内容' : 'Add your content here'],
       htmlContent: null,
       notes: "",
-      layoutSuggestion: "Layout: Standard. Title and Body.",
+      layoutSuggestion: lang === 'zh'
+        ? "Layout: Standard. 标题 + 正文结构。"
+        : "Layout: Standard. Title and Body.",
       isRegenerating: false
     };
     // Insert before the last slide (Ending) if possible
@@ -196,33 +212,41 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     const warnings: string[] = [];
     if (targetSlideCount && slides.length !== targetSlideCount) {
       warnings.push(
-        `Current slide count is ${slides.length}, target is ${targetSlideCount}.`
+        lang === 'zh'
+          ? `当前幻灯片数量为 ${slides.length}，目标为 ${targetSlideCount}。`
+          : `Current slide count is ${slides.length}, target is ${targetSlideCount}.`
       );
     }
     if (slides.length > 0 && detectLayout(slides[0].layoutSuggestion) !== 'Cover') {
-      warnings.push('Slide 1 should usually use Cover layout.');
+      warnings.push(lang === 'zh' ? '第 1 页通常应使用 Cover 布局。' : 'Slide 1 should usually use Cover layout.');
     }
     if (slides.length > 1 && detectLayout(slides[slides.length - 1].layoutSuggestion) !== 'Ending') {
-      warnings.push('Last slide should usually use Ending layout.');
+      warnings.push(lang === 'zh' ? '最后一页通常应使用 Ending 布局。' : 'Last slide should usually use Ending layout.');
     }
     if (invalidLayoutSlides.length > 0) {
       warnings.push(
-        `Slides ${invalidLayoutSlides.join(', ')} use non-standard layout labels.`
+        lang === 'zh'
+          ? `第 ${invalidLayoutSlides.join(', ')} 页使用了非标准布局标签。`
+          : `Slides ${invalidLayoutSlides.join(', ')} use non-standard layout labels.`
       );
     }
 
     const errors: string[] = [];
     if (slides.length === 0) {
-      errors.push('At least one slide is required.');
+      errors.push(lang === 'zh' ? '至少需要一页幻灯片。' : 'At least one slide is required.');
     }
     if (missingTitleSlides.length > 0) {
       errors.push(
-        `Slides ${missingTitleSlides.join(', ')} are missing titles.`
+        lang === 'zh'
+          ? `第 ${missingTitleSlides.join(', ')} 页缺少标题。`
+          : `Slides ${missingTitleSlides.join(', ')} are missing titles.`
       );
     }
     if (missingPointsSlides.length > 0) {
       errors.push(
-        `Slides ${missingPointsSlides.join(', ')} are missing content points.`
+        lang === 'zh'
+          ? `第 ${missingPointsSlides.join(', ')} 页缺少内容要点。`
+          : `Slides ${missingPointsSlides.join(', ')} are missing content points.`
       );
     }
 
@@ -249,8 +273,8 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       const contentPoints = (slide.contentPoints || []).map(p => (p || '').trim()).filter(Boolean);
       return {
         ...slide,
-        title: title || (`Slide ${index + 1}`),
-        contentPoints: contentPoints.length > 0 ? contentPoints : ['TBD content'],
+        title: title || (lang === 'zh' ? `第 ${index + 1} 页` : `Slide ${index + 1}`),
+        contentPoints: contentPoints.length > 0 ? contentPoints : [lang === 'zh' ? '待补充内容' : 'TBD content'],
         htmlContent: null,
         hasError: false,
         errorMessage: undefined
@@ -300,10 +324,10 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                {'Outline Quality Check'}
+                {t('outlineQualityCheck')}
               </h3>
               <p className={cx('text-xs', th.text.muted)}>
-                {'Validate structure before rendering your downloadable HTML deck.'}
+                {t('outlineQualityDesc')}
               </p>
             </div>
             <span className={cx(
@@ -313,14 +337,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                 : 'bg-red-500/10 border-red-500/30 text-red-300'
             )}>
               {quality.canGenerate
-                ? ('Ready')
-                : ('Needs Fixes')}
+                ? t('ready')
+                : t('needsFixes')}
             </span>
           </div>
 
           {quality.errors.length > 0 && (
             <div className={cx('rounded-lg border p-3', 'bg-red-500/10 border-red-500/30')}>
-              <div className="text-xs font-semibold text-red-300 mb-1">{'Errors'}</div>
+              <div className="text-xs font-semibold text-red-300 mb-1">{t('errors')}</div>
               <div className="space-y-1">
                 {quality.errors.map((msg, idx) => (
                   <p key={`err-${idx}`} className="text-xs text-red-200">{msg}</p>
@@ -331,7 +355,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
           {quality.warnings.length > 0 && (
             <div className={cx('rounded-lg border p-3', 'bg-amber-500/10 border-amber-500/30')}>
-              <div className="text-xs font-semibold text-amber-300 mb-1">{'Warnings'}</div>
+              <div className="text-xs font-semibold text-amber-300 mb-1">{t('warnings')}</div>
               <div className="space-y-1">
                 {quality.warnings.map((msg, idx) => (
                   <p key={`warn-${idx}`} className="text-xs text-amber-200">{msg}</p>
@@ -342,7 +366,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
           {quality.errors.length === 0 && quality.warnings.length === 0 && (
             <div className={cx('rounded-lg border p-3 text-xs', 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200')}>
-              {'Checks passed: ready for HTML slide generation.'}
+              {t('checksPassed')}
             </div>
           )}
 
@@ -352,14 +376,14 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
               onClick={handleAutoFixRequiredFields}
               className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
             >
-              {'Auto-fix Required Fields'}
+              {t('autoFixRequiredFields')}
             </button>
             <button
               type="button"
               onClick={handleAutoFixLayouts}
               className={cx('px-3 py-1.5 rounded-lg text-xs border transition-all', th.button.primary)}
             >
-              {'Normalize Layout Labels'}
+              {t('normalizeLayoutLabels')}
             </button>
           </div>
         </div>
@@ -414,13 +438,13 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                    </div>
                  </div>
                  <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button onClick={() => handleMove(index, 'up')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title="Move Up"><MoveUp className="w-4 h-4"/></button>
-                   <button onClick={() => handleMove(index, 'down')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title="Move Down"><MoveDown className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'up')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title={t('moveUp')}><MoveUp className="w-4 h-4"/></button>
+                   <button onClick={() => handleMove(index, 'down')} className={cx('p-2 rounded-lg transition-colors', th.button.ghost)} title={t('moveDown')}><MoveDown className="w-4 h-4"/></button>
                    <button 
                     type="button"
                     onClick={(e) => handleDelete(e, slide.id)} 
                     className={cx('p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg ml-2 cursor-pointer transition-colors', th.text.tertiary)} 
-                    title="Delete"
+                    title={t('delete')}
                    >
                      <Trash2 className="w-4 h-4"/>
                    </button>
@@ -457,21 +481,21 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <AlignLeft className="w-4 h-4 mb-1" />
-                                        <span className="text-[10px]">Modern Left</span>
+                                        <span className="text-[10px]">{t('coverStyleModern')}</span>
                                     </button>
                                     <button 
                                         onClick={() => handleCoverStyle(slide.id, 'elegant')}
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="flex gap-0.5"><Type className="w-4 h-4 mb-1" /><AlignCenter className="w-4 h-4 mb-1" /></div>
-                                        <span className="text-[10px]">Elegant Serif</span>
+                                        <span className="text-[10px]">{t('coverStyleElegant')}</span>
                                     </button>
                                     <button 
                                         onClick={() => handleCoverStyle(slide.id, 'bold')}
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <Bold className="w-4 h-4 mb-1" />
-                                        <span className="text-[10px]">Big & Bold</span>
+                                        <span className="text-[10px]">{t('coverStyleBold')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -518,21 +542,21 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="w-4 h-4 border border-gray-400 rounded-sm mb-1" />
-                                        <span className="text-[10px]">Minimal</span>
+                                        <span className="text-[10px]">{t('endingStyleMinimal')}</span>
                                     </button>
                                     <button 
                                         onClick={() => handleEndingStyle(slide.id, 'contact')}
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="flex gap-0.5"><Layout className="w-4 h-4 mb-1" /></div>
-                                        <span className="text-[10px]">Contact Info</span>
+                                        <span className="text-[10px]">{t('endingStyleContact')}</span>
                                     </button>
                                     <button 
                                         onClick={() => handleEndingStyle(slide.id, 'brand')}
                                         className={cx('flex flex-col items-center justify-center p-3 rounded border transition-all', th.button.ghost)}
                                     >
                                         <div className="w-4 h-4 bg-gray-500 rounded-full mb-1" />
-                                        <span className="text-[10px]">Brand Focus</span>
+                                        <span className="text-[10px]">{t('endingStyleBrand')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -575,23 +599,23 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
                             
                             {/* Standard Slide Presets Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                                <button onClick={() => handleStandardLayout(slide.id, 'standard')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Standard List">
-                                    <Layout className="w-3 h-3 mb-1" /> <span className="text-[9px]">Standard</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'standard')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutStandard')}>
+                                    <Layout className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutStandard')}</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'split')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Comparison">
-                                    <Columns className="w-3 h-3 mb-1" /> <span className="text-[9px]">Compare</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'split')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutCompare')}>
+                                    <Columns className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutCompare')}</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'grid')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Grid/Cards">
-                                    <Grip className="w-3 h-3 mb-1" /> <span className="text-[9px]">Grid</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'grid')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutGrid')}>
+                                    <Grip className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutGrid')}</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'timeline')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Timeline">
-                                    <Calendar className="w-3 h-3 mb-1" /> <span className="text-[9px]">Timeline</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'timeline')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutTimeline')}>
+                                    <Calendar className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutTimeline')}</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'data')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Big Number/Chart">
-                                    <BarChart2 className="w-3 h-3 mb-1" /> <span className="text-[9px]">Data</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'data')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutData')}>
+                                    <BarChart2 className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutData')}</span>
                                 </button>
-                                <button onClick={() => handleStandardLayout(slide.id, 'quote')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title="Quote/Center">
-                                    <Quote className="w-3 h-3 mb-1" /> <span className="text-[9px]">Quote</span>
+                                <button onClick={() => handleStandardLayout(slide.id, 'quote')} className={cx('flex flex-col items-center p-2 rounded border', th.button.ghost)} title={t('layoutQuote')}>
+                                    <Quote className="w-3 h-3 mb-1" /> <span className="text-[9px]">{t('layoutQuote')}</span>
                                 </button>
                             </div>
 

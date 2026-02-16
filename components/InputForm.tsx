@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Wand2, CheckSquare, Square } from 'lucide-react';
 import { analyzeContent, ContentAnalysis } from '../services/geminiService';
-import { PresentationConfig, ApiSettings, ApiProvider } from '../types';
+import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { 
   PROVIDERS, 
@@ -21,6 +21,7 @@ interface InputFormProps {
   onCancel: () => void;
   isGenerating: boolean;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
+  lang: Language;
   theme: Theme;
 }
 
@@ -39,7 +40,7 @@ const loadJson = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, t, theme }) => {
+const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGenerating, t, lang, theme }) => {
   // Load initial state from localStorage or defaults
   const [topic, setTopic] = useState(() => loadStr('gendeck_topic', ""));
   const [slideCount, setSlideCount] = useState(() => loadNum('gendeck_count', 8));
@@ -81,8 +82,8 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   );
 
   // ========== COMPUTED VALUES ==========
-  const quickAudience = 'General business team and stakeholders';
-  const quickPurpose = 'Clearly communicate and drive decisions';
+  const quickAudience = lang === 'zh' ? '通用业务团队与相关方' : 'General business team and stakeholders';
+  const quickPurpose = lang === 'zh' ? '清晰传达信息并推动决策' : 'Clearly communicate and drive decisions';
   
   // Final audience string (custom or from selection)
   const finalAudience = useMemo(() => {
@@ -219,24 +220,24 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   // ========== ANALYSIS FUNCTION (试试手气) ==========
   const handleFeelingLucky = async () => {
     if (!content.trim()) {
-      setErrorMsg('Please enter content to analyze');
+      setErrorMsg(t('errEnterContentAnalyze'));
       return;
     }
 
     if (requiresApiKey && (!apiKeys[provider] || apiKeys[provider]!.trim() === '')) {
       setShowSettings(true);
-      setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
+      setErrorMsg(`${t('errMissingApiKey')} ${PROVIDERS.find(p => p.id === provider)?.name || provider}.`);
       return;
     }
     if (!resolvedModelId) {
       setShowSettings(true);
-      setErrorMsg('Please set a model ID.');
+      setErrorMsg(t('errSetModelId'));
       return;
     }
     if (provider !== 'google' && !resolvedBaseUrl) {
       setShowSettings(true);
       setShowAdvancedModelOptions(true);
-      setErrorMsg('Please set a Base URL.');
+      setErrorMsg(t('errSetBaseUrl'));
       return;
     }
 
@@ -254,7 +255,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
         }
       };
 
-      const result = await analyzeContent(content, apiSettings);
+      const result = await analyzeContent(content, apiSettings, undefined, lang);
       const { audience: suggestedAudience, purpose: suggestedPurpose, reasoning } = result.data;
       
       // Find best matching audience category and subcategory
@@ -319,7 +320,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       
     } catch (error: any) {
       if (error?.name !== 'AbortError') {
-        setErrorMsg(error?.message || ('Analysis failed, please try again'));
+        setErrorMsg(error?.message || t('analysisFailedTryAgain'));
       }
     } finally {
       setIsAnalyzing(false);
@@ -333,28 +334,28 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
     if (requiresApiKey && (!apiKeys[provider] || apiKeys[provider]!.trim() === '')) {
       setShowSettings(true);
-      setErrorMsg(`Missing API Key for: ${PROVIDERS.find(p => p.id === provider)?.name || provider}. Please enter it in Model Settings.`);
+      setErrorMsg(`${t('errMissingApiKey')} ${PROVIDERS.find(p => p.id === provider)?.name || provider}.`);
       return;
     }
     if (!resolvedModelId) {
       setShowSettings(true);
-      setErrorMsg('Please set a model ID.');
+      setErrorMsg(t('errSetModelId'));
       return;
     }
     if (provider !== 'google' && !resolvedBaseUrl) {
       setShowSettings(true);
       setShowAdvancedModelOptions(true);
-      setErrorMsg('Please set a Base URL.');
+      setErrorMsg(t('errSetBaseUrl'));
       return;
     }
 
     if (inputMode === 'advanced' && !finalAudience.trim()) {
-      setErrorMsg('Please select or enter target audience');
+      setErrorMsg(t('errSelectAudience'));
       return;
     }
 
     if (inputMode === 'advanced' && !finalPurpose.trim()) {
-      setErrorMsg('Please select or enter presentation purpose');
+      setErrorMsg(t('errSelectPurpose'));
       return;
     }
 
@@ -368,9 +369,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
     };
 
     onGenerate({ 
-      topic: topic || ('Untitled Presentation'), 
+      topic: topic || t('untitledPresentation'), 
       audience: effectiveAudience,
       purpose: effectivePurpose,
+      language: lang,
       slideCount, 
       apiSettings, 
       documentContent: content, 
@@ -402,7 +404,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 inputMode === 'quick' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
               )}
             >
-              {'Quick'}
+              {t('quickMode')}
             </button>
             <button
               type="button"
@@ -412,7 +414,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 inputMode === 'advanced' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
               )}
             >
-              {'Advanced'}
+              {t('advancedMode')}
             </button>
           </div>
           <button
@@ -480,7 +482,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     type="text"
                     value={customModelId}
                     onChange={(e) => setCustomModelId(e.target.value)}
-                    placeholder={'e.g. qwen2.5:14b or gpt-4o-mini'}
+                    placeholder={t('customModelPlaceholder')}
                     className={cx(
                       'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                       th.input.bg, th.input.border, th.input.text, th.input.focusBorder
@@ -514,7 +516,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   type="password"
                   value={apiKeys[provider] || ''}
                   onChange={(e) => setApiKeys(prev => ({ ...prev, [provider]: e.target.value }))}
-                  placeholder={selectedProvider?.placeholderKey || 'Enter API Key'}
+                  placeholder={selectedProvider?.placeholderKey || t('apiCredentials')}
                   className={cx(
                     'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                     th.input.bg, th.input.border, th.input.text, th.input.focusBorder
@@ -522,7 +524,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 />
                 {requiresApiKey && !apiKeys[provider] && (
                   <p className="text-[11px] mt-1 text-orange-300">
-                    {'API key is required for the selected provider.'}
+                    {t('apiKeyRequired')}
                   </p>
                 )}
               </div>
@@ -534,20 +536,20 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className={cx('text-xs underline decoration-dotted underline-offset-2', th.text.muted)}
                 >
                   {showAdvancedModelOptions
-                    ? ('Hide advanced options')
-                    : ('Advanced options')}
+                    ? t('hideAdvancedOptions')
+                    : t('advancedOptions')}
                 </button>
 
                 {showAdvancedModelOptions && (
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.tertiary)}>
-                      Base URL {provider === 'google' ? `(${'Not required for Google'})` : ''}
+                      {t('baseUrl')} {provider === 'google' ? `(${t('notRequiredForGoogle')})` : ''}
                     </label>
                     <input
                       type="text"
                       value={baseUrls[provider] ?? selectedProvider?.defaultBaseUrl ?? ''}
                       onChange={(e) => setBaseUrls(prev => ({ ...prev, [provider]: e.target.value }))}
-                      placeholder={selectedProvider?.defaultBaseUrl || ('Enter API Base URL')}
+                      placeholder={selectedProvider?.defaultBaseUrl || t('enterApiBaseUrl')}
                       disabled={provider === 'google'}
                       className={cx(
                         'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
@@ -557,7 +559,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     />
                     {provider !== 'google' && (
                       <p className={cx('text-[11px] mt-1', th.text.muted)}>
-                        {`Effective value: ${resolvedBaseUrl || 'Not set'}`}
+                        {`${t('effectiveValue')}: ${resolvedBaseUrl || t('notSet')}`}
                       </p>
                     )}
                   </div>
@@ -570,7 +572,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
 
         {inputMode === 'quick' && (
           <div className={cx('p-3 rounded-lg border text-sm', 'bg-blue-500/10 border-blue-500/20 text-blue-200')}>
-            {'Quick mode flow: 1) Generate outline, 2) Review outline/layout, 3) Render and download HTML deck.'}
+            {t('quickModeFlow')}
           </div>
         )}
 
@@ -633,10 +635,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   </div>
                   <div>
                     <div className={cx('text-sm font-medium', th.text.primary)}>
-                      {'AI Auto Analysis'}
+                      {t('aiAutoAnalysis')}
                     </div>
                     <div className={cx('text-xs', th.text.muted)}>
-                      {'Analyze content to recommend audience and purpose'}
+                      {t('aiAutoAnalysisDesc')}
                     </div>
                   </div>
                 </div>
@@ -658,12 +660,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {'Analyzing...'}
+                      {t('analyzing')}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      {"I'm Feeling Lucky"}
+                      {t('feelingLuckyBtn')}
                     </>
                   )}
                 </button>
@@ -677,7 +679,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 )}>
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Sparkles className="w-4 h-4" />
-                    {'AI Analysis Result:'}
+                    {t('analysisResult')}
                   </div>
                   <div className={cx('text-xs opacity-80', 'text-green-300')}>
                     {analysisResult.reasoning}
@@ -699,7 +701,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-purple-500" />
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {'Target Audience'}
+                  {t('targetAudience')}
                 </h3>
               </div>
 
@@ -712,7 +714,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
                 <span className={cx('text-xs', th.text.secondary)}>
-                  {'Custom Audience'}
+                  {t('customAudience')}
                 </span>
               </label>
 
@@ -725,14 +727,14 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
                     th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
                   )}
-                  placeholder={'Enter custom audience...'}
+                  placeholder={t('enterCustomAudience')}
                 />
               ) : (
                 <>
                   {/* Category Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {'Category'}
+                      {t('category')}
                     </label>
                     <select
                       value={audienceCategoryId}
@@ -756,7 +758,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   {/* Subcategory Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {'Specific Audience'}
+                      {t('specificAudience')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {AUDIENCE_CATEGORIES.find(c => c.id === audienceCategoryId)?.audiences.map((aud) => (
@@ -784,7 +786,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'p-2 rounded-lg text-xs',
                 'bg-purple-500/10 text-purple-300'
               )}>
-                <span className="opacity-70">{'Current:'}</span>{' '}
+                <span className="opacity-70">{t('current')}</span>{' '}
                 <span className="font-medium">{finalAudience}</span>
               </div>
             </div>
@@ -797,7 +799,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-5 h-5 text-blue-500" />
                 <h3 className={cx('text-sm font-semibold', th.text.primary)}>
-                  {'Presentation Purpose'}
+                  {t('presentationPurpose')}
                 </h3>
               </div>
 
@@ -810,7 +812,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className={cx('text-xs', th.text.secondary)}>
-                  {'Custom Purpose'}
+                  {t('customPurpose')}
                 </span>
               </label>
 
@@ -823,14 +825,14 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                     'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
                     th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
                   )}
-                  placeholder={'Enter custom purpose...'}
+                  placeholder={t('enterCustomPurpose')}
                 />
               ) : (
                 <>
                   {/* Category Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {'Category'}
+                      {t('category')}
                     </label>
                     <select
                       value={purposeCategoryId}
@@ -854,7 +856,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   {/* Subcategory Selection */}
                   <div>
                     <label className={cx('block text-xs mb-1.5', th.text.muted)}>
-                      {'Specific Purpose'}
+                      {t('specificPurpose')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {PURPOSE_CATEGORIES.find(c => c.id === purposeCategoryId)?.purposes.map((pur) => (
@@ -882,7 +884,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 'p-2 rounded-lg text-xs',
                 'bg-blue-500/10 text-blue-300'
               )}>
-                <span className="opacity-70">{'Current:'}</span>{' '}
+                <span className="opacity-70">{t('current')}</span>{' '}
                 <span className="font-medium">{finalPurpose}</span>
               </div>
             </div>
@@ -909,7 +911,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   )}
                 >
                   {strictMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                  {'Strict Mode'}
+                  {t('strictMode')}
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { SlideData } from '../types';
+import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { RefreshCw, Code, ZoomIn, ZoomOut, Maximize, Monitor, PaintBucket, ChevronRight } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES, SAFE_THEME_IDS, getThemeBadge } from '../constants';
@@ -16,6 +16,7 @@ interface SlidePreviewProps {
   recommendedThemeIds?: string[];
   onCodeChange?: (html: string) => void;
   t: (key: keyof typeof TRANSLATIONS['en']) => string;
+  lang: Language;
   theme: Theme;
 }
 
@@ -23,15 +24,15 @@ const VIEW_MODE_STORAGE_KEY = 'gendeck_slide_view_mode';
 
 // Group themes by category
 const THEME_CATEGORIES = [
-  { id: 'business', label: 'Business', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
-  { id: 'government', label: 'Government', themeIds: ['government-red', 'government-red-light', 'soe-navy', 'soe-navy-light', 'executive-gray', 'executive-gray-light'] },
-  { id: 'tech', label: 'Tech Internet', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
-  { id: 'minimalist', label: 'Minimalist', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
-  { id: 'artistic', label: 'Artistic', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
-  { id: 'feminine', label: 'Feminine Power', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
-];
+  { id: 'business', labelKey: 'themeCategoryBusiness', themeIds: ['classic-navy', 'classic-navy-light', 'modern-graphite', 'modern-graphite-light', 'finance-emerald', 'finance-emerald-light'] },
+  { id: 'government', labelKey: 'themeCategoryGovernment', themeIds: ['government-red', 'government-red-light', 'soe-navy', 'soe-navy-light', 'executive-gray', 'executive-gray-light'] },
+  { id: 'tech', labelKey: 'themeCategoryTech', themeIds: ['cyber-electric', 'cyber-electric-light', 'aurora-violet', 'aurora-violet-light', 'neuron-orange', 'neuron-orange-light', 'google', 'google-light', 'tesla', 'tesla-light', 'alibaba', 'alibaba-light', 'huawei', 'huawei-light', 'apple', 'apple-light', 'microsoft', 'microsoft-light', 'meta', 'meta-light', 'netflix', 'netflix-light', 'bytedance', 'bytedance-light', 'tencent', 'tencent-light'] },
+  { id: 'minimalist', labelKey: 'themeCategoryMinimalist', themeIds: ['paper-white', 'paper-white-light', 'concrete-gray', 'concrete-gray-light', 'cream-minimal', 'cream-minimal-light'] },
+  { id: 'artistic', labelKey: 'themeCategoryArtistic', themeIds: ['morandi', 'morandi-light', 'bauhaus', 'bauhaus-light', 'vintage-film', 'vintage-film-light', 'marvel', 'marvel-light', 'maillard', 'maillard-light', 'lotus-pink', 'lotus-pink-light'] },
+  { id: 'feminine', labelKey: 'themeCategoryFeminine', themeIds: ['burgundy-power', 'burgundy-power-light', 'pearl-oldmoney', 'pearl-oldmoney-light', 'violet-rebellion', 'violet-rebellion-light', 'terracotta-earth', 'terracotta-earth-light', 'cyber-femme', 'cyber-femme-light'] },
+] as const;
 
-const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, recommendedThemeIds, onCodeChange, t, theme }) => {
+const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColorPaletteChange, liveCodeOutput, recommendedThemeIds, onCodeChange, t, lang, theme }) => {
   const [showCode, setShowCode] = useState(() => localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'code');
   const [scale, setScale] = useState(0.5);
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -290,7 +291,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                 }}
                 className={cx('text-[11px] px-2 py-1 rounded border transition-all', th.button.primary)}
               >
-                {expandedCategories.length === THEME_CATEGORIES.length ? ('Collapse') : ('Expand')}
+                {expandedCategories.length === THEME_CATEGORIES.length ? t('collapse') : t('expand')}
               </button>
               <button 
                 onClick={() => setShowThemePanel(false)}
@@ -305,7 +306,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
             <div className={cx('p-3 rounded-xl border mb-4', 'bg-slate-900/60 border-white/10')}>
               {recommendedThemes.length > 0 && (
                 <div className="mb-3">
-                  <div className={cx('text-[11px] font-semibold mb-2', 'text-indigo-300')}>{'Recommended for this deck'}</div>
+                  <div className={cx('text-[11px] font-semibold mb-2', 'text-indigo-300')}>{t('recommendedForDeck')}</div>
                   <div className="flex flex-wrap gap-2">
                     {recommendedThemes.map((colorTheme) => {
                       const isActive = localPalette === colorTheme.colors.join(', ');
@@ -337,7 +338,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
               )}
               {safeThemes.length > 0 && (
                 <div>
-                  <div className={cx('text-[11px] font-semibold mb-2', th.text.muted)}>{'Safe defaults'}</div>
+                  <div className={cx('text-[11px] font-semibold mb-2', th.text.muted)}>{t('safeDefaults')}</div>
                   <div className="flex flex-wrap gap-1.5">
                     {safeThemes.map((colorTheme) => (
                       <button
@@ -387,7 +388,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                   >
                     <div className="flex items-center gap-2">
                       <span className={cx('text-xs font-semibold', hasActiveTheme ? ('text-indigo-300') : th.text.secondary)}>
-                        {category.label}
+                        {t(category.labelKey)}
                       </span>
                       <span className={cx('text-[10px] px-1.5 py-0.5 rounded-full', 'bg-slate-800 text-slate-400')}>
                         {categoryThemes.length}
@@ -425,7 +426,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                                   key={i} 
                                   style={{backgroundColor: colorTheme.colors[colorIdx]}} 
                                   className="flex-1"
-                                  title={['Background', 'Text', 'Primary', 'Secondary', 'Accent', 'Border'][i]}
+                                  title={[t('cBg'), t('cText'), t('cPrimary'), t('cSecondary'), t('cAccent'), t('cBorder')][i]}
                                 />
                               ))}
                             </div>
@@ -486,7 +487,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                     const trimmedColor = color.trim();
                     const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
                     const labels = [t('cBg'), t('cBgSoft'), t('cBgGlass'), t('cBgInvert')];
-                    const fullNames = ['Background', 'Background Soft', 'Background Glass', 'Background Invert'];
+                    const fullNames = lang === 'zh'
+                      ? ['背景', '柔和背景', '玻璃背景', '反转背景']
+                      : ['Background', 'Background Soft', 'Background Glass', 'Background Invert'];
                     return (
                       <div key={idx} className="flex flex-col items-center gap-0.5 w-10">
                         <div 
@@ -495,7 +498,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                             isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
                           )}
                           style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : (lang === 'zh' ? '无效' : 'Invalid')}`}
                         />
                         <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
                           {labels[idx] || '-'}
@@ -512,7 +515,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                     const trimmedColor = color.trim();
                     const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
                     const labels = [t('cText'), t('cTextMuted'), t('cTextFaint'), t('cTextInvert')];
-                    const fullNames = ['Text', 'Text Muted', 'Text Faint', 'Text Invert'];
+                    const fullNames = lang === 'zh'
+                      ? ['文本', '弱化文本', '浅色文本', '反转文本']
+                      : ['Text', 'Text Muted', 'Text Faint', 'Text Invert'];
                     return (
                       <div key={idx + 4} className="flex flex-col items-center gap-0.5 w-10">
                         <div 
@@ -521,7 +526,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                             isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
                           )}
                           style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : (lang === 'zh' ? '无效' : 'Invalid')}`}
                         />
                         <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
                           {labels[idx] || '-'}
@@ -538,7 +543,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                     const trimmedColor = color.trim();
                     const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
                     const labels = [t('cBorder'), t('cBorderStrong'), t('cDivider')];
-                    const fullNames = ['Border', 'Border Strong', 'Divider'];
+                    const fullNames = lang === 'zh'
+                      ? ['边框', '强边框', '分割线']
+                      : ['Border', 'Border Strong', 'Divider'];
                     return (
                       <div key={idx + 8} className="flex flex-col items-center gap-0.5 w-10">
                         <div 
@@ -547,7 +554,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                             isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
                           )}
                           style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : (lang === 'zh' ? '无效' : 'Invalid')}`}
                         />
                         <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
                           {labels[idx] || '-'}
@@ -564,7 +571,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                     const trimmedColor = color.trim();
                     const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
                     const labels = [t('cPrimary'), t('cSecondary'), t('cAccent')];
-                    const fullNames = ['Primary', 'Secondary', 'Accent'];
+                    const fullNames = lang === 'zh'
+                      ? ['主色', '次色', '强调色']
+                      : ['Primary', 'Secondary', 'Accent'];
                     return (
                       <div key={idx + 11} className="flex flex-col items-center gap-0.5 w-10">
                         <div 
@@ -573,7 +582,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                             isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
                           )}
                           style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : (lang === 'zh' ? '无效' : 'Invalid')}`}
                         />
                         <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
                           {labels[idx] || '-'}
@@ -590,7 +599,9 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                     const trimmedColor = color.trim();
                     const isValid = /^#([0-9A-Fa-f]{3,4}){1,2}$/i.test(trimmedColor);
                     const labels = [t('cSuccess'), t('cWarning'), t('cDanger'), t('cInfo')];
-                    const fullNames = ['Success', 'Warning', 'Danger', 'Info'];
+                    const fullNames = lang === 'zh'
+                      ? ['成功', '警告', '危险', '信息']
+                      : ['Success', 'Warning', 'Danger', 'Info'];
                     return (
                       <div key={idx + 14} className="flex flex-col items-center gap-0.5 w-10">
                         <div 
@@ -599,7 +610,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                             isValid ? 'border-black/10' : 'border-red-400 bg-gray-100 dark:bg-gray-800'
                           )}
                           style={{ backgroundColor: isValid ? trimmedColor : 'transparent' }}
-                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : 'Invalid'}`}
+                          title={`${fullNames[idx]}: ${isValid ? trimmedColor : (lang === 'zh' ? '无效' : 'Invalid')}`}
                         />
                         <span className={cx('text-[7px] font-medium text-center w-full truncate', th.text.muted)}>
                           {labels[idx] || '-'}
@@ -620,7 +631,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
            showCode ? (
              <div className={cx('w-full h-full p-4 overflow-auto flex flex-col gap-2', 'bg-slate-950')}>
                <div className="flex items-center justify-between">
-                 <span className={cx('text-[11px] uppercase tracking-wide', th.text.muted)}>HTML Code</span>
+                 <span className={cx('text-[11px] uppercase tracking-wide', th.text.muted)}>{t('htmlCode')}</span>
                </div>
                <textarea
                  value={liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : editableCode}
