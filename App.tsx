@@ -1,16 +1,15 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, LocalProjectFile, ApiProvider, Language } from './types';
-import type { Theme } from './styles/theme';
+import { PresentationConfig, SlideData, OutlineItem, GenerationStatus, LocalProjectFile, Language } from './types';
 import { useThemeContext } from './contexts/ThemeContext';
 import { cls } from './styles/themeUtils';
 import { getThemeClasses, cx } from './styles/theme';
 import InputForm from './components/InputForm';
 import Sidebar from './components/Sidebar';
 import SlidePreview from './components/SlidePreview';
-import OutlineEditor from './components/OutlineEditor';
 import { generateOutline, generateSlideHtml, generateSpeakerNotes } from './services/geminiService';
-import { Download, DollarSign, Eye, FileText, FileJson, ChevronDown, MessageSquareText, Loader2, Play, Pause, XCircle, Plus, FolderOpen, Save, MessageCircle, SendHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { parseMarkdownOutline } from './services/importService';
+import { Download, DollarSign, Eye, MessageSquareText, Loader2, Play, Pause, XCircle, Plus, FolderOpen, Save, MessageCircle, SendHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { TRANSLATIONS, COLOR_THEMES, findAudienceProfile, getStylePreset, getRecommendedThemesForDeck } from './constants';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -26,11 +25,6 @@ interface AutosaveData {
   timestamp: number;
 }
 
-interface ExportQaIssue {
-  level: 'error' | 'warning' | 'pass';
-  message: string;
-}
-
 interface SlideChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -38,7 +32,6 @@ interface SlideChatMessage {
 }
 
 const AUTOSAVE_KEY = 'gendeck_autosave';
-const LANGUAGE_KEY = 'gendeck_lang';
 const PROJECT_FILE_VERSION = 1;
 
 const App: React.FC = () => {
@@ -67,19 +60,13 @@ const App: React.FC = () => {
   const th = getThemeClasses();
 
   const [status, setStatus] = useState<GenerationStatus>(initialState.status || GenerationStatus.IDLE);
-  const [lang, setLang] = useState<Language>(() => {
-    const saved = localStorage.getItem(LANGUAGE_KEY);
-    return saved === 'zh' ? 'zh' : 'en';
-  });
+  const [lang] = useState<Language>('en');
   const [config, setConfig] = useState<PresentationConfig | null>(initialState.config || null);
   const [colorPalette, setColorPalette] = useState<string>(initialState.colorPalette || '');
   const [slides, setSlides] = useState<SlideData[]>(initialState.slides || []);
   const [currentSlideId, setCurrentSlideId] = useState<string | null>(initialState.currentSlideId || null);
   const [totalCost, setTotalCost] = useState(initialState.totalCost || 0);
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
-  const [showExportQa, setShowExportQa] = useState(false);
-  const [exportQaIssues, setExportQaIssues] = useState<ExportQaIssue[]>([]);
   const [showNewDeckConfirm, setShowNewDeckConfirm] = useState(false);
   const [showRecoveredBanner, setShowRecoveredBanner] = useState(initialStateResult.recovered);
   const [isSlideChatOpen, setIsSlideChatOpen] = useState(false);
@@ -156,17 +143,8 @@ const App: React.FC = () => {
   ), [lang]);
 
   useEffect(() => {
-    localStorage.setItem(LANGUAGE_KEY, lang);
-    document.documentElement.lang = lang;
-  }, [lang]);
-
-  const getBaseUrl = (providerId: ApiProvider): string | undefined => {
-    return providerId === 'openai' ? 'https://api.openai.com/v1'
-      : providerId === 'deepseek' ? 'https://api.deepseek.com'
-      : providerId === 'moonshot' ? 'https://api.moonshot.ai/v1'
-      : providerId === 'anthropic' ? 'https://api.anthropic.com/v1'
-      : undefined;
-  };
+    document.documentElement.lang = 'en';
+  }, []);
 
   // Auto-save state to localStorage whenever important state changes
   useEffect(() => {
@@ -217,6 +195,8 @@ const App: React.FC = () => {
     }
 
     const slideToProcess = currentSlides[pendingSlideIndex];
+    setCurrentSlideId(slideToProcess.id);
+    setSlideChatLiveOutputBySlideId(prev => ({ ...prev, [slideToProcess.id]: '' }));
 
     // Optimistic update to show regeneration state
     setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: true, hasError: false, errorMessage: undefined } : s));
@@ -237,12 +217,16 @@ const App: React.FC = () => {
         currentConfig.audience,
         currentConfig.apiSettings,
         currentConfig.topic,
+        currentConfig.purpose,
+        currentConfig.tone,
         pendingSlideIndex + 1,
         currentSlides.length,
         undefined,
         currentConfig.stylePresetId,
         controller.signal,
-        undefined,
+        (partialText) => {
+          setSlideChatLiveOutputBySlideId(prev => ({ ...prev, [slideToProcess.id]: partialText }));
+        },
         currentConfig.language || lang
       );
       slideAbortControllerRef.current = null;
@@ -254,6 +238,7 @@ const App: React.FC = () => {
 
       setTotalCost(prev => prev + result.cost);
       slideRetryCountRef.current[slideToProcess.id] = 0;
+      setSlideChatLiveOutputBySlideId(prev => ({ ...prev, [slideToProcess.id]: '' }));
 
       setSlides(prev => {
         const next = prev.map(s => s.id === slideToProcess.id
@@ -277,6 +262,7 @@ const App: React.FC = () => {
       slideAbortControllerRef.current = null;
       if (isAbortError(e)) {
         setSlides(prev => prev.map(s => s.id === slideToProcess.id ? { ...s, isRegenerating: false } : s));
+        setSlideChatLiveOutputBySlideId(prev => ({ ...prev, [slideToProcess.id]: '' }));
         return;
       }
       // Failed to generate slide - retry with cap to avoid infinite loop.
@@ -303,6 +289,7 @@ const App: React.FC = () => {
             const retryDelay = Math.min(2000, 100 * attempts);
             processingTimeoutRef.current = setTimeout(() => processSlideQueue(next, currentConfig, palette), retryDelay);
          }
+         setSlideChatLiveOutputBySlideId(prevLive => ({ ...prevLive, [slideToProcess.id]: '' }));
          return next;
       });
     }
@@ -338,8 +325,7 @@ const App: React.FC = () => {
       slideAbortControllerRef.current.abort();
       slideAbortControllerRef.current = null;
     }
-    // Return to outline view to allow editing or restarting
-    setStatus(GenerationStatus.REVIEWING_OUTLINE);
+    setStatus(GenerationStatus.IDLE);
     slideRetryCountRef.current = {};
   };
 
@@ -371,7 +357,6 @@ const App: React.FC = () => {
 
     // 2. Reset UI State
     setIsPaused(false);
-    setShowExportMenu(false);
     setShowNewDeckConfirm(false);
     setShowRecoveredBanner(false);
     setStatus(GenerationStatus.IDLE);
@@ -397,6 +382,34 @@ const App: React.FC = () => {
     setShowNewDeckConfirm(false);
   };
 
+  const pickInitialPalette = (deckConfig: PresentationConfig): string => {
+    let selectedThemeColors = '';
+
+    if (deckConfig.stylePresetId) {
+      const preset = getStylePreset(deckConfig.stylePresetId);
+      if (preset && preset.recommendedThemes.length > 0) {
+        const theme = COLOR_THEMES.find(t => t.id === preset.recommendedThemes[0]);
+        if (theme) {
+          selectedThemeColors = theme.colors.join(',');
+        }
+      }
+    } else {
+      const profile = findAudienceProfile(deckConfig.audience);
+      if (profile && profile.recommendedThemes.length > 0) {
+        const theme = COLOR_THEMES.find(t => t.id === profile.recommendedThemes[0]);
+        if (theme) {
+          selectedThemeColors = theme.colors.join(',');
+        }
+      }
+    }
+
+    if (!selectedThemeColors) {
+      selectedThemeColors = COLOR_THEMES[0].colors.join(',');
+    }
+
+    return selectedThemeColors;
+  };
+
   // Step 1: Generate Outline Only
   const handleGenerateOutline = async (newConfig: PresentationConfig) => {
     setShowRecoveredBanner(false);
@@ -411,6 +424,35 @@ const App: React.FC = () => {
     abortControllerRef.current = controller;
 
     try {
+      if (newConfig.sourceMode === 'markdown_outline') {
+        const parsed = parseMarkdownOutline(newConfig.documentContent);
+        const parsedSlides: SlideData[] = parsed.slides.map(item => ({
+          id: generateId(),
+          title: item.title,
+          contentPoints: item.contentPoints,
+          notes: item.notes || "",
+          layoutSuggestion: item.layoutSuggestion || "Standard",
+          htmlContent: null,
+          isRegenerating: false,
+          hasError: false,
+          errorMessage: undefined
+        }));
+
+        const resolvedConfig: PresentationConfig = {
+          ...newConfig,
+          topic: parsed.topic || newConfig.topic,
+          audience: parsed.audience || newConfig.audience,
+          purpose: parsed.purpose || newConfig.purpose,
+          tone: parsed.tone || newConfig.tone,
+          slideCount: parsedSlides.length,
+        };
+
+        const palette = pickInitialPalette(resolvedConfig);
+        setConfig(resolvedConfig);
+        startSlideGeneration(parsedSlides, resolvedConfig, palette);
+        return;
+      }
+
       const result = await generateOutline(
         newConfig.documentContent,
         newConfig.topic,
@@ -439,38 +481,7 @@ const App: React.FC = () => {
       }));
 
       setSlides(initialSlides);
-      
-      // Auto-select theme based on style preset or audience
-      let selectedThemeColors = '';
-      
-      if (newConfig.stylePresetId) {
-        // Use user-selected style preset
-        const preset = getStylePreset(newConfig.stylePresetId);
-        if (preset && preset.recommendedThemes.length > 0) {
-          const theme = COLOR_THEMES.find(t => t.id === preset.recommendedThemes[0]);
-          if (theme) {
-            selectedThemeColors = theme.colors.join(',');
-          }
-        }
-      } else {
-        // Fallback: auto-detect from audience
-        const profile = findAudienceProfile(newConfig.audience);
-        if (profile && profile.recommendedThemes.length > 0) {
-          const theme = COLOR_THEMES.find(t => t.id === profile.recommendedThemes[0]);
-          if (theme) {
-            selectedThemeColors = theme.colors.join(',');
-          }
-        }
-      }
-      
-      // Ensure we have a valid palette
-      if (!selectedThemeColors) {
-        selectedThemeColors = COLOR_THEMES[0].colors.join(',');
-      }
-      
-      setColorPalette(selectedThemeColors);
-      
-      setStatus(GenerationStatus.REVIEWING_OUTLINE);
+      startSlideGeneration(initialSlides, newConfig, pickInitialPalette(newConfig));
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
@@ -479,7 +490,11 @@ const App: React.FC = () => {
       } else {
         // Error handled via alert
         setStatus(GenerationStatus.ERROR);
-        alert(t('outlineGenerateFailed'));
+        if (newConfig.sourceMode === 'markdown_outline') {
+          alert(error?.message || t('markdownOutlineParseFailed'));
+        } else {
+          alert(t('outlineGenerateFailed'));
+        }
         setStatus(GenerationStatus.IDLE);
       }
     } finally {
@@ -492,6 +507,16 @@ const App: React.FC = () => {
         abortControllerRef.current.abort();
     }
     setStatus(GenerationStatus.IDLE);
+  };
+
+  const startSlideGeneration = (slidesToGenerate: SlideData[], deckConfig: PresentationConfig, selectedColorPalette: string) => {
+    setSlides(slidesToGenerate);
+    setColorPalette(selectedColorPalette);
+    setStatus(GenerationStatus.GENERATING_SLIDES);
+    shouldStopRef.current = false;
+    setIsPaused(false);
+    slideRetryCountRef.current = {};
+    processSlideQueue(slidesToGenerate, deckConfig, selectedColorPalette);
   };
 
   const handleGenerateNotes = async () => {
@@ -528,33 +553,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Step 2: Confirm Outline, Set Palette, and Start HTML Generation
-  const handleConfirmOutline = (selectedColorPalette: string) => {
-    if (!config || slides.length === 0) return;
-
-    const slidesToGenerate = slides.map((s) => ({
-      ...s,
-      isRegenerating: false,
-      ...(s.hasError ? { htmlContent: null, hasError: false, errorMessage: undefined } : {})
-    }));
-
-    setSlides(slidesToGenerate);
-    setColorPalette(selectedColorPalette);
-    setStatus(GenerationStatus.GENERATING_SLIDES);
-
-    // Reset stop flags
-    shouldStopRef.current = false;
-    setIsPaused(false);
-    slideRetryCountRef.current = {};
-
-    // processSlideQueue will handle the rest
-    processSlideQueue(slidesToGenerate, config, selectedColorPalette);
-  };
-
-  const handleUpdateSlides = (updatedSlides: SlideData[]) => {
-    setSlides(updatedSlides);
-  };
-
   const handleRetryFailedSlides = () => {
     if (!config) return;
     const retrySet = slides.map((s) =>
@@ -566,12 +564,6 @@ const App: React.FC = () => {
     setIsPaused(false);
     slideRetryCountRef.current = {};
     processSlideQueue(retrySet, config, colorPalette);
-  };
-
-  const handleCancelOutline = () => {
-    setStatus(GenerationStatus.IDLE);
-    setSlides([]);
-    setConfig(null);
   };
 
   const handleRegenerateSlide = async (
@@ -604,6 +596,8 @@ const App: React.FC = () => {
         config.audience,
         config.apiSettings,
         config.topic,
+        config.purpose,
+        config.tone,
         slideIndex + 1,
         slides.length,
         customInstruction,
@@ -707,6 +701,10 @@ Task:
   };
 
   const getFullHtml = () => {
+    const renderedSlides = slides
+      .map((s) => (s.htmlContent || '').trim())
+      .filter((html) => html.length > 0);
+
     const colors = colorPalette.split(',').map(c => c.trim());
     // Format: [bg, bg-soft, bg-glass, bg-invert, text, text-muted, text-faint, text-invert,
     //          border, border-strong, divider, primary, secondary, accent, success, warning, danger, info]
@@ -890,23 +888,28 @@ Task:
   <div class="progress-bar" id="progressBar" style="width: 0%"></div>
 
   <div id="deck-container">
-    ${slides.map((s, i) => s.htmlContent).join('\n')}
+    ${renderedSlides.join('\n')}
   </div>
 
   <div class="nav-controls no-print">
     <div class="nav-btn" id="prevBtn">←</div>
-    <div class="page-indicator" id="pageIndicator">1 / ${slides.length}</div>
+    <div class="page-indicator" id="pageIndicator">1 / ${renderedSlides.length}</div>
     <div class="nav-btn" id="nextBtn">→</div>
     <div class="nav-btn" id="fullscreenBtn" title="${lang === 'zh' ? '全屏' : 'Fullscreen'}">⛶</div>
   </div>
 
   <script>
     let currentSlide = 0;
-    const slides = document.querySelectorAll('.slide');
+    const slides = document.querySelectorAll('#deck-container > .slide');
     const totalSlides = slides.length;
     const indicator = document.getElementById('pageIndicator');
     const progressBar = document.getElementById('progressBar');
     function updateSlide() {
+      if (totalSlides === 0) {
+        indicator.innerText = '0 / 0';
+        progressBar.style.width = '0%';
+        return;
+      }
       slides.forEach((s, i) => {
         s.classList.toggle('active', i === currentSlide);
       });
@@ -990,119 +993,8 @@ Task:
     document.body.removeChild(a);
   };
 
-  const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-    const normalized = hex.trim().replace('#', '');
-    if (![3, 4, 6, 8].includes(normalized.length)) return null;
-    const hasAlpha = normalized.length === 4 || normalized.length === 8;
-    const rgbPart = hasAlpha ? normalized.slice(0, normalized.length - (normalized.length === 4 ? 1 : 2)) : normalized;
-    const full = rgbPart.length === 3 ? rgbPart.split('').map((c) => c + c).join('') : rgbPart;
-    const num = Number.parseInt(full, 16);
-    if (Number.isNaN(num)) return null;
-    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
-  };
-
-  const relativeLuminance = ({ r, g, b }: { r: number; g: number; b: number }): number => {
-    const channel = (v: number) => {
-      const s = v / 255;
-      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-    };
-    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-  };
-
-  const contrastRatio = (a: string, b: string): number | null => {
-    const ca = hexToRgb(a);
-    const cb = hexToRgb(b);
-    if (!ca || !cb) return null;
-    const l1 = relativeLuminance(ca);
-    const l2 = relativeLuminance(cb);
-    const light = Math.max(l1, l2);
-    const dark = Math.min(l1, l2);
-    return (light + 0.05) / (dark + 0.05);
-  };
-
-  const runExportChecks = (): ExportQaIssue[] => {
-    const issues: ExportQaIssue[] = [];
-    if (slides.length === 0) {
-      issues.push({
-        level: 'error',
-        message: lang === 'zh' ? '没有可导出的幻灯片。' : 'No slides available to export.',
-      });
-      return issues;
-    }
-
-    const missingHtmlCount = slides.filter((s) => !s.htmlContent || !s.htmlContent.trim()).length;
-    if (missingHtmlCount > 0) {
-      issues.push({
-        level: 'error',
-        message: lang === 'zh'
-          ? `${missingHtmlCount} 页缺少已渲染的 HTML。`
-          : `${missingHtmlCount} slide(s) are missing rendered HTML.`,
-      });
-    }
-
-    const failedSlidesCount = slides.filter((s) => s.hasError).length;
-    if (failedSlidesCount > 0) {
-      issues.push({
-        level: 'error',
-        message: lang === 'zh'
-          ? `${failedSlidesCount} 页渲染失败。请在导出前重试失败页。`
-          : `${failedSlidesCount} slide(s) failed to render successfully. Regenerate failed slides before export.`,
-      });
-    }
-
-    const missingNotesCount = slides.filter((s) => !s.notes || !s.notes.trim()).length;
-    if (missingNotesCount > 0) {
-      issues.push({
-        level: 'warning',
-        message: lang === 'zh'
-          ? `${missingNotesCount} 页没有演讲备注。`
-          : `${missingNotesCount} slide(s) have no speaker notes.`,
-      });
-    }
-
-    const overflowRiskCount = slides.filter((s) => /overflow\s*:\s*(auto|scroll)/i.test(s.htmlContent || '')).length;
-    if (overflowRiskCount > 0) {
-      issues.push({
-        level: 'warning',
-        message: lang === 'zh'
-          ? `${overflowRiskCount} 页可能在打印时溢出（包含 overflow:auto/scroll）。`
-          : `${overflowRiskCount} slide(s) may overflow in print (contains overflow:auto/scroll).`,
-      });
-    }
-
-    const paletteColors = colorPalette.split(',').map((c) => c.trim());
-    const ratio = contrastRatio(paletteColors[0] || '#0a0a0a', paletteColors[4] || '#ffffff');
-    if (ratio !== null && ratio < 4.5) {
-      issues.push({
-        level: 'warning',
-        message: lang === 'zh'
-          ? `主题对比度为 ${ratio.toFixed(2)}（< 4.5），在部分屏幕/打印中可能影响可读性。`
-          : `Theme contrast ratio is ${ratio.toFixed(2)} (< 4.5). Readability risk on some displays/print.`,
-      });
-    }
-
-    if (issues.length === 0) {
-      issues.push({
-        level: 'pass',
-        message: lang === 'zh' ? '导出检查全部通过。' : 'All export checks passed.',
-      });
-    }
-
-    return issues;
-  };
-
   const requestExport = () => {
-    const issues = runExportChecks();
-    setExportQaIssues(issues);
-    setShowExportQa(true);
-    setShowExportMenu(false);
-  };
-
-  const hasBlockingExportIssue = exportQaIssues.some((issue) => issue.level === 'error');
-
-  const executePendingExport = () => {
     downloadFile(getFullHtml(), `deck-${config?.topic.replace(/\s+/g, '-').toLowerCase()}.html`, 'text/html');
-    setShowExportQa(false);
   };
 
   const toProjectFile = (): LocalProjectFile => ({
@@ -1143,7 +1035,7 @@ Task:
     const normalizedConfig = candidate.config && typeof candidate.config === 'object'
       ? {
           ...(candidate.config as PresentationConfig),
-          language: (candidate.config as PresentationConfig).language === 'zh' ? 'zh' : 'en',
+          language: ((candidate.config as PresentationConfig).language === 'zh' ? 'zh' : 'en') as Language,
         }
       : null;
 
@@ -1167,7 +1059,6 @@ Task:
     setCurrentSlideId(project.currentSlideId);
     setTotalCost(project.totalCost || 0);
     setIsPaused(false);
-    setShowExportMenu(false);
     shouldStopRef.current = false;
     slideRetryCountRef.current = {};
     setShowRecoveredBanner(false);
@@ -1206,18 +1097,6 @@ Task:
     reader.readAsText(file);
   };
 
-  const handleExportMarkdown = () => {
-    const md = slides.map(s => `## ${s.title}\n\n${s.contentPoints.map(p => `- ${p}`).join('\n')}\n\n**Notes:**\n${s.notes || 'N/A'}\n`).join('\n---\n\n');
-    downloadFile(md, `outline-${config?.topic.replace(/\s+/g, '-').toLowerCase()}.md`, 'text/markdown');
-    setShowExportMenu(false);
-  };
-
-  const handleExportNotes = () => {
-    const txt = slides.map((s, i) => `Slide ${i+1}: ${s.title}\n-------------------\n${s.notes || '(No notes)'}\n\n`).join('\n');
-    downloadFile(txt, `notes-${config?.topic.replace(/\s+/g, '-').toLowerCase()}.txt`, 'text/plain');
-    setShowExportMenu(false);
-  };
-
   const handlePreview = () => {
     const hasRenderedSlides = slides.some(s => !!s.htmlContent && s.htmlContent.trim().length > 0);
     if (!hasRenderedSlides) {
@@ -1248,51 +1127,21 @@ Task:
   const failedCount = slides.filter(s => s.hasError).length;
   const generatedCount = slides.filter(s => s.htmlContent && !s.hasError).length;
   const progressPercent = slides.length > 0 ? ((generatedCount + failedCount) / slides.length) * 100 : 0;
-  const stageInfo = (() => {
-    switch (status) {
-      case GenerationStatus.GENERATING_OUTLINE:
-        return {
-          label: t('stageOutlineGenerating'),
-          hint: t('stageOutlineGeneratingHint')
-        };
-      case GenerationStatus.REVIEWING_OUTLINE:
-        return {
-          label: t('stageOutlineReview'),
-          hint: t('stageOutlineReviewHint')
-        };
-      case GenerationStatus.GENERATING_SLIDES:
-        return {
-          label: `${t('stageRenderLabel')} ${generatedCount}/${slides.length}${failedCount > 0 ? ` (${lang === 'zh' ? '失败' : 'Failed'} ${failedCount})` : ''}`,
-          hint: t('stageRenderHint')
-        };
-      case GenerationStatus.COMPLETE:
-        return {
-          label: failedCount > 0 ? `${t('stageCompleteWithFailed')} ${failedCount}` : t('stageCompleteReady'),
-          hint: failedCount > 0 ? t('stageCompleteWithFailedHint') : t('stageCompleteReadyHint')
-        };
-      default:
-        return null;
-    }
-  })();
-
   const workflowSteps = [
     { id: 'input', label: t('stageInput') },
-    { id: 'outline', label: t('stageOutline') },
     { id: 'render', label: t('stageRender') },
     { id: 'export', label: t('stageExport') },
-  ] as const;
+  ];
 
   const currentWorkflowStep = (() => {
     switch (status) {
       case GenerationStatus.IDLE:
       case GenerationStatus.GENERATING_OUTLINE:
         return 0;
-      case GenerationStatus.REVIEWING_OUTLINE:
-        return 1;
       case GenerationStatus.GENERATING_SLIDES:
-        return 2;
+        return 1;
       case GenerationStatus.COMPLETE:
-        return 3;
+        return 2;
       default:
         return 0;
     }
@@ -1401,45 +1250,6 @@ Task:
             </div>
             )}
 
-            {/* Auto-save indicator */}
-            {slides.length > 0 && (
-              <div className={cx('hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full border', 'bg-slate-800/50 border-white/5')} title={t('autoSaved')}>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={cx('text-[10px] font-medium', th.text.muted)}>{t('saved')}</span>
-              </div>
-            )}
-
-            <div className={cx('flex items-center gap-1 p-1 rounded-lg border', 'bg-slate-900/70 border-white/10')}>
-              <span className={cx('text-[10px] px-1', th.text.muted)}>{t('language')}</span>
-              <button
-                type="button"
-                onClick={() => setLang('en')}
-                className={cx(
-                  'px-2 py-1 rounded text-[10px] font-semibold transition-all',
-                  lang === 'en' ? 'bg-indigo-500 text-white' : 'text-slate-300 hover:bg-white/10'
-                )}
-              >
-                {t('langEnglish')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setLang('zh')}
-                className={cx(
-                  'px-2 py-1 rounded text-[10px] font-semibold transition-all',
-                  lang === 'zh' ? 'bg-indigo-500 text-white' : 'text-slate-300 hover:bg-white/10'
-                )}
-              >
-                {t('langChinese')}
-              </button>
-            </div>
-
-            {stageInfo && (
-              <div className={cx('hidden lg:flex flex-col px-3 py-1.5 rounded-lg border min-w-[220px]', 'bg-slate-900/80 border-white/10')}>
-                <span className={cx('text-[11px] font-semibold', 'text-violet-200')}>{stageInfo.label}</span>
-                <span className={cx('text-[10px]', th.text.muted)}>{stageInfo.hint}</span>
-              </div>
-            )}
-
             {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
               <div className="flex items-center gap-2">
                  {status === GenerationStatus.GENERATING_SLIDES && (
@@ -1475,49 +1285,6 @@ Task:
                     <Download className="w-4 h-4" />
                     <span className="hidden sm:inline">{t('downloadHtml')}</span>
                  </button>
-
-                 {/* Export Dropdown */}
-                 <div className="relative">
-                    <button
-                      onClick={() => setShowExportMenu(!showExportMenu)}
-                      className={cx('flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border', th.button.primary)}
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="hidden sm:inline">{t('otherFormats')}</span>
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-
-                    {showExportMenu && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>
-                        <div className={cx('absolute top-full right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 border', 'bg-slate-900/95 border-white/10')}>
-                          <div className="p-1">
-                             <button
-                               onClick={requestExport}
-                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
-                             >
-                               <FileJson className="w-4 h-4" />
-                               {t('downloadHtml')}
-                             </button>
-                             <button
-                               onClick={handleExportMarkdown}
-                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
-                             >
-                               <FileText className="w-4 h-4" />
-                               {t('exportOutline')}
-                             </button>
-                             <button
-                               onClick={handleExportNotes}
-                               className={cx('w-full text-left px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors', th.button.ghost)}
-                             >
-                               <MessageSquareText className="w-4 h-4" />
-                               {t('exportNotes')}
-                             </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                 </div>
 
                  <button
                     onClick={handlePreview}
@@ -1578,20 +1345,6 @@ Task:
               theme={theme}
             />
           </div>
-        )}
-
-        {status === GenerationStatus.REVIEWING_OUTLINE && (
-          <OutlineEditor
-            slides={slides}
-            onUpdateSlides={handleUpdateSlides}
-            onConfirm={handleConfirmOutline}
-            onCancel={handleCancelOutline}
-            t={t}
-            lang={lang}
-            theme={theme}
-            colorPalette={colorPalette}
-            targetSlideCount={config?.slideCount}
-          />
         )}
 
         {(status === GenerationStatus.GENERATING_SLIDES || status === GenerationStatus.COMPLETE) && (
@@ -1811,73 +1564,6 @@ Task:
                 className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-lg transition-all shadow-lg shadow-red-500/20"
               >
                 {t('confirmNewBtn')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showExportQa && (
-        <div
-          className="fixed inset-0 z-[210] flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowExportQa(false);
-            }
-          }}
-        >
-          <div className={cx('absolute inset-0 backdrop-blur-sm transition-opacity', 'bg-slate-950/80')} />
-          <div className={cx('relative border rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all animate-in fade-in zoom-in-95 duration-200', 'bg-slate-900 border-white/10')}>
-            <div className={cx('flex items-center gap-3 px-6 py-5 border-b', 'border-white/5')}>
-              <div className={cx('w-10 h-10 rounded-xl flex items-center justify-center ring-1', 'bg-violet-500/10 ring-violet-500/20')}>
-                <Download className={cx('w-5 h-5', 'text-violet-300')} />
-              </div>
-              <div>
-                <h3 className={cx('text-lg font-semibold', th.text.primary)}>
-                  {t('preExportCheck')}
-                </h3>
-                <p className={cx('text-sm', th.text.muted)}>
-                  {t('targetFormatHtml')}
-                </p>
-              </div>
-            </div>
-            <div className="px-6 py-4 space-y-2 max-h-[50vh] overflow-y-auto">
-              {exportQaIssues.map((issue, idx) => (
-                <div
-                  key={`${issue.level}-${idx}`}
-                  className={cx(
-                    'p-3 rounded-lg border text-sm',
-                    issue.level === 'error' && 'bg-red-500/10 border-red-500/30 text-red-200',
-                    issue.level === 'warning' && 'bg-amber-500/10 border-amber-500/30 text-amber-200',
-                    issue.level === 'pass' && 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                  )}
-                >
-                  {issue.message}
-                </div>
-              ))}
-            </div>
-            <div className={cx('flex items-center justify-end gap-3 px-6 py-4 border-t rounded-b-2xl', 'border-white/5 bg-slate-900/50')}>
-              <button
-                onClick={() => {
-                  setShowExportQa(false);
-                }}
-                className={cx('px-4 py-2 text-sm font-medium rounded-lg transition-all border', th.button.primary)}
-              >
-                {t('cancel')}
-              </button>
-              <button
-                onClick={executePendingExport}
-                disabled={hasBlockingExportIssue}
-                className={cx(
-                  'px-4 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-lg',
-                  hasBlockingExportIssue
-                    ? 'bg-gray-600/50 cursor-not-allowed shadow-none'
-                    : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-purple-500/20'
-                )}
-              >
-                {hasBlockingExportIssue
-                  ? t('resolveBlockingIssues')
-                  : t('exportAnyway')}
               </button>
             </div>
           </div>

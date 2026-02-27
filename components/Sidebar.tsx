@@ -2,7 +2,7 @@
 import React from 'react';
 import { SlideData, Language } from '../types';
 import type { Theme } from '../styles/theme';
-import { Layout, CheckCircle, CircleDashed } from 'lucide-react';
+import { Layout, CheckCircle, CircleDashed, Loader2 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
@@ -52,7 +52,9 @@ const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide
                 )}>
                   #{index + 1}
                 </span>
-                {slide.htmlContent ? (
+                {slide.isRegenerating ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                ) : slide.htmlContent ? (
                   <CheckCircle className="w-3 h-3 text-emerald-400" />
                 ) : (
                   <CircleDashed className={cx('w-3 h-3', isGeneratingAll ? 'animate-spin text-amber-400' : 'text-slate-600')} />
@@ -68,6 +70,9 @@ const Sidebar: React.FC<SidebarProps> = ({ slides, currentSlideId, onSelectSlide
               </h3>
               {slide.layoutSuggestion && (
                  <p className={cx('text-[10px] mt-1 truncate', th.text.muted)}>{slide.layoutSuggestion}</p>
+              )}
+              {slide.isRegenerating && (
+                <p className="text-[10px] mt-1 text-amber-300">Updating...</p>
               )}
             </button>
           );

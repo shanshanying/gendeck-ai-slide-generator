@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FileText, Upload, Sparkles, Settings, Users, Key, Target, XCircle, AlertTriangle, Wand2, CheckSquare, Square } from 'lucide-react';
-import { analyzeContent, ContentAnalysis } from '../services/geminiService';
+import { Sparkles, Settings, Users, Key, Target, AlertTriangle, Wand2 } from 'lucide-react';
+import { analyzeContent } from '../services/geminiService';
 import { PresentationConfig, ApiSettings, ApiProvider, Language } from '../types';
 import type { Theme } from '../styles/theme';
 import { 
@@ -10,9 +10,7 @@ import {
   TRANSLATIONS, 
   AUDIENCE_CATEGORIES,
   PURPOSE_CATEGORIES,
-  resolveStyleRecommendation,
-  type AudienceCategory,
-  type PurposeCategory
+  resolveStyleRecommendation
 } from '../constants';
 import { getThemeClasses, cx } from '../styles/theme';
 
@@ -47,7 +45,9 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   const [content, setContent] = useState(() => loadStr('gendeck_content', SAMPLE_CONTENT));
   const [showSettings, setShowSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [strictMode, setStrictMode] = useState(() => loadJson('gendeck_strict_mode', false));
+  const [sourceMode, setSourceMode] = useState<'document' | 'markdown_outline'>(() =>
+    loadStr('gendeck_source_mode', 'markdown_outline') === 'document' ? 'document' : 'markdown_outline'
+  );
   const [inputMode, setInputMode] = useState<'quick' | 'advanced'>(() =>
     loadStr('gendeck_input_mode', 'quick') === 'advanced' ? 'advanced' : 'quick'
   );
@@ -148,6 +148,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   } | null>(null);
 
   const th = getThemeClasses(theme);
+  const isMarkdownMode = sourceMode === 'markdown_outline';
   
   // Update progress message when generating state changes
   useEffect(() => {
@@ -156,11 +157,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       return;
     }
     
-    // Step 1/3: Outline Generation
-    setProgressMessage(`Step 1/3: ${t('analyzingContent')}`);
+    setProgressMessage(isMarkdownMode ? t('parsingMarkdownOutline') : `Step 1/3: ${t('analyzingContent')}`);
     
     const timeout1 = setTimeout(() => {
-      setProgressMessage(`Step 1/3: ${t('generatingOutline')}`);
+      setProgressMessage(isMarkdownMode ? t('generatingHtmlDeck') : `Step 1/3: ${t('generatingOutline')}`);
     }, 2000);
     
     const timeout2 = setTimeout(() => {
@@ -171,13 +171,13 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       clearTimeout(timeout1);
       clearTimeout(timeout2);
     };
-  }, [isGenerating, t]);
+  }, [isGenerating, isMarkdownMode, t]);
 
   // ========== PERSISTENCE EFFECTS ==========
   useEffect(() => localStorage.setItem('gendeck_topic', topic), [topic]);
   useEffect(() => localStorage.setItem('gendeck_count', slideCount.toString()), [slideCount]);
   useEffect(() => localStorage.setItem('gendeck_content', content), [content]);
-  useEffect(() => localStorage.setItem('gendeck_strict_mode', JSON.stringify(strictMode)), [strictMode]);
+  useEffect(() => localStorage.setItem('gendeck_source_mode', sourceMode), [sourceMode]);
   useEffect(() => localStorage.setItem('gendeck_api_keys', JSON.stringify(apiKeys)), [apiKeys]);
   useEffect(() => {
     localStorage.setItem('gendeck_provider', provider);
@@ -199,6 +199,16 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
   useEffect(() => localStorage.setItem('gendeck_use_custom_purpose', JSON.stringify(useCustomPurpose)), [useCustomPurpose]);
 
   useEffect(() => localStorage.setItem('gendeck_input_mode', inputMode), [inputMode]);
+  useEffect(() => {
+    if (sourceMode !== 'markdown_outline') {
+      setSourceMode('markdown_outline');
+    }
+  }, [sourceMode]);
+  useEffect(() => {
+    if (sourceMode === 'markdown_outline' && inputMode !== 'quick') {
+      setInputMode('quick');
+    }
+  }, [sourceMode, inputMode]);
 
   // ========== HELPERS ==========
   const handleCategoryChange = useCallback((newCategoryId: string) => {
@@ -358,6 +368,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       setErrorMsg(t('errSelectPurpose'));
       return;
     }
+    if (sourceMode === 'markdown_outline' && !/##\s*slide\s*\d+/i.test(content)) {
+      setErrorMsg(t('errMarkdownOutlineFormat'));
+      return;
+    }
 
     const apiSettings: ApiSettings = {
       apiKeys: apiKeys,
@@ -373,10 +387,10 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
       audience: effectiveAudience,
       purpose: effectivePurpose,
       language: lang,
-      slideCount, 
+      slideCount: isMarkdownMode ? 1 : slideCount, 
       apiSettings, 
       documentContent: content, 
-      strictMode,
+      sourceMode,
       stylePresetId: styleRecommendation.presetId
     });
   };
@@ -395,28 +409,30 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           {t('createNewDeck')}
         </h2>
         <div className="flex items-center gap-2">
-          <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
-            <button
-              type="button"
-              onClick={() => setInputMode('quick')}
-              className={cx(
-                'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
-                inputMode === 'quick' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
-              )}
-            >
-              {t('quickMode')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setInputMode('advanced')}
-              className={cx(
-                'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
-                inputMode === 'advanced' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
-              )}
-            >
-              {t('advancedMode')}
-            </button>
-          </div>
+          {!isMarkdownMode && (
+            <div className={cx('flex items-center rounded-lg border p-0.5', th.input.bg, th.border.secondary)}>
+              <button
+                type="button"
+                onClick={() => setInputMode('quick')}
+                className={cx(
+                  'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
+                  inputMode === 'quick' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
+                )}
+              >
+                {t('quickMode')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('advanced')}
+                className={cx(
+                  'px-2.5 py-1 text-xs rounded-md font-medium transition-all',
+                  inputMode === 'advanced' ? cx(th.bg.tertiary, th.text.primary, 'shadow-sm') : cx(th.text.muted, 'hover:text-current')
+                )}
+              >
+                {t('advancedMode')}
+              </button>
+            </div>
+          )}
           <button
             onClick={() => setShowSettings(!showSettings)}
             className={cx(
@@ -570,56 +586,65 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
           </div>
         )}
 
-        {inputMode === 'quick' && (
+        {inputMode === 'quick' && !isMarkdownMode && (
           <div className={cx('p-3 rounded-lg border text-sm', 'bg-blue-500/10 border-blue-500/20 text-blue-200')}>
             {t('quickModeFlow')}
+          </div>
+        )}
+        {isMarkdownMode && (
+          <div className={cx('p-3 rounded-lg border text-sm', 'bg-indigo-500/10 border-indigo-500/20 text-indigo-200')}>
+            {t('markdownDirectFlow')}
           </div>
         )}
 
         {/* Form Fields */}
         <div className="space-y-6">
-          {/* Topic */}
-          <div>
-            <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('topicLabel')}</label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className={cx(
-                'w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
-                th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
-              )}
-              placeholder={t('topicPlaceholder')}
-            />
-          </div>
+          {!isMarkdownMode && (
+            <>
+              {/* Topic */}
+              <div>
+                <label className={cx('block text-sm font-medium mb-2', th.text.secondary)}>{t('topicLabel')}</label>
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className={cx(
+                    'w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all',
+                    th.input.bg, th.input.border, th.input.text, th.input.placeholder, th.input.focusBorder
+                  )}
+                  placeholder={t('topicPlaceholder')}
+                />
+              </div>
 
-          {/* Slide Count */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className={cx('block text-sm font-medium', th.text.secondary)}>{t('slideCountLabel')}</label>
-              <span className={cx(
-                'text-sm font-bold text-purple-500 px-2 py-0.5 rounded',
-                'bg-purple-900/30'
-              )}>{slideCount}</span>
-            </div>
-            <input
-              type="range"
-              min="3"
-              max="30"
-              value={slideCount}
-              onChange={(e) => setSlideCount(parseInt(e.target.value))}
-              className={cx(
-                'w-full h-2 rounded-lg appearance-none cursor-pointer accent-purple-500',
-                'bg-gray-700'
-              )}
-            />
-            <div className={cx('flex justify-between text-[10px] mt-1', th.text.muted)}>
-              <span>3</span>
-              <span>30</span>
-            </div>
-          </div>
+              {/* Slide Count */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className={cx('block text-sm font-medium', th.text.secondary)}>{t('slideCountLabel')}</label>
+                  <span className={cx(
+                    'text-sm font-bold text-purple-500 px-2 py-0.5 rounded',
+                    'bg-purple-900/30'
+                  )}>{slideCount}</span>
+                </div>
+                <input
+                  type="range"
+                  min="3"
+                  max="30"
+                  value={slideCount}
+                  onChange={(e) => setSlideCount(parseInt(e.target.value))}
+                  className={cx(
+                    'w-full h-2 rounded-lg appearance-none cursor-pointer accent-purple-500',
+                    'bg-gray-700'
+                  )}
+                />
+                <div className={cx('flex justify-between text-[10px] mt-1', th.text.muted)}>
+                  <span>3</span>
+                  <span>30</span>
+                </div>
+              </div>
+            </>
+          )}
 
-          {inputMode === 'advanced' && (
+          {inputMode === 'advanced' && !isMarkdownMode && (
             <>
               {/* AI Auto Analysis Button */}
               <div className={cx(
@@ -689,7 +714,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
             </>
           )}
 
-          {inputMode === 'advanced' && (
+          {inputMode === 'advanced' && !isMarkdownMode && (
           <>
           {/* TWO COLUMN LAYOUT: Audience & Purpose */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -899,21 +924,12 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
               <label className={cx('block text-sm font-medium', th.text.secondary)}>
                 {t('sourceLabel')}
               </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStrictMode(!strictMode)}
-                  className={cx(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border',
-                    strictMode
-                      ? cx('bg-green-500/20 border-green-500/50 text-green-400')
-                      : cx(th.text.muted, th.border.secondary, 'hover:border-white/20')
-                  )}
-                >
-                  {strictMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                  {t('strictMode')}
-                </button>
-              </div>
+              <span className={cx('text-xs px-2 py-1 rounded border', 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200')}>
+                {t('sourceModeMarkdownOutline')}
+              </span>
+            </div>
+            <div className={cx('p-3 mb-2 rounded-lg border text-xs', 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200')}>
+              {t('markdownOutlineHint')}
             </div>
             <div className="relative">
               <textarea
@@ -924,7 +940,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                   'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all font-mono resize-y',
                   th.input.bg, th.input.border, 'text-slate-300', th.input.placeholder, th.input.focusBorder
                 )}
-                placeholder={t('pastePlaceholder')}
+                placeholder={t('markdownOutlinePlaceholder')}
               />
             </div>
           </div>
@@ -951,7 +967,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, onCancel, isGeneratin
                 {progressMessage || t('generating')}
               </span>
             ) : (
-              t('generateBtn')
+              t('generateFromMarkdownBtn')
             )}
           </button>
           {isGenerating && (

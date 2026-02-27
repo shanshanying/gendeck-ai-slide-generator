@@ -50,6 +50,12 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
     setEditableCode(slide?.htmlContent || '');
   }, [slide?.id, slide?.htmlContent]);
 
+  useEffect(() => {
+    if (slide?.isRegenerating && liveCodeOutput && liveCodeOutput.trim().length > 0) {
+      setShowCode(true);
+    }
+  }, [slide?.id, slide?.isRegenerating, liveCodeOutput]);
+
   const th = getThemeClasses(theme);
   const recommendedThemes = useMemo(
     () => COLOR_THEMES.filter((theme) => (recommendedThemeIds || []).includes(theme.id)).slice(0, 3),
@@ -179,6 +185,8 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
     
     return html;
   };
+
+  const codeValue = liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : editableCode;
 
   // Auto-fit logic
   const fitToScreen = () => {
@@ -368,7 +376,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
           <div className="space-y-2 mb-4">
             {THEME_CATEGORIES.map((category) => {
               const isExpanded = expandedCategories.includes(category.id);
-              const categoryThemes = COLOR_THEMES.filter(t => category.themeIds.includes(t.id));
+              const categoryThemes = COLOR_THEMES.filter((item) => (category.themeIds as readonly string[]).includes(item.id));
               const hasActiveTheme = categoryThemes.some(t => localPalette === t.colors.join(', '));
               
               return (
@@ -634,7 +642,7 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
                  <span className={cx('text-[11px] uppercase tracking-wide', th.text.muted)}>{t('htmlCode')}</span>
                </div>
                <textarea
-                 value={liveCodeOutput && liveCodeOutput.trim().length > 0 ? liveCodeOutput : editableCode}
+                 value={codeValue}
                  readOnly={Boolean(liveCodeOutput && liveCodeOutput.trim().length > 0)}
                  onChange={(e) => {
                    const next = e.target.value;
@@ -696,17 +704,6 @@ const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, colorPalette, onColo
         )}
       </div>
 
-      {/* Notes footer */}
-      <div className={cx('h-32 backdrop-blur border-t p-4 overflow-y-auto shrink-0 z-20', th.bg.sidebar, th.border.primary)}>
-        <h4 className={cx('text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-2', th.text.muted)}>
-          <Code className="w-3 h-3" /> {t('speakerNotes')}
-        </h4>
-        {slide.notes ? (
-           <p className={cx('text-sm leading-relaxed whitespace-pre-line font-serif', th.text.secondary)}>{slide.notes}</p>
-        ) : (
-           <p className={cx('text-sm italic', th.text.muted)}>{t('noNotes')}</p>
-        )}
-      </div>
     </div>
   );
 };

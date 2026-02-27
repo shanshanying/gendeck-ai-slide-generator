@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, AlertTriangle, Sparkles } from 'lucide-react';
+import { AlertTriangle, Sparkles } from 'lucide-react';
 import { PROVIDERS } from '../constants';
 import { ApiProvider } from '../types';
 import { getThemeClasses, cx, type Theme } from '../styles/theme';

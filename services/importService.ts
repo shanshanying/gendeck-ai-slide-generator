@@ -8,6 +8,194 @@ export interface ImportResult {
   topic: string;
 }
 
+export interface MarkdownOutlineImportResult {
+  topic: string;
+  audience?: string;
+  purpose?: string;
+  tone?: string;
+  slides: Array<{
+    title: string;
+    contentPoints: string[];
+    notes: string;
+    layoutSuggestion: string;
+  }>;
+}
+
+const cleanInlineMarkdown = (value: string): string => {
+  return value
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/`(.*?)`/g, '$1')
+    .trim();
+};
+
+const inferLayoutFromLabel = (value: string): string => {
+  const v = value.toLowerCase();
+  if (v.includes('cover')) return 'Cover';
+  if (v.includes('ending') || v.includes('thank') || v.includes('q&a') || v.includes('qa') || v.includes('contact')) return 'Ending';
+  if (v.includes('compare')) return 'Compare';
+  if (v.includes('grid')) return 'Grid';
+  if (v.includes('timeline') || v.includes('phase') || v.includes('roadmap')) return 'Timeline';
+  if (v.includes('data') || v.includes('metric') || v.includes('economics')) return 'Data';
+  if (v.includes('quote') || v.includes('voice')) return 'Quote';
+  return 'Standard';
+};
+
+const parseSlideSection = (headerSuffix: string, sectionLines: string[]) => {
+  let explicitTitle = '';
+  const contentPoints: string[] = [];
+  const notes: string[] = [];
+  const tableLinesBuffer: string[] = [];
+
+  const flushTableBuffer = () => {
+    if (tableLinesBuffer.length < 2) {
+      tableLinesBuffer.length = 0;
+      return;
+    }
+
+    const splitRow = (row: string) => row
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cleanInlineMarkdown(cell.trim()));
+
+    const isSeparatorRow = (cells: string[]) => cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+
+    const rows = tableLinesBuffer.map(splitRow).filter((cells) => cells.length > 0);
+    if (rows.length < 2) {
+      tableLinesBuffer.length = 0;
+      return;
+    }
+
+    const headers = rows[0];
+    const dataRows = isSeparatorRow(rows[1]) ? rows.slice(2) : rows.slice(1);
+
+    dataRows.forEach((row) => {
+      if (row.every((cell) => !cell)) return;
+      const point = row
+        .map((cell, idx) => {
+          const header = headers[idx] || `Col ${idx + 1}`;
+          return `${header}: ${cell || '-'}`;
+        })
+        .join(' | ');
+      if (point.trim()) {
+        contentPoints.push(point);
+      }
+    });
+
+    tableLinesBuffer.length = 0;
+  };
+
+  for (const rawLine of sectionLines) {
+    const line = rawLine.trim();
+    if (!line) {
+      flushTableBuffer();
+      continue;
+    }
+    if (line === '---') continue;
+    if (/^```/.test(line)) continue;
+
+    if (/^\|.*\|$/.test(line)) {
+      tableLinesBuffer.push(line);
+      continue;
+    }
+    flushTableBuffer();
+
+    const boldTitle = line.match(/^\*\*(.+?)\*\*$/);
+    if (boldTitle && !explicitTitle) {
+      explicitTitle = cleanInlineMarkdown(boldTitle[1]);
+      continue;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      contentPoints.push(cleanInlineMarkdown(bullet[1]));
+      continue;
+    }
+
+    const quote = line.match(/^>\s*(.+)$/);
+    if (quote) {
+      notes.push(cleanInlineMarkdown(quote[1]));
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) continue;
+    if (/^[A-Za-z\u4e00-\u9fff][^:：]{0,25}[:：]$/.test(line)) continue;
+
+    if (contentPoints.length < 6) {
+      contentPoints.push(cleanInlineMarkdown(line));
+    }
+  }
+  flushTableBuffer();
+
+  const cleanedHeader = cleanInlineMarkdown(headerSuffix).replace(/\s*\(.*?\)\s*$/, '').trim();
+  const title = explicitTitle || cleanedHeader || 'Untitled Slide';
+  const layoutSuggestion = inferLayoutFromLabel(`${cleanedHeader} ${title}`);
+
+  return {
+    title,
+    contentPoints,
+    notes: notes.join('\n'),
+    layoutSuggestion,
+  };
+};
+
+/**
+ * Parse markdown outline where slides are defined as `## Slide N — ...`
+ */
+export const parseMarkdownOutline = (markdown: string): MarkdownOutlineImportResult => {
+  const raw = String(markdown || '').replace(/\r\n/g, '\n');
+  const lines = raw.split('\n');
+
+  const slideHeaderRegex = /^##\s*slide\s*\d+\s*(?:[-—–:]\s*(.+))?$/i;
+  const titleMatch = raw.match(/^#\s+(.+)$/m);
+  const topic = cleanInlineMarkdown(titleMatch?.[1] || '').trim() || 'Imported Markdown Outline';
+
+  const audience = cleanInlineMarkdown(raw.match(/^\>\s*\*\*Audience:\*\*\s*(.+)$/im)?.[1] || '');
+  const purpose = cleanInlineMarkdown(raw.match(/^\>\s*\*\*Goal:\*\*\s*(.+)$/im)?.[1] || '');
+  const tone = cleanInlineMarkdown(raw.match(/^\>\s*\*\*Tone:\*\*\s*(.+)$/im)?.[1] || '');
+
+  const sections: Array<{ headerSuffix: string; lines: string[] }> = [];
+  let current: { headerSuffix: string; lines: string[] } | null = null;
+
+  for (const line of lines) {
+    const headerMatch = line.match(slideHeaderRegex);
+    if (headerMatch) {
+      if (current) {
+        sections.push(current);
+      }
+      current = {
+        headerSuffix: headerMatch[1] || '',
+        lines: [],
+      };
+      continue;
+    }
+    if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) {
+    sections.push(current);
+  }
+
+  const slides = sections
+    .map((section) => parseSlideSection(section.headerSuffix, section.lines))
+    .filter((slide) => slide.title || slide.contentPoints.length > 0);
+
+  if (slides.length === 0) {
+    throw new Error('No slide sections found. Use headings like: ## Slide 1 — Cover');
+  }
+
+  return {
+    topic,
+    audience: audience || undefined,
+    purpose: purpose || undefined,
+    tone: tone || undefined,
+    slides,
+  };
+};
+
 /**
  * Parse an exported HTML deck file and extract slide data
  */

@@ -80,7 +80,7 @@ export const themes = {
 };
 
 // Helper function to get theme classes - always returns dark theme
-export function getThemeClasses(theme?: Theme) {
+export function getThemeClasses(_theme?: Theme) {
   return themes.dark;
 }
 

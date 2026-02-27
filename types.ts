@@ -41,10 +41,12 @@ export interface PresentationConfig {
   topic: string;
   audience: string;
   purpose: string;
+  tone?: string;
   language: Language;
   slideCount: number;
   apiSettings: ApiSettings;
   documentContent: string;
+  sourceMode?: 'document' | 'markdown_outline';
   strictMode?: boolean;
   stylePresetId?: string; // User-selected style preset (overrides audience default)
 }

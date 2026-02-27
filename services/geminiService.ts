@@ -788,10 +788,12 @@ export const generateSpeakerNotes = async (
 
 export const generateSlideHtml = async (
   slide: OutlineItem,
-  colorPalette: string,
+  _colorPalette: string,
   audience: string,
   apiSettings: ApiSettings,
   deckTitle: string,
+  deckGoal: string,
+  deckTone: string | undefined,
   pageNumber: number,
   totalPages: number,
   customInstruction?: string,
@@ -803,7 +805,7 @@ export const generateSlideHtml = async (
   try {
     // Get style guidance - use user-selected preset if provided, otherwise use audience default
     const profile = stylePresetId ? getStylePreset(stylePresetId) : findAudienceProfile(audience);
-    const designSystemGuidance = getDeckDesignSystemPrompt(audience, deckTitle, stylePresetId);
+    const designSystemGuidance = getDeckDesignSystemPrompt(audience, deckGoal || deckTitle, stylePresetId);
     const archetypeGuidance = getLayoutArchetypeGuideline(slide.layoutSuggestion || 'Standard');
     const promptLang: PromptLang = lang || resolvePromptLang(
       slide.title,
@@ -811,6 +813,8 @@ export const generateSlideHtml = async (
       slide.layoutSuggestion,
       audience,
       deckTitle,
+      deckGoal,
+      deckTone || '',
       customInstruction
     );
     
@@ -902,6 +906,14 @@ export const generateSlideHtml = async (
           --c-border, --c-border-strong, --c-divider,
           --c-primary, --c-secondary, --c-accent,
           --c-success, --c-warning, --c-danger, --c-info。
+      12. **内容忠实度（必须）**：
+          - 只能基于输入的标题、内容点、布局提示渲染，不得添加输入中没有的新观点/新事实/新数字/新案例。
+          - 不得编造客户名称、行业数据、百分比、时间线里程碑。
+          - 文案可做精炼与结构化，但语义必须与输入一致。
+      13. **配色克制（必须）**：
+          - 根据 Audience/Goal/Tone 选择保守、商务化色彩表达。
+          - 单页仅突出 1 个主强调色（必要时可辅以 1 个次强调色），其余以中性色和结构色为主。
+          - 禁止高饱和多彩堆叠、霓虹/花哨视觉、过度装饰。
       
       ${styleGuidance}
       ${commonStyleSettings}
@@ -929,6 +941,7 @@ export const generateSlideHtml = async (
       ## 🎨 样式覆盖规则
       若 Layout Hint 或 User Override 包含“衬线、全大写、居中、左对齐、粗体、现代”等指令，必须体现。
       - 颜色尽量用 inline style + CSS 变量。
+      - 颜色分配建议：约 80% 中性（bg/text/border），20% 强调（primary/accent）。
       - Tailwind 主要用于布局（flex/grid/absolute/relative）。
       - 字号建议内联 px，保证 1080p 打印一致性。
       - 避免所有页面视觉铬层完全一致，应体现风格差异（语气、密度、排版）。
@@ -940,6 +953,9 @@ export const generateSlideHtml = async (
       - 尺寸按场景使用 24/32/48px。
 
       ## 输入数据
+      - Audience：${audience}
+      - Goal：${deckGoal}
+      - Tone：${deckTone || '未提供（按 Goal 与 Audience 推断）'}
       - 标题：${slide.title}
       - 内容：${JSON.stringify(slide.contentPoints)}
       - 布局提示：${slide.layoutSuggestion}
@@ -994,6 +1010,14 @@ export const generateSlideHtml = async (
          - \`var(--c-warning)\`: Warning/attention
          - \`var(--c-danger)\`: Error/danger
          - \`var(--c-info)\`: Information
+      12. **Content Fidelity (MANDATORY)**:
+         - Render strictly from input title/content points/layout hint.
+         - Do NOT add new claims, facts, numbers, customer names, timelines, or case details not present in input.
+         - You may rewrite for clarity, but must preserve original meaning.
+      13. **Color Restraint (MANDATORY)**:
+         - Determine color temperament from Audience/Goal/Tone with a conservative business style.
+         - Per slide, emphasize with ONE primary accent (optional secondary accent only when necessary).
+         - Avoid flashy, highly saturated, or rainbow-like color usage.
       
       ${styleGuidance}
       ${commonStyleSettings}
@@ -1042,6 +1066,7 @@ export const generateSlideHtml = async (
       ## 🎨 STYLING OVERRIDES (IMPORTANT)
       If the 'Layout Hint' or 'User Override' contains specific typography or style instructions (e.g. "Serif", "All Caps", "Centered", "Left Aligned", "Bold", "Modern"), you **MUST** apply relevant styles.
       - Use inline styles for colors: \`style="color: var(--c-text);"\`, \`style="background-color: var(--c-bg-soft);"\`, etc.
+      - Color proportion guideline: ~80% neutral (bg/text/border), ~20% accent.
       - Use Tailwind utilities mainly for layout: \`flex\`, \`grid\`, \`absolute\`, \`relative\`, etc.
       - Prefer inline px typography styles for title/body sizing to ensure 1080p print consistency.
       - Do NOT render every slide with the same visual chrome; express the chosen style profile (tone, density, typography).
@@ -1054,6 +1079,9 @@ export const generateSlideHtml = async (
       - Use consistent icon style throughout the slide.
 
       ## INPUT DATA
+      - Audience: ${audience}
+      - Goal: ${deckGoal}
+      - Tone: ${deckTone || 'Not provided (infer from Audience and Goal)'}
       - Title: ${slide.title}
       - Content: ${JSON.stringify(slide.contentPoints)}
       - Layout Hint: ${slide.layoutSuggestion}
